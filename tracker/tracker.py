@@ -2,6 +2,7 @@ import numpy as np
 import scipy.optimize
 from time import time
 import cv2
+import os
 
 # Install openpose globally where all other python packages are installed.
 from openpose import openpose as op
@@ -48,13 +49,7 @@ class Tracker(object):
     def video(self, file):
         capture = cv2.VideoCapture(file)
 
-        frame_width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-        frame_height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fourcc_code = capture.get(cv2.CAP_PROP_FOURCC)
-        fps = int(capture.get(cv2.CAP_PROP_FPS))
-
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        writer = cv2.VideoWriter('output.avi', fourcc, fps, (frame_width, frame_height))
+        writer = self._create_writer(file, capture)
 
         success, original_image = capture.read()
         while success:
@@ -82,6 +77,21 @@ class Tracker(object):
             success, original_image = capture.read()
 
         capture.release()
+        writer.release()
+
+    def _create_writer(self, in_file, capture):
+        frame_width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fourcc_code = capture.get(cv2.CAP_PROP_FOURCC)
+        fps = int(capture.get(cv2.CAP_PROP_FPS))
+
+        filename = os.path.basename(in_file)
+        out_file = os.path.join("output", filename + '.avi')
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+
+        writer = cv2.VideoWriter(out_file, fourcc, fps, (frame_width, frame_height))
+
+        return writer
 
     def _find_assignments(self, people, prev_people):
         # Pre-allocate the distance matrix
