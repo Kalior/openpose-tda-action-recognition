@@ -66,10 +66,10 @@ class Tracker(object):
 
             min_person_start_time = time()
             # Find out which people are closest to each other
-            assignments, distances = self.find_assignments(prev_frame_people, people)
+            assignments, distances = self._find_assignments(prev_frame_people, people)
             closest_person_time = time() - min_person_start_time
 
-            self.update_paths(distances, assignments, people)
+            self._update_paths(distances, assignments, people)
 
             self.visualiser.draw_paths(self.people_paths, output_image)
 
@@ -79,28 +79,21 @@ class Tracker(object):
             prev_frame_people = people
             success, img = capture.read()
 
-        total_distance = 0
-        prev_position = person_paths[0][0]
-        for piece in person_paths[0][1:]:
-            total_distance += self.person_distance(piece, prev_position)
-            prev_position = piece
-        print("Total distance moved throughout video: {}".format(total_distance))
-
-    def find_assignments(self, prev_frame_people, people):
+    def _find_assignments(self, prev_frame_people, people):
         # Pre-allocate the distance matrix
         distances = np.ndarray((prev_frame_people.shape[0], people.shape[0]))
 
         # And calculate the distances...
         for i, prev_frame_person in enumerate(prev_frame_people):
             for j, person in enumerate(people):
-                distance = self.person_distance(person, prev_frame_person)
+                distance = self._person_distance(person, prev_frame_person)
                 distances[i, j] = distance
 
         # Find the best assignments between people in the two frames
         assignments = scipy.optimize.linear_sum_assignment(distances)
         return assignments, distances
 
-    def update_paths(self, distances, assignments, people):
+    def _update_paths(self, distances, assignments, people):
         new_path_indices = {}
         for from_, to in zip(assignments[0], assignments[1]):
             # Make sure we know to which path the requested index belongs to
@@ -124,14 +117,14 @@ class Tracker(object):
 
     # A person is a [#keypoints x 3] numpy array
     # With [X, Y, Confidence] as the values.
-    def person_distance(self, person, prev_frame_person):
+    def _person_distance(self, person, prev_frame_person):
         # Disregard the confidence for now.
         xy_person = person[:, :2]
         xy_prev = prev_frame_person[:, :2]
 
         #   Don't include the keypoints we didn't identify
         # as this can give large frame-to-frame errors.
-        xy_person, xy_prev = self.filter_nonzero(xy_person, xy_prev)
+        xy_person, xy_prev = self._filter_nonzero(xy_person, xy_prev)
 
         if xy_person.size == 0:
             return 10000  # np.inf, but np.inf doesn't play nice with scipy.optimize
@@ -142,7 +135,7 @@ class Tracker(object):
 
         return distance
 
-    def filter_nonzero(self, first, second):
+    def _filter_nonzero(self, first, second):
         first, second = first[np.nonzero(first)], second[np.nonzero(first)]
         first, second = first[np.nonzero(second)], second[np.nonzero(second)]
         return first, second
