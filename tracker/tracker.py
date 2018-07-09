@@ -105,11 +105,13 @@ class Tracker(object):
             assignments = [indicies, indicies]
 
         for from_, to in zip(assignments[0], assignments[1]):
+            if from_ < len(prev_people):
+                path_index = prev_people[from_].path_index
+                avg_speed = self.people_paths[path_index].get_average_speed_in_window()
+
             # Make sure we know to which path the requested index belongs to
             #  and make sure there isn't a large gap between the two.
-            if from_ < len(prev_people) and distances[from_, to] < 10:
-                path_index = prev_people[from_].path_index
-            else:
+            if from_ >= len(prev_people) or distances[from_, to] >= avg_speed + 10:
                 path_index = self.person_counter
                 self.person_counter += 1
 
