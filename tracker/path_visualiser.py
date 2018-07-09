@@ -16,7 +16,7 @@ class PathVisualiser(object):
         cv2.waitKey(15)
 
     def add_lines_from_path(self, img, person_path, color):
-        for i in range(1, len(person_path)):
+        for i in range(1, len(person_path.path)):
             keypoint = person_path[i].get_nonzero_keypoint()
             prev_keypoint = person_path[i - 1].get_nonzero_keypoint()
 
