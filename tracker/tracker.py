@@ -114,24 +114,39 @@ class Tracker(object):
             indicies = [self.person_counter + i for i in range(len(people))]
             assignments = [indicies, indicies]
 
-        for from_, to in zip(assignments[0], assignments[1]):
-            if from_ < len(prev_people):
-                path_index = prev_people[from_].path_index
-                avg_speed = self.people_paths[path_index].get_average_speed_in_window()
+        unassigned_people_to = [i for i, _ in enumerate(people) if i not in assignments[1]]
+        unassigned_people_from = [i + self.person_counter for i in unassigned_people_to]
 
-            # Make sure we know to which path the requested index belongs to
-            #  and make sure there isn't a large gap between the two.
-            if from_ >= len(prev_people) or distances[from_, to] >= avg_speed + 10:
-                path_index = self.person_counter
-                self.person_counter += 1
+        from_assignments = np.append(assignments[0], np.array(
+            unassigned_people_from, dtype=np.int))
+        to_assignments = np.append(assignments[1], np.array(unassigned_people_to, dtype=np.int))
+
+        for from_, to in zip(from_assignments, to_assignments):
+            path_index = self._establish_index_of_path(from_, to, prev_people, distances)
 
             # Extend people_paths if it's too short
-            if len(self.people_paths) <= path_index:
-                for _ in range(path_index - len(self.people_paths) + 1):
-                    self.people_paths.append(Path([]))
+            self._extend_people_path_to(path_index)
 
             people[to].path_index = path_index
             self.people_paths[path_index].add_person(people[to])
+
+    def _establish_index_of_path(self, from_, to, prev_people, distances):
+        if from_ < len(prev_people):
+            path_index = prev_people[from_].path_index
+            avg_speed = self.people_paths[path_index].get_average_speed_in_window()
+
+        # Make sure we know to which path the requested index belongs to
+        #  and make sure there isn't a large gap between the two.
+        if from_ >= len(prev_people) or distances[from_, to] >= avg_speed + 10:
+            path_index = self.person_counter
+            self.person_counter += 1
+
+        return path_index
+
+    def _extend_people_path_to(self, new_length):
+        if len(self.people_paths) <= new_length:
+            for _ in range(new_length - len(self.people_paths) + 1):
+                self.people_paths.append(Path([]))
 
     def _convert_to_persons(self, keypoints, keep_order=False):
         if keep_order:
