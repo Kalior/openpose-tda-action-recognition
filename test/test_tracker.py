@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from tracker import Tracker, Person, PathVisualiser
+from tracker import Tracker, Person, PathVisualiser, Path
 
 
 class TestTracker(unittest.TestCase):
@@ -39,42 +39,20 @@ class TestTracker(unittest.TestCase):
 
         people = np.append(self.people, self.far_away_people, axis=0)
 
-        self.tracker.people_paths = [[Person(p.keypoints, i)] for i, p in enumerate(people)]
-        self.tracker.path_indices = {i: i for i, _ in enumerate(people)}
-        self.tracker.person_counter = len(people)
+        assignments, distances = self.tracker._find_assignments(people, [])
+        self.tracker._update_paths(distances, assignments, people, [])
 
         assignments, distances = self.tracker._find_assignments(other_people_order, people)
-        self.tracker._update_paths(distances, assignments, people)
-
-        path_indices = self.tracker.path_indices
-        # Do the paths get assigned correctly
-        self.assertTrue(len(path_indices) == 5 and
-                        path_indices[2] == 0 and
-                        path_indices[1] == 1 and
-                        # 0, but too far away to claim they are the same person
-                        path_indices[3] == 5 and
-                        path_indices[0] == 3 and
-                        path_indices[4] == 4)
+        self.tracker._update_paths(distances, assignments, other_people_order, people)
 
         clone_people = [Person(p.keypoints) for p in people]
         assignments, distances = self.tracker._find_assignments(clone_people, other_people_order)
-        self.tracker._update_paths(distances, assignments, clone_people)
-
-        path_indices = self.tracker.path_indices
-        # Reverse order, see that the indices still correspond to the correct
-        # path
-        self.assertTrue(len(path_indices) == 5 and
-                        path_indices[0] == 0 and
-                        path_indices[1] == 1 and
-                        # 2, but too far away to claim they are the same person
-                        path_indices[2] == 6 and
-                        path_indices[3] == 3 and
-                        path_indices[4] == 4)
+        self.tracker._update_paths(distances, assignments, clone_people, other_people_order)
 
         people_paths = self.tracker.people_paths
         # Check a path so that it also contains the correct people
         self.assertTrue(people_paths[0][0] == self.people[0] and
-                        people_paths[0][1] == self.people[2] and
+                        people_paths[0][1] == other_people_order[3] and
                         people_paths[0][2] == self.people[0])
 
         # Check that every person in the same path has the same path_index

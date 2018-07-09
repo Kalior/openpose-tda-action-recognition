@@ -8,14 +8,13 @@ from openpose import openpose as op
 
 from .path_visualiser import PathVisualiser
 from .person import Person
+from .path import Path
 
 
 class Tracker(object):
 
     def __init__(self, model_path='/models/', no_openpose=False):
-        self.people = []
         self.people_paths = []
-        self.path_indices = {}
         if not no_openpose:
             # Initialise openpose
             params = self._openpose_parameters(model_path)
@@ -57,10 +56,10 @@ class Tracker(object):
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
         writer = cv2.VideoWriter('output.avi', fourcc, fps, (frame_width, frame_height))
 
-        prev_frame_people = []
-
         success, original_image = capture.read()
         while success:
+            path_endpoints = [path.get_last_person() for path in self.people_paths]
+
             openpose_start_time = time()
             keypoints, image_with_keypoints = self.openpose.forward(original_image, True)
             people = self._convert_to_persons(keypoints)
@@ -68,28 +67,28 @@ class Tracker(object):
 
             min_person_start_time = time()
             # Find out which people are closest to each other
-            assignments, distances = self._find_assignments(prev_frame_people, people)
+            assignments, distances = self._find_assignments(people, path_endpoints)
             closest_person_time = time() - min_person_start_time
 
-            self._update_paths(distances, assignments, people)
+            self._update_paths(distances, assignments, people, path_endpoints)
 
+            # Write the frame to a video
             self.visualiser.draw_paths(self.people_paths, image_with_keypoints)
             writer.write(image_with_keypoints)
 
             print("OpenPose: {:.5f}, Closest person: {:.5f}".format(
                 openpose_time, closest_person_time))
 
-            prev_frame_people = people
             success, original_image = capture.read()
 
         capture.release()
 
-    def _find_assignments(self, prev_frame_people, people):
+    def _find_assignments(self, people, prev_people):
         # Pre-allocate the distance matrix
-        distances = np.ndarray((len(prev_frame_people), len(people)))
+        distances = np.ndarray((len(prev_people), len(people)))
 
         # And calculate the distances...
-        for i, prev_frame_person in enumerate(prev_frame_people):
+        for i, prev_frame_person in enumerate(prev_people):
             for j, person in enumerate(people):
                 distance = person.distance(prev_frame_person)
                 distances[i, j] = distance
@@ -98,13 +97,18 @@ class Tracker(object):
         assignments = scipy.optimize.linear_sum_assignment(distances)
         return assignments, distances
 
-    def _update_paths(self, distances, assignments, people):
-        new_path_indices = {}
+    def _update_paths(self, distances, assignments, people, prev_people):
+        # Special case for no assignments (either this frame has no people or no
+        # previous frame had people)
+        if assignments[0].size == 0 and assignments[1].size == 0:
+            indicies = [self.person_counter + i for i in range(len(people))]
+            assignments = [indicies, indicies]
+
         for from_, to in zip(assignments[0], assignments[1]):
             # Make sure we know to which path the requested index belongs to
             #  and make sure there isn't a large gap between the two.
-            if from_ in self.path_indices and distances[from_, to] < 10:
-                path_index = self.path_indices[from_]
+            if from_ < len(prev_people) and distances[from_, to] < 10:
+                path_index = prev_people[from_].path_index
             else:
                 path_index = self.person_counter
                 self.person_counter += 1
@@ -112,14 +116,10 @@ class Tracker(object):
             # Extend people_paths if it's too short
             if len(self.people_paths) <= path_index:
                 for _ in range(path_index - len(self.people_paths) + 1):
-                    self.people_paths.append([])
+                    self.people_paths.append(Path([]))
 
             people[to].path_index = path_index
-            self.people_paths[path_index].append(people[to])
-
-            new_path_indices[to] = path_index
-
-        self.path_indices = new_path_indices
+            self.people_paths[path_index].add_person(people[to])
 
     def _convert_to_persons(self, keypoints, keep_order=False):
         if keep_order:
