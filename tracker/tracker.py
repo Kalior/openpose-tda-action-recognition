@@ -49,12 +49,20 @@ class Tracker(object):
     def video(self, file):
         capture = cv2.VideoCapture(file)
 
+        frame_width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fourcc_code = capture.get(cv2.CAP_PROP_FOURCC)
+        fps = int(capture.get(cv2.CAP_PROP_FPS))
+
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        writer = cv2.VideoWriter('output.avi', fourcc, fps, (frame_width, frame_height))
+
         prev_frame_people = []
 
-        success, img = capture.read()
-        for _ in range(10):
+        success, original_image = capture.read()
+        while success:
             openpose_start_time = time()
-            keypoints, output_image = self.openpose.forward(img, True)
+            keypoints, image_with_keypoints = self.openpose.forward(original_image, True)
             people = self._convert_to_persons(keypoints)
             openpose_time = time() - openpose_start_time
 
@@ -65,13 +73,16 @@ class Tracker(object):
 
             self._update_paths(distances, assignments, people)
 
-            self.visualiser.draw_paths(self.people_paths, output_image)
+            self.visualiser.draw_paths(self.people_paths, image_with_keypoints)
+            writer.write(image_with_keypoints)
 
             print("OpenPose: {:.5f}, Closest person: {:.5f}".format(
                 openpose_time, closest_person_time))
 
             prev_frame_people = people
-            success, img = capture.read()
+            success, original_image = capture.read()
+
+        capture.release()
 
     def _find_assignments(self, prev_frame_people, people):
         # Pre-allocate the distance matrix
