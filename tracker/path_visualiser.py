@@ -7,11 +7,12 @@ class PathVisualiser(object):
     def __init__(self):
         self.colors = [(255, 0, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255), (255, 255, 255)]
 
-    def draw_paths(self, people_paths, output_image):
+    def draw_paths(self, people_paths, img):
         for i, person_path in enumerate(people_paths):
-            self.add_lines_from_path(output_image, person_path, colors[i % len(self.colors)])
+            # self.add_lines_from_path(img, person_path, self.colors[i % len(self.colors)])
+            self.mark_hand(img, person_path, self.colors[i % len(self.colors)])
 
-        cv2.imshow("output", output_image)
+        cv2.imshow("output", img)
         cv2.waitKey(15)
 
     def add_lines_from_path(self, img, person_path, color):
