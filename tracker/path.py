@@ -1,12 +1,14 @@
 class Path(object):
 
-    def __init__(self, list):
+    def __init__(self):
         self.path = []
+        self.last_frame_update = -1
 
     def __getitem__(self, item):
         return self.path[item]
 
-    def add_person(self, person):
+    def add_person(self, person, current_frame):
+        self.last_frame_update = current_frame
         self.path.append(person)
 
     def get_last_person(self):
@@ -22,3 +24,7 @@ class Path(object):
 
         speed = distance / window_size
         return speed
+
+    def is_relevant(self, current_frame):
+        # Paths are relevant if they are repeated
+        return self.last_frame_update > current_frame - 10

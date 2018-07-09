@@ -40,14 +40,14 @@ class TestTracker(unittest.TestCase):
         people = np.append(self.people, self.far_away_people, axis=0)
 
         assignments, distances = self.tracker._find_assignments(people, [])
-        self.tracker._update_paths(distances, assignments, people, [])
+        self.tracker._update_paths(distances, assignments, people, [], 0)
 
         assignments, distances = self.tracker._find_assignments(other_people_order, people)
-        self.tracker._update_paths(distances, assignments, other_people_order, people)
+        self.tracker._update_paths(distances, assignments, other_people_order, people, 1)
 
         clone_people = [Person(p.keypoints) for p in people]
         assignments, distances = self.tracker._find_assignments(clone_people, other_people_order)
-        self.tracker._update_paths(distances, assignments, clone_people, other_people_order)
+        self.tracker._update_paths(distances, assignments, clone_people, other_people_order, 2)
 
         people_paths = self.tracker.people_paths
         # Check a path so that it also contains the correct people

@@ -51,9 +51,12 @@ class Tracker(object):
 
         writer = self._create_writer(file, capture)
 
+        current_frame = 0
         success, original_image = capture.read()
         while success:
-            path_endpoints = [path.get_last_person() for path in self.people_paths]
+            path_endpoints = [path.get_last_person()
+                              for path in self.people_paths
+                              if path.is_relevant(current_frame)]
 
             openpose_start_time = time()
             keypoints, image_with_keypoints = self.openpose.forward(original_image, True)
@@ -65,16 +68,17 @@ class Tracker(object):
             assignments, distances = self._find_assignments(people, path_endpoints)
             closest_person_time = time() - min_person_start_time
 
-            self._update_paths(distances, assignments, people, path_endpoints)
+            self._update_paths(distances, assignments, people, path_endpoints, current_frame)
 
+            self.visualiser.draw_paths(self.people_paths, image_with_keypoints, current_frame)
             # Write the frame to a video
-            self.visualiser.draw_paths(self.people_paths, image_with_keypoints)
             writer.write(image_with_keypoints)
 
             print("OpenPose: {:.5f}, Closest person: {:.5f}".format(
                 openpose_time, closest_person_time))
 
             success, original_image = capture.read()
+            current_frame += 1
 
         capture.release()
         writer.release()
@@ -107,7 +111,7 @@ class Tracker(object):
         assignments = scipy.optimize.linear_sum_assignment(distances)
         return assignments, distances
 
-    def _update_paths(self, distances, assignments, people, prev_people):
+    def _update_paths(self, distances, assignments, people, prev_people, current_frame):
         # Special case for no assignments (either this frame has no people or no
         # previous frame had people)
         if assignments[0].size == 0 and assignments[1].size == 0:
@@ -128,7 +132,7 @@ class Tracker(object):
             self._extend_people_path_to(path_index)
 
             people[to].path_index = path_index
-            self.people_paths[path_index].add_person(people[to])
+            self.people_paths[path_index].add_person(people[to], current_frame)
 
     def _establish_index_of_path(self, from_, to, prev_people, distances):
         if from_ < len(prev_people):
@@ -146,7 +150,7 @@ class Tracker(object):
     def _extend_people_path_to(self, new_length):
         if len(self.people_paths) <= new_length:
             for _ in range(new_length - len(self.people_paths) + 1):
-                self.people_paths.append(Path([]))
+                self.people_paths.append(Path())
 
     def _convert_to_persons(self, keypoints, keep_order=False):
         if keep_order:
