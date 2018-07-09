@@ -48,20 +48,14 @@ class Tracker(object):
 
     def video(self, file):
         capture = cv2.VideoCapture(file)
+
+        prev_frame_people = []
+
         success, img = capture.read()
-
-        prev_frame_people, _ = self.openpose.forward(img, True)
-        success, img = capture.read()
-
-        # Keep track of which indices belong to which people, since the lists
-        # aren't sorted in any way.
-        self.path_indices = {i: i for i, _ in enumerate(prev_frame_people)}
-        self.person_paths = [[Person(i, p)] for i, p in enumerate(prev_frame_people)]
-        self.person_counter = len(prev_frame_people)
-
         for _ in range(10):
             openpose_start_time = time()
-            people, output_image = self.openpose.forward(img, True)
+            keypoints, output_image = self.openpose.forward(img, True)
+            people = self._convert_to_persons(keypoints)
             openpose_time = time() - openpose_start_time
 
             min_person_start_time = time()
@@ -81,12 +75,12 @@ class Tracker(object):
 
     def _find_assignments(self, prev_frame_people, people):
         # Pre-allocate the distance matrix
-        distances = np.ndarray((prev_frame_people.shape[0], people.shape[0]))
+        distances = np.ndarray((len(prev_frame_people), len(people)))
 
         # And calculate the distances...
         for i, prev_frame_person in enumerate(prev_frame_people):
             for j, person in enumerate(people):
-                distance = self._person_distance(person, prev_frame_person)
+                distance = person.distance(prev_frame_person)
                 distances[i, j] = distance
 
         # Find the best assignments between people in the two frames
@@ -97,6 +91,7 @@ class Tracker(object):
         new_path_indices = {}
         for from_, to in zip(assignments[0], assignments[1]):
             # Make sure we know to which path the requested index belongs to
+            #  and make sure there isn't a large gap between the two.
             if from_ in self.path_indices and distances[from_, to] < 10:
                 path_index = self.path_indices[from_]
             else:
@@ -108,34 +103,15 @@ class Tracker(object):
                 for _ in range(path_index - len(self.people_paths) + 1):
                     self.people_paths.append([])
 
-            new_person = Person(path_index, people[to])
-            self.people_paths[path_index].append(new_person)
+            people[to].path_index = path_index
+            self.people_paths[path_index].append(people[to])
 
             new_path_indices[to] = path_index
 
         self.path_indices = new_path_indices
 
-    # A person is a [#keypoints x 3] numpy array
-    # With [X, Y, Confidence] as the values.
-    def _person_distance(self, person, prev_frame_person):
-        # Disregard the confidence for now.
-        xy_person = person[:, :2]
-        xy_prev = prev_frame_person[:, :2]
-
-        #   Don't include the keypoints we didn't identify
-        # as this can give large frame-to-frame errors.
-        xy_person, xy_prev = self._filter_nonzero(xy_person, xy_prev)
-
-        if xy_person.size == 0:
-            return 10000  # np.inf, but np.inf doesn't play nice with scipy.optimize
-
-        # Calculate average distance between the two people
-        distance = np.linalg.norm(xy_person - xy_prev)
-        distance = distance / xy_person.size
-
-        return distance
-
-    def _filter_nonzero(self, first, second):
-        first, second = first[np.nonzero(first)], second[np.nonzero(first)]
-        first, second = first[np.nonzero(second)], second[np.nonzero(second)]
-        return first, second
+    def _convert_to_persons(self, keypoints, keep_order=False):
+        if keep_order:
+            return [Person(k, i) for i, k in enumerate(keypoints)]
+        else:
+            return [Person(k) for k in keypoints]
