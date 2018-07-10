@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+from util import COCOKeypoints
+
 
 class PathVisualiser(object):
 

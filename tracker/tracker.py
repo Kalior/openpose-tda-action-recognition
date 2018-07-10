@@ -8,13 +8,14 @@ import os
 from openpose import openpose as op
 
 # Tensorflow implementation of openpose:
-from tf_pose import common
 from tf_pose.estimator import TfPoseEstimator
 from tf_pose.networks import get_graph_path, model_wh
 
 from .path_visualiser import PathVisualiser
 from .person import Person
 from .path import Path
+
+import util
 
 
 class Tracker(object):
@@ -61,25 +62,12 @@ class Tracker(object):
             humans = self.e.inference(original_image)
             image_with_keypoints = TfPoseEstimator.draw_humans(
                 original_image, humans, imgcopy=False)
-            people = np.array([self._tf_openpose_human_to_np(human, image_width, image_height)
+            people = np.array([util.tf_openpose_human_to_np(human, image_width, image_height)
                                for human in humans])
             return people, image_with_keypoints
         else:
             keypoints, image_with_keypoints = self.openpose.forward(original_image, True)
             return keypoints, image_with_keypoints
-
-    def _tf_openpose_human_to_np(self, human, image_width, image_height):
-        keypoints = np.empty([common.CocoPart.Background.value, 3])
-        for i in range(common.CocoPart.Background.value):
-            if i not in human.body_parts.keys():
-                keypoints[i] = np.array([0, 0, 0])
-            else:
-                part = human.body_parts[i]
-                x = part.x * image_width + 0.5
-                y = part.y * image_height + 0.5
-                confidence = part.score
-                keypoints[i] = np.array([x, y, confidence])
-        return keypoints
 
     def video(self, file, only_arms=False):
         capture = cv2.VideoCapture(file)

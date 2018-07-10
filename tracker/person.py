@@ -1,5 +1,7 @@
 import numpy as np
 
+from util import COCOKeypoints
+
 
 class Person(object):
 
@@ -54,34 +56,4 @@ class Person(object):
         return self.keypoints[0]
 
     def get_arm_keypoints(self):
-        return self.keypoints[[4, 3, 7, 6]]
-
-    # Result for BODY_25 (25 body parts consisting of COCO + foot)
-    # const std::map<unsigned int, std::string> POSE_BODY_25_BODY_PARTS {
-    #     {0,  "Nose"},
-    #     {1,  "Neck"},
-    #     {2,  "RShoulder"},
-    #     {3,  "RElbow"},
-    #     {4,  "RWrist"},
-    #     {5,  "LShoulder"},
-    #     {6,  "LElbow"},
-    #     {7,  "LWrist"},
-    #     {8,  "MidHip"},
-    #     {9,  "RHip"},
-    #     {10, "RKnee"},
-    #     {11, "RAnkle"},
-    #     {12, "LHip"},
-    #     {13, "LKnee"},
-    #     {14, "LAnkle"},
-    #     {15, "REye"},
-    #     {16, "LEye"},
-    #     {17, "REar"},
-    #     {18, "LEar"},
-    #     {19, "LBigToe"},
-    #     {20, "LSmallToe"},
-    #     {21, "LHeel"},
-    #     {22, "RBigToe"},
-    #     {23, "RSmallToe"},
-    #     {24, "RHeel"},
-    #     {25, "Background"}
-    # };
+        return self.keypoints[[COCOKeypoints.RWrist.value, COCOKeypoints.RElbow.value]]
