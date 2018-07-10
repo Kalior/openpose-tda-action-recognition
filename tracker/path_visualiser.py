@@ -23,8 +23,8 @@ class PathVisualiser(object):
 
         start_index = max(1, len(person_path.path) - 10)
         for i in range(start_index, len(person_path.path)):
-            keypoint = person_path[i].get_nonzero_keypoint()
-            prev_keypoint = person_path[i - 1].get_nonzero_keypoint()
+            keypoint = person_path[i].get_nonzero_keypoint(only_arms).astype(np.int)
+            prev_keypoint = person_path[i - 1].get_nonzero_keypoint(only_arms).astype(np.int)
 
             # If there are no nonzero keypoints, just move on with your life.
             if any(np.array_equal(k, [0.0, 0.0]) for k in [keypoint, prev_keypoint]):

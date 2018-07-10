@@ -7,6 +7,11 @@ import os
 # Install openpose globally where all other python packages are installed.
 from openpose import openpose as op
 
+# Tensorflow implementation of openpose:
+from tf_pose import common
+from tf_pose.estimator import TfPoseEstimator
+from tf_pose.networks import get_graph_path, model_wh
+
 from .path_visualiser import PathVisualiser
 from .person import Person
 from .path import Path
@@ -14,9 +19,12 @@ from .path import Path
 
 class Tracker(object):
 
-    def __init__(self, model_path='/models/', no_openpose=False):
+    def __init__(self, tf_openpose=False, model_path='/models/', no_openpose=False):
         self.people_paths = []
-        if not no_openpose:
+        self.tf_openpose = tf_openpose
+        if tf_openpose:
+            self.e = TfPoseEstimator(get_graph_path("mobilenet_thin"), target_size=(432, 368))
+        elif not no_openpose:
             # Initialise openpose
             params = self._openpose_parameters(model_path)
             # Construct OpenPose object allocates GPU memory
@@ -46,7 +54,34 @@ class Tracker(object):
         }
         return params
 
-    def video(self, file):
+    def _forward(self, original_image):
+        if self.tf_openpose:
+            image_height, image_width = original_image.shape[:2]
+
+            humans = self.e.inference(original_image)
+            image_with_keypoints = TfPoseEstimator.draw_humans(
+                original_image, humans, imgcopy=False)
+            people = np.array([self._tf_openpose_human_to_np(human, image_width, image_height)
+                               for human in humans])
+            return people, image_with_keypoints
+        else:
+            keypoints, image_with_keypoints = self.openpose.forward(original_image, True)
+            return keypoints, image_with_keypoints
+
+    def _tf_openpose_human_to_np(self, human, image_width, image_height):
+        keypoints = np.empty([common.CocoPart.Background.value, 3])
+        for i in range(common.CocoPart.Background.value):
+            if i not in human.body_parts.keys():
+                keypoints[i] = np.array([0, 0, 0])
+            else:
+                part = human.body_parts[i]
+                x = part.x * image_width + 0.5
+                y = part.y * image_height + 0.5
+                confidence = part.score
+                keypoints[i] = np.array([x, y, confidence])
+        return keypoints
+
+    def video(self, file, only_arms=False):
         capture = cv2.VideoCapture(file)
 
         writer = self._create_writer(file, capture)
@@ -59,7 +94,7 @@ class Tracker(object):
                               if path.is_relevant(current_frame)]
 
             openpose_start_time = time()
-            keypoints, image_with_keypoints = self.openpose.forward(original_image, True)
+            keypoints, image_with_keypoints = self._forward(original_image)
             people = self._convert_to_persons(keypoints)
             openpose_time = time() - openpose_start_time
 
