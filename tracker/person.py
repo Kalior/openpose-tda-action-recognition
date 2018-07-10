@@ -4,13 +4,14 @@ from util import COCOKeypoints
 
 
 class Person(object):
+    only_track_arms = False
 
     def __init__(self, keypoints, path_index=-1):
         self.keypoints = keypoints
         self.path_index = path_index
 
-    def get_nonzero_keypoint(self, only_arms=False):
-        if only_arms:
+    def get_nonzero_keypoint(self):
+        if Person.only_track_arms:
             relevant_keypoints = self.get_arm_keypoints()
         else:
             relevant_keypoints = self.keypoints
@@ -25,9 +26,9 @@ class Person(object):
 
     # A person is a [#keypoints x 3] numpy array
     # With [X, Y, Confidence] as the values.
-    def distance(self, other_person, only_arms=False):
+    def distance(self, other_person):
         # Disregard the confidence for now.
-        if only_arms:
+        if Person.only_track_arms:
             xy_person = self.get_arm_keypoints()[:, :2]
             xy_other = other_person.get_arm_keypoints()[:, :2]
         else:
@@ -59,7 +60,7 @@ class Person(object):
         return self.keypoints[idx]
 
     def get_head(self):
-        return self.keypoints[0]
+        return self.keypoints[COCOKeypoints.Neck.value]
 
     def get_arm_keypoints(self):
         return self.keypoints[[COCOKeypoints.RWrist.value, COCOKeypoints.RElbow.value]]

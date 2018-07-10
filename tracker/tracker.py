@@ -20,11 +20,15 @@ import util
 
 class Tracker(object):
 
-    def __init__(self, tf_openpose=False, model_path='/models/', no_openpose=False):
+    def __init__(self, with_tf_openpose=False, model_path='/models/', no_openpose=False, only_track_arms=False, out_dir='output'):
+        self.only_track_arms = only_track_arms
+        Person.only_track_arms = only_track_arms
+
         self.people_paths = []
-        self.tf_openpose = tf_openpose
-        if tf_openpose:
-            self.e = TfPoseEstimator(get_graph_path("mobilenet_thin"), target_size=(432, 368))
+        self.with_tf_openpose = with_tf_openpose
+        if with_tf_openpose:
+            self.tf_openpose = TfPoseEstimator(get_graph_path("mobilenet_thin"),
+                                               target_size=(432, 368))
         elif not no_openpose:
             # Initialise openpose
             params = self._openpose_parameters(model_path)
@@ -56,12 +60,12 @@ class Tracker(object):
         return params
 
     def _forward(self, original_image):
-        if self.tf_openpose:
+        if self.with_tf_openpose:
             image_height, image_width = original_image.shape[:2]
 
-            humans = self.e.inference(original_image)
+            humans = self.tf_openpose.inference(original_image, resize_to_default=True)
             image_with_keypoints = TfPoseEstimator.draw_humans(
-                original_image, humans, imgcopy=False)
+                original_image, humans, imgcopy=True)
             people = np.array([util.tf_openpose_human_to_np(human, image_width, image_height)
                                for human in humans])
             return people, image_with_keypoints
@@ -69,7 +73,7 @@ class Tracker(object):
             keypoints, image_with_keypoints = self.openpose.forward(original_image, True)
             return keypoints, image_with_keypoints
 
-    def video(self, file, only_arms=False):
+    def video(self, file):
         capture = cv2.VideoCapture(file)
 
         writer = self._create_writer(file, capture)
@@ -88,18 +92,20 @@ class Tracker(object):
 
             min_person_start_time = time()
             # Find out which people are closest to each other
-            assignments, distances = self._find_assignments(people, path_endpoints, only_arms)
+            assignments, distances = self._find_assignments(people, path_endpoints)
+            self._update_paths(distances, assignments, people, path_endpoints, current_frame)
             closest_person_time = time() - min_person_start_time
 
-            self._update_paths(distances, assignments, people, path_endpoints, current_frame)
-
+            visualisation_start_time = time()
             self.visualiser.draw_paths(
-                self.people_paths, image_with_keypoints, current_frame, only_arms)
+                self.people_paths, image_with_keypoints, current_frame, self.only_track_arms)
+            visualisation_time = time() - visualisation_start_time
+
             # Write the frame to a video
             writer.write(image_with_keypoints)
 
-            print("OpenPose: {:.5f}, Closest person: {:.5f}".format(
-                openpose_time, closest_person_time))
+            print("OpenPose: {:.5f}, Closest person: {:.5f}, Draw paths to img: {:.5f}".format(
+                openpose_time, closest_person_time, visualisation_time))
 
             success, original_image = capture.read()
             current_frame += 1
@@ -115,21 +121,21 @@ class Tracker(object):
 
         basename = os.path.basename(in_file)
         filename, _ = os.path.splitext(basename)
-        out_file = os.path.join("output", filename + '.avi')
+        out_file = os.path.join(self.out_dir, filename + '.avi')
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
         writer = cv2.VideoWriter(out_file, fourcc, fps, (frame_width, frame_height))
 
         return writer
 
-    def _find_assignments(self, people, prev_people, only_arms=False):
+    def _find_assignments(self, people, prev_people):
         # Pre-allocate the distance matrix
         distances = np.empty((len(prev_people), len(people)))
 
         # And calculate the distances...
         for i, prev_frame_person in enumerate(prev_people):
             for j, person in enumerate(people):
-                distance = person.distance(prev_frame_person, only_arms)
+                distance = person.distance(prev_frame_person)
                 distances[i, j] = distance
 
         # Find the best assignments between people in the two frames
