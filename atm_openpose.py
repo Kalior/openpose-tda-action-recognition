@@ -8,8 +8,9 @@ if __name__ == '__main__':
                         help='The video to run tracking on.')
 
     args = parser.parse_args()
-    model_path = '/home/kalior/projects/fujitsu-CoE/openpose/models/'
 
-    tracker = Tracker(tf_openpose=True, model_path=model_path)
+    model_path = '/path/to/models/'
+
+    tracker = Tracker(tf_openpose=False, model_path=model_path)
 
     tracker.video(args.video, only_arms=True)

@@ -189,8 +189,5 @@ class Tracker(object):
             for _ in range(new_length - len(self.people_paths) + 1):
                 self.people_paths.append(Path())
 
-    def _convert_to_persons(self, keypoints, keep_order=False):
-        if keep_order:
-            return [Person(k, i) for i, k in enumerate(keypoints)]
-        else:
-            return [Person(k) for k in keypoints]
+    def _convert_to_persons(self, keypoints):
+        return [Person(k) for k in keypoints]

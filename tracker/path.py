@@ -26,5 +26,5 @@ class Path(object):
         return speed
 
     def is_relevant(self, current_frame):
-        # Paths are relevant if they are repeated
+        # Paths are relevant if they are used recently
         return self.last_frame_update > current_frame - 10
