@@ -21,10 +21,12 @@ class PathVisualiser(object):
         if person_path.last_frame_update <= current_frame - 10:
             return
 
-        start_index = max(1, len(person_path.path) - 10)
-        for i in range(start_index, len(person_path.path)):
-            keypoint = person_path[i].get_nonzero_keypoint(only_arms).astype(np.int)
-            prev_keypoint = person_path[i - 1].get_nonzero_keypoint(only_arms).astype(np.int)
+        person_path = person_path.get_keypoint_path(COCOKeypoints.Neck.value)
+
+        start_index = max(1, len(person_path) - 10)
+        for i in range(start_index, len(person_path)):
+            keypoint = person_path[i].astype(np.int)
+            prev_keypoint = person_path[i - 1].astype(np.int)
 
             # If there are no nonzero keypoints, just move on with your life.
             if any(np.array_equal(k, [0.0, 0.0]) for k in [keypoint, prev_keypoint]):
