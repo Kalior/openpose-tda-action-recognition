@@ -113,7 +113,8 @@ class Tracker(object):
         fourcc_code = capture.get(cv2.CAP_PROP_FOURCC)
         fps = int(capture.get(cv2.CAP_PROP_FPS))
 
-        filename = os.path.basename(in_file)
+        basename = os.path.basename(in_file)
+        filename, _ = os.path.splitext(basename)
         out_file = os.path.join("output", filename + '.avi')
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
@@ -144,6 +145,7 @@ class Tracker(object):
             assignments = [from_indicies, to_indicies]
 
         unassigned_people_to = [i for i, _ in enumerate(people) if i not in assignments[1]]
+        # Should signal new indicies to the program:
         unassigned_people_from = [i + self.person_counter for i in unassigned_people_to]
 
         from_assignments = np.append(assignments[0],
@@ -162,7 +164,7 @@ class Tracker(object):
     def _establish_index_of_path(self, from_, to, prev_people, distances):
         if from_ < len(prev_people):
             path_index = prev_people[from_].path_index
-            avg_speed = self.people_paths[path_index].get_average_speed_in_window()
+            avg_speed = self.people_paths[path_index].get_average_speed_in_window(10)
 
         # Make sure we know to which path the requested index belongs to
         #  and make sure there isn't a large gap between the two.

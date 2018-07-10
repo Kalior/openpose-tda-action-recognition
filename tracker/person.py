@@ -18,7 +18,7 @@ class Person(object):
         return next((keypoint[:2]
                      for keypoint in relevant_keypoints
                      if not np.array_equal(keypoint[:2], [0.0, 0.0])),
-                    [0.0, 0.0])
+                    np.array([0.0, 0.0]))
 
     def __eq__(self, other_person):
         return np.array_equal(self.keypoints, other_person.keypoints)
@@ -51,6 +51,12 @@ class Person(object):
         first, second = first[np.nonzero(first)], second[np.nonzero(first)]
         first, second = first[np.nonzero(second)], second[np.nonzero(second)]
         return first, second
+
+    def get_keypoint(self, idx):
+        return self.keypoints[idx]
+
+    def __getitem__(self, idx):
+        return self.keypoints[idx]
 
     def get_head(self):
         return self.keypoints[0]

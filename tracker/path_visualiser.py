@@ -13,7 +13,6 @@ class PathVisualiser(object):
         for i, person_path in enumerate(people_paths):
             self._add_lines_from_path(img, person_path,
                                       self.colors[i % len(self.colors)], current_frame, only_arms)
-            # self.mark_hand(img, person_path, self.colors[i % len(self.colors)])
 
         cv2.imshow("output", img)
         cv2.waitKey(15)
