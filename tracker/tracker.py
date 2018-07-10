@@ -151,14 +151,15 @@ class Tracker(object):
         # Special case for no assignments (either this frame has no people or no
         # previous frame had people)
         if assignments[0].size == 0 and assignments[1].size == 0:
-            indicies = [self.person_counter + i for i in range(len(people))]
-            assignments = [indicies, indicies]
+            from_indicies = [self.person_counter + i for i in range(len(people))]
+            to_indicies = [i for i in range(len(people))]
+            assignments = [from_indicies, to_indicies]
 
         unassigned_people_to = [i for i, _ in enumerate(people) if i not in assignments[1]]
         unassigned_people_from = [i + self.person_counter for i in unassigned_people_to]
 
-        from_assignments = np.append(assignments[0], np.array(
-            unassigned_people_from, dtype=np.int))
+        from_assignments = np.append(assignments[0],
+                                     np.array(unassigned_people_from, dtype=np.int))
         to_assignments = np.append(assignments[1], np.array(unassigned_people_to, dtype=np.int))
 
         for from_, to in zip(from_assignments, to_assignments):
