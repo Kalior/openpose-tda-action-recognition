@@ -7,9 +7,14 @@ class Person(object):
         self.keypoints = keypoints
         self.path_index = path_index
 
-    def get_nonzero_keypoint(self):
+    def get_nonzero_keypoint(self, only_arms=False):
+        if only_arms:
+            relevant_keypoints = self.get_arm_keypoints()
+        else:
+            relevant_keypoints = self.keypoints
+
         return next((keypoint[:2]
-                     for keypoint in self.keypoints
+                     for keypoint in relevant_keypoints
                      if not np.array_equal(keypoint[:2], [0.0, 0.0])),
                     [0.0, 0.0])
 
@@ -18,10 +23,14 @@ class Person(object):
 
     # A person is a [#keypoints x 3] numpy array
     # With [X, Y, Confidence] as the values.
-    def distance(self, other_person):
+    def distance(self, other_person, only_arms=False):
         # Disregard the confidence for now.
-        xy_person = self.keypoints[:, :2]
-        xy_other = other_person.keypoints[:, :2]
+        if only_arms:
+            xy_person = self.get_arm_keypoints()[:, :2]
+            xy_other = other_person.get_arm_keypoints()[:, :2]
+        else:
+            xy_person = self.keypoints[:, :2]
+            xy_other = other_person.keypoints[:, :2]
 
         #   Don't include the keypoints we didn't identify
         # as this can give large frame-to-frame errors.
@@ -44,8 +53,8 @@ class Person(object):
     def get_head(self):
         return self.keypoints[0]
 
-    def get_hand(self):
-        return self.keypoints[4]
+    def get_arm_keypoints(self):
+        return self.keypoints[[4, 3, 7, 6]]
 
     # Result for BODY_25 (25 body parts consisting of COCO + foot)
     # const std::map<unsigned int, std::string> POSE_BODY_25_BODY_PARTS {

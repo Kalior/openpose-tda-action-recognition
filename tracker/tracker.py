@@ -65,12 +65,13 @@ class Tracker(object):
 
             min_person_start_time = time()
             # Find out which people are closest to each other
-            assignments, distances = self._find_assignments(people, path_endpoints)
+            assignments, distances = self._find_assignments(people, path_endpoints, only_arms)
             closest_person_time = time() - min_person_start_time
 
             self._update_paths(distances, assignments, people, path_endpoints, current_frame)
 
-            self.visualiser.draw_paths(self.people_paths, image_with_keypoints, current_frame)
+            self.visualiser.draw_paths(
+                self.people_paths, image_with_keypoints, current_frame, only_arms)
             # Write the frame to a video
             writer.write(image_with_keypoints)
 
@@ -97,14 +98,14 @@ class Tracker(object):
 
         return writer
 
-    def _find_assignments(self, people, prev_people):
+    def _find_assignments(self, people, prev_people, only_arms=False):
         # Pre-allocate the distance matrix
-        distances = np.ndarray((len(prev_people), len(people)))
+        distances = np.empty((len(prev_people), len(people)))
 
         # And calculate the distances...
         for i, prev_frame_person in enumerate(prev_people):
             for j, person in enumerate(people):
-                distance = person.distance(prev_frame_person)
+                distance = person.distance(prev_frame_person, only_arms)
                 distances[i, j] = distance
 
         # Find the best assignments between people in the two frames

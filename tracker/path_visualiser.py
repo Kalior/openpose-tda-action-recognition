@@ -7,16 +7,16 @@ class PathVisualiser(object):
     def __init__(self):
         self.colors = [(255, 0, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255), (255, 255, 255)]
 
-    def draw_paths(self, people_paths, img, current_frame):
+    def draw_paths(self, people_paths, img, current_frame, only_arms=False):
         for i, person_path in enumerate(people_paths):
-            self.add_lines_from_path(img, person_path,
-                                     self.colors[i % len(self.colors)], current_frame)
+            self._add_lines_from_path(img, person_path,
+                                      self.colors[i % len(self.colors)], current_frame, only_arms)
             # self.mark_hand(img, person_path, self.colors[i % len(self.colors)])
 
         cv2.imshow("output", img)
         cv2.waitKey(15)
 
-    def add_lines_from_path(self, img, person_path, color, current_frame):
+    def _add_lines_from_path(self, img, person_path, color, current_frame, only_arms):
         # Don't draw old paths
         if person_path.last_frame_update <= current_frame - 10:
             return
