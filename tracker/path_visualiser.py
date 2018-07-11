@@ -23,13 +23,13 @@ class PathVisualiser(object):
             return
 
         if only_track_arms:
-            person_path = person_path.get_keypoint_path(COCOKeypoints.RWrist.value)
+            path = person_path.get_keypoint_path(COCOKeypoints.RWrist.value)
         else:
-            person_path = person_path.get_keypoint_path(COCOKeypoints.Neck.value)
+            path = person_path.get_keypoint_path(COCOKeypoints.Neck.value)
 
-        start_index = max(1, len(person_path) - 10)
-        for i in range(start_index, len(person_path)):
-            keypoint = person_path[i].astype(np.int)
-            prev_keypoint = person_path[i - 1].astype(np.int)
+        start_index = max(1, len(path) - 10)
+        for i in range(start_index, len(path)):
+            keypoint = path[i].astype(np.int)
+            prev_keypoint = path[i - 1].astype(np.int)
 
             cv2.line(img, tuple(prev_keypoint), tuple(keypoint), color, 3)
