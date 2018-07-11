@@ -178,9 +178,10 @@ class Tracker(object):
             path_index = prev_people[from_].path_index
             avg_speed = self.people_paths[path_index].get_average_speed_in_window(10)
 
+        speed_change_threshold = 10
         # Make sure we know to which path the requested index belongs to
         #  and make sure there isn't a large gap between the two.
-        if from_ >= len(prev_people) or distances[from_, to] >= avg_speed + 10:
+        if from_ >= len(prev_people) or distances[from_, to] >= avg_speed + speed_change_threshold:
             path_index = self.person_counter
             self.person_counter += 1
 
