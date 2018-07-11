@@ -1,5 +1,6 @@
 from tracker import Tracker
 import argparse
+import logging
 
 
 def main(args):
@@ -24,4 +25,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    logging.basicConfig(level=logging.DEBUG)
     main(args)

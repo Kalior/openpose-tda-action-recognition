@@ -3,6 +3,7 @@ import scipy.optimize
 from time import time
 import cv2
 import os
+import logging
 
 # Install openpose globally where all other python packages are installed.
 from openpose import openpose as op
@@ -111,7 +112,7 @@ class Tracker(object):
             # Write the frame to a video
             writer.write(image_with_keypoints)
 
-            print("OpenPose: {:.5f}, Closest person: {:.5f}, Draw paths to img: {:.5f}".format(
+            logging.info("OpenPose: {:.5f}, Closest person: {:.5f}, Draw paths to img: {:.5f}".format(
                 openpose_time, closest_person_time, visualisation_time))
 
             success, original_image = capture.read()
@@ -166,6 +167,8 @@ class Tracker(object):
         to_assignments = np.append(assignments[1], np.array(unassigned_people_to, dtype=np.int))
 
         for from_, to in zip(from_assignments, to_assignments):
+            logging.debug("From: {}, to: {} \n people: {}\n prev_people: {}".format(
+                from_, to, people, prev_people))
             path_index = self._establish_index_of_path(from_, to, prev_people, distances)
 
             # Extend people_paths if it's too short
@@ -182,7 +185,10 @@ class Tracker(object):
         speed_change_threshold = 10
         # Make sure we know to which path the requested index belongs to
         #  and make sure there isn't a large gap between the two.
-        if from_ >= len(prev_people) or distances[from_, to] >= avg_speed + speed_change_threshold:
+        if from_ >= len(prev_people) or distances[from_, to] >= avg_speed + self.speed_change_threshold:
+            if from_ < len(prev_people):
+                logging.debug("Invalid association: from: {}, to: {}, dist: {}, avg_speed: {}".format(
+                    from_, to, distances[from_, to], avg_speed))
             path_index = self.person_counter
             self.person_counter += 1
 
