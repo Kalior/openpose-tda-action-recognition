@@ -82,6 +82,7 @@ class Tracker(object):
 
     def video(self, file):
         capture = cv2.VideoCapture(file)
+        self.speed_change_threshold = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)) / 10
 
         writer = self._create_writer(file, capture)
 
@@ -182,7 +183,6 @@ class Tracker(object):
             path_index = prev_people[from_].path_index
             avg_speed = self.people_paths[path_index].get_average_speed_in_window(10)
 
-        speed_change_threshold = 10
         # Make sure we know to which path the requested index belongs to
         #  and make sure there isn't a large gap between the two.
         if from_ >= len(prev_people) or distances[from_, to] >= avg_speed + self.speed_change_threshold:
