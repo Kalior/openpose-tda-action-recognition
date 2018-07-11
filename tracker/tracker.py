@@ -89,11 +89,12 @@ class Tracker(object):
         while success:
             path_endpoints = [path.get_last_person()
                               for path in self.people_paths
-                              if path.is_relevant(current_frame)]
+                              if path.is_relevant(current_frame) and
+                              path.get_last_person().is_relevant()]
 
             openpose_start_time = time()
             keypoints, image_with_keypoints = self._forward(original_image)
-            people = self._convert_to_persons(keypoints)
+            people = [p for p in self._convert_to_persons(keypoints) if p.is_relevant()]
             openpose_time = time() - openpose_start_time
 
             min_person_start_time = time()

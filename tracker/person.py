@@ -64,3 +64,9 @@ class Person(object):
 
     def get_arm_keypoints(self):
         return self.keypoints[[COCOKeypoints.RWrist.value, COCOKeypoints.RElbow.value]]
+
+    def is_relevant(self):
+        if Person.only_track_arms:
+            return np.any(self.get_arm_keypoints())
+        else:
+            return True
