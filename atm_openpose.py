@@ -5,7 +5,7 @@ import logging
 
 def main(args):
     if args.tf_openpose:
-        tracker = Tracker(tf_openpose=args.tf_openpose, only_track_arms=args.arm_tracking)
+        tracker = Tracker(with_tf_openpose=args.tf_openpose, only_track_arms=args.arm_tracking)
     else:
         tracker = Tracker(model_path=args.model_path, only_track_arms=args.arm_tracking)
 
