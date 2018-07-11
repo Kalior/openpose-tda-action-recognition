@@ -18,7 +18,7 @@ class Person(object):
 
         return next((keypoint[:2]
                      for keypoint in relevant_keypoints
-                     if not np.array_equal(keypoint[:2], [0.0, 0.0])),
+                     if np.any(keypoint[:2])),
                     np.array([0.0, 0.0]))
 
     def __eq__(self, other_person):

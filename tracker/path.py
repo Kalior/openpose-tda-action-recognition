@@ -43,4 +43,4 @@ class Path(object):
         return self.last_frame_update > current_frame - 10
 
     def get_keypoint_path(self, idx):
-        return [p[idx][:2] for p in self.path if not np.array_equal(p[idx][:2], [0.0, 0.0])]
+        return [p[idx][:2] for p in self.path if np.any(p[idx][:2])]
