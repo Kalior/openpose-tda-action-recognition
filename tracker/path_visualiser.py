@@ -32,8 +32,4 @@ class PathVisualiser(object):
             keypoint = person_path[i].astype(np.int)
             prev_keypoint = person_path[i - 1].astype(np.int)
 
-            # If there are no nonzero keypoints, just move on with your life.
-            if any(not np.any(k) for k in [keypoint, prev_keypoint]):
-                continue
-
             cv2.line(img, tuple(prev_keypoint), tuple(keypoint), color, 3)
