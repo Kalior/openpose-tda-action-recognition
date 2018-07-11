@@ -41,6 +41,12 @@ class Tracker(object):
 
         self.visualiser = PathVisualiser()
 
+        self.out_dir = out_dir
+        try:
+            os.stat(out_dir)
+        except:
+            os.makedirs(out_dir)
+
     def _openpose_parameters(self, model_path):
         params = {
             "logging_level": 3,
