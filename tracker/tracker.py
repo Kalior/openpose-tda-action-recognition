@@ -101,7 +101,12 @@ class Tracker(object):
 
             min_person_start_time = time()
             # Find out which people are closest to each other
-            assignments, distances = self._find_assignments(people, path_endpoints)
+            assignments, distances, removed_people = self._find_assignments(people, path_endpoints)
+
+            #  Add back the people we couldn't associate well during the assignment process
+            # to the back of the list
+            people = people + removed_people
+
             self._update_paths(distances, assignments, people, path_endpoints, current_frame)
             closest_person_time = time() - min_person_start_time
 
@@ -147,9 +152,34 @@ class Tracker(object):
                 distance = person.distance(prev_frame_person)
                 distances[i, j] = distance
 
+        removed_people = []
         # Find the best assignments between people in the two frames
-        assignments = scipy.optimize.linear_sum_assignment(distances)
-        return assignments, distances
+        valid_assignment = False
+        while not valid_assignment:
+            assignments = scipy.optimize.linear_sum_assignment(distances)
+            valid_assignment, distances, removed_person = self._is_assignment_valid(
+                assignments, distances, people, prev_people)
+            if removed_person is not None:
+                removed_people.append(removed_person)
+
+        return assignments, distances, removed_people
+
+    def _is_assignment_valid(self, assignments, distances, people, prev_people):
+        for from_, to in zip(assignments[0], assignments[1]):
+            path_index = prev_people[from_].path_index
+            avg_speed = self.people_paths[path_index].get_average_speed_in_window(10)
+
+            #  If the movement is too large, assume that the new item can't
+            # be associated well. (Which will force it to get a new path later
+            # in the processing).
+            if distances[from_, to] > avg_speed + self.speed_change_threshold:
+                logging.debug("Invalid association! from: {}, to: {}, dist: {}, avg_speed: {}".format(
+                    from_, to, distances[from_, to], avg_speed))
+                distances = np.delete(distances, to, axis=1)
+                removed_person = people.pop(to)
+                return False, distances, removed_person
+
+        return True, distances, None
 
     def _update_paths(self, distances, assignments, people, prev_people, current_frame):
         # Special case for no assignments (either this frame has no people or no
