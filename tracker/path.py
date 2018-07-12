@@ -44,3 +44,17 @@ class Path(object):
 
     def get_keypoint_path(self, idx):
         return [p[idx][:2] for p in self.path if np.any(p[idx][:2])]
+
+    def divide_into_chunks(self, frames_per_chunk, overlap=-1):
+        if overlap == -1:
+            overlap = int(frames_per_chunk / 2)
+
+        #  Turn chunks into np array and preallocate if this turns into a speed
+        # issue.
+        chunks = []
+        start_index = 0
+        while start_index + frames_per_chunk < len(self.path):
+            chunk = np.array([p.keypints for p in self.path[start_index:frames_per_chunk]])
+            chunks.append(chunk)
+            start_index = frames_per_chunk - overlap
+        return chunks
