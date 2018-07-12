@@ -5,9 +5,11 @@ import logging
 
 def main(args):
     if args.tf_openpose:
-        tracker = Tracker(with_tf_openpose=args.tf_openpose, only_track_arms=args.arm_tracking)
+        tracker = Tracker(with_tf_openpose=args.tf_openpose,
+                          only_track_arms=args.arm_tracking, out_dir=args.output_directory)
     else:
-        tracker = Tracker(model_path=args.model_path, only_track_arms=args.arm_tracking)
+        tracker = Tracker(model_path=args.model_path,
+                          only_track_arms=args.arm_tracking, out_dir=args.output_directory)
 
     tracker.video(args.video)
 
@@ -22,6 +24,8 @@ if __name__ == '__main__':
                         help='The model path for the caffe implementation.')
     parser.add_argument('--arm-tracking', action='store_true',
                         help='Use for arm/hand specific tracking.')
+    parser.add_argument('--output-directory', type=str, default='output',
+                        help='Directory to where the annotated video is saved.')
 
     args = parser.parse_args()
 
