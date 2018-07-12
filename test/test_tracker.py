@@ -30,30 +30,36 @@ class TestTracker(unittest.TestCase):
         self.assertEqual(np.count_nonzero(b), b.size)
 
     def test_find_assignments(self):
-        assignments, _ = self.tracker._find_assignments(self.people, self.people)
+        self.tracker.people_paths = [Path() for p in self.people]
+        assignments, _, _ = self.tracker._find_assignments(self.people, self.people, 0)
         self.assertListEqual(list(assignments[0]), list(assignments[1]))
 
     def test_update_paths(self):
-        other_people_order = np.array(
-            [self.people[2], self.people[1], self.people[3], self.people[0], self.far_away_person])
+        other_people_order = [self.people[2], self.people[1],
+                              self.people[3], self.people[0], self.far_away_person]
 
-        people = np.append(self.people, self.far_away_people, axis=0)
+        people = self.people + self.far_away_people
 
-        assignments, distances = self.tracker._find_assignments(people, [])
-        self.tracker._update_paths(distances, assignments, people, [], 0)
+        assignments, distances, removed_people = self.tracker._find_assignments(people, [], 0)
+        self.tracker._update_paths(distances, assignments, people + removed_people, [], 0)
 
-        assignments, distances = self.tracker._find_assignments(other_people_order, people)
-        self.tracker._update_paths(distances, assignments, other_people_order, people, 1)
+        assignments, distances, removed_people = self.tracker._find_assignments(
+            other_people_order, people, 1)
+        self.tracker._update_paths(distances, assignments,
+                                   other_people_order + removed_people, people, 1)
 
         clone_people = [Person(p.keypoints) for p in people]
-        assignments, distances = self.tracker._find_assignments(clone_people, other_people_order)
-        self.tracker._update_paths(distances, assignments, clone_people, other_people_order, 2)
+        assignments, distances, removed_people = self.tracker._find_assignments(
+            clone_people, other_people_order, 2)
+        self.tracker._update_paths(distances, assignments, clone_people +
+                                   removed_people, other_people_order, 2)
 
         people_paths = self.tracker.people_paths
+
+        manual_path = [self.people[0].keypoints,
+                       self.people[0].keypoints, self.people[0].keypoints]
         # Check a path so that it also contains the correct people
-        self.assertTrue(people_paths[0][0] == self.people[0] and
-                        people_paths[0][1] == other_people_order[3] and
-                        people_paths[0][2] == self.people[0])
+        np.testing.assert_array_equal([p.keypoints for p in people_paths[0]], manual_path)
 
         # Check that every person in the same path has the same path_index
         self.assertTrue(all(all(person.path_index == path[0].path_index
