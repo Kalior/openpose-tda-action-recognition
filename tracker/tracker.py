@@ -38,7 +38,6 @@ class Tracker(object):
         else:
             self.openpose = None
 
-        self.person_counter = 0
 
         self.visualiser = PathVisualiser()
 
@@ -182,52 +181,34 @@ class Tracker(object):
         return True, distances, None
 
     def _update_paths(self, distances, assignments, people, prev_people, current_frame):
-        # Special case for no assignments (either this frame has no people or no
-        # previous frame had people)
-        if assignments[0].size == 0 and assignments[1].size == 0:
-            from_indicies = [self.person_counter + i for i in range(len(people))]
-            to_indicies = [i for i in range(len(people))]
-            assignments = [from_indicies, to_indicies]
-
-        unassigned_people_to = [i for i, _ in enumerate(people) if i not in assignments[1]]
-        # Should signal new indicies to the program:
-        unassigned_people_from = [i + self.person_counter for i in unassigned_people_to]
-
-        from_assignments = np.append(assignments[0],
-                                     np.array(unassigned_people_from, dtype=np.int))
-        to_assignments = np.append(assignments[1], np.array(unassigned_people_to, dtype=np.int))
-
-        for from_, to in zip(from_assignments, to_assignments):
-            logging.debug("From: {}, to: {} \n people: {}\n prev_people: {}".format(
-                from_, to, people, prev_people))
+        for from_, to in zip(assignments[0], assignments[1]):
+            logging.debug("From: {}, to: {}  people: {}  prev_people: {}".format(
+                from_, to, len(people), len(prev_people)))
             path_index = self._establish_index_of_path(from_, to, prev_people, distances)
-
-            # Extend people_paths if it's too short
-            self._extend_people_path_to(path_index)
 
             people[to].path_index = path_index
             self.people_paths[path_index].add_person(people[to], current_frame)
 
+        # If a person is not assigned to a path yet, assign it to a new path
+        self._add_unassigned_people(assignments, people, current_frame)
+
+    def _add_unassigned_people(self, assignments, people, current_frame):
+        for i, _ in enumerate(people):
+            if i not in assignments[1]:
+                path = Path()
+                people[i].path_index = len(self.people_paths)
+                path.add_person(people[i], current_frame)
+                self.people_paths.append(path)
+
     def _establish_index_of_path(self, from_, to, prev_people, distances):
+        # Make sure we know to which path the requested index belongs to
         if from_ < len(prev_people):
             path_index = prev_people[from_].path_index
-            avg_speed = self.people_paths[path_index].get_average_speed_in_window(10)
-
-        # Make sure we know to which path the requested index belongs to
-        #  and make sure there isn't a large gap between the two.
-        if from_ >= len(prev_people) or distances[from_, to] >= avg_speed + self.speed_change_threshold:
-            if from_ < len(prev_people):
-                logging.debug("Invalid association: from: {}, to: {}, dist: {}, avg_speed: {}".format(
-                    from_, to, distances[from_, to], avg_speed))
-            path_index = self.person_counter
-            self.person_counter += 1
+        else:
+            path_index = len(self.people_paths)
+            self.people_paths.append(Path())
 
         return path_index
-
-    def _extend_people_path_to(self, new_length):
-        if len(self.people_paths) <= new_length:
-            for _ in range(new_length - len(self.people_paths) + 1):
-                self.people_paths.append(Path())
 
     def _convert_to_persons(self, keypoints):
         return [Person(k) for k in keypoints]
