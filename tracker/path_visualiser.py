@@ -11,11 +11,11 @@ class PathVisualiser(object):
 
     def draw_paths(self, people_paths, img, current_frame, only_track_arms=False):
         for i, person_path in enumerate(people_paths):
-            self._add_lines_from_path(img, person_path,
-                                      self.colors[i % len(self.colors)], current_frame, only_track_arms)
+            self._add_lines_from_path(img, person_path, self.colors[i % len(self.colors)],
+                                      current_frame, only_track_arms)
 
         cv2.imshow("output", img)
-        cv2.waitKey(15)
+        cv2.waitKey(1)
 
     def _add_lines_from_path(self, img, person_path, color, current_frame, only_track_arms):
         # Don't draw old paths

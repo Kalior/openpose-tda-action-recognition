@@ -132,7 +132,6 @@ class Tracker(object):
     def _create_writer(self, in_file, capture):
         frame_width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
         frame_height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fourcc_code = capture.get(cv2.CAP_PROP_FOURCC)
         fps = int(capture.get(cv2.CAP_PROP_FPS))
 
         basename = os.path.basename(in_file)

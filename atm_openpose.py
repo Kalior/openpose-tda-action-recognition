@@ -14,8 +14,7 @@ def main(args):
     tracker.video(args.video)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description='Openpose tracking system.')
+    parser = argparse.ArgumentParser(description='Openpose tracking system.')
     parser.add_argument('--video', type=str, default='media/video.avi',
                         help='The video to run tracking on.')
     parser.add_argument('--tf-openpose', action='store_true',

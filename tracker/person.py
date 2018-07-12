@@ -40,7 +40,7 @@ class Person(object):
         xy_person, xy_other = self._filter_nonzero(xy_person, xy_other)
 
         if xy_person.size == 0:
-            return 10000  # np.inf, but np.inf doesn't play nice with scipy.optimize
+            return 10000000  # np.inf, but np.inf doesn't play nice with scipy.optimize
 
         # Calculate average distance between the two people
         distance = np.linalg.norm(xy_person - xy_other)
