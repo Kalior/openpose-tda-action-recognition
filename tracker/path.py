@@ -28,7 +28,7 @@ class Path(object):
             window_size = len(self.path)
 
         if len(self.path) < 2:
-            return 100
+            return 10
 
         distance = 0
         start_index = max(1, len(self.path) - window_size + 1)
