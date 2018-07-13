@@ -6,9 +6,9 @@ from util import COCOKeypoints
 class Person(object):
     only_track_arms = False
 
-    def __init__(self, keypoints, path_index=-1):
+    def __init__(self, keypoints, track_index=-1):
         self.keypoints = keypoints
-        self.path_index = path_index
+        self.track_index = track_index
 
     def get_nonzero_keypoint(self):
         if Person.only_track_arms:

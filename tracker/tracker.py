@@ -12,9 +12,9 @@ from openpose import openpose as op
 from tf_pose.estimator import TfPoseEstimator
 from tf_pose.networks import get_graph_path, model_wh
 
-from .path_visualiser import PathVisualiser
+from .track_visualiser import TrackVisualiser
 from .person import Person
-from .path import Path
+from .track import Track
 
 import util
 
@@ -25,7 +25,7 @@ class Tracker(object):
         self.only_track_arms = only_track_arms
         Person.only_track_arms = only_track_arms
 
-        self.people_paths = []
+        self.tracks = []
         self.with_tf_openpose = with_tf_openpose
         if with_tf_openpose:
             self.tf_openpose = TfPoseEstimator(get_graph_path("mobilenet_thin"),
@@ -41,7 +41,7 @@ class Tracker(object):
 
         self.speed_change_threshold = 10
 
-        self.visualiser = PathVisualiser()
+        self.visualiser = TrackVisualiser()
 
         self.out_dir = out_dir
         try:
@@ -89,11 +89,11 @@ class Tracker(object):
 
         current_frame = 0
         success, original_image = capture.read()
-        while success:
-            path_endpoints = [path.get_last_person()
-                              for path in self.people_paths
-                              if path.is_relevant(current_frame) and
-                              path.get_last_person().is_relevant()]
+        for _ in range(10):
+            track_endpoints = [track.get_last_person()
+                               for track in self.tracks
+                               if track.is_relevant(current_frame) and
+                               track.get_last_person().is_relevant()]
 
             openpose_start_time = time()
             keypoints, image_with_keypoints = self._forward(original_image)
@@ -103,24 +103,24 @@ class Tracker(object):
             min_person_start_time = time()
             # Find out which people are closest to each other
             assignments, distances, removed_people = self._find_assignments(
-                people, path_endpoints, current_frame)
+                people, track_endpoints, current_frame)
 
             #  Add back the people we couldn't associate well during the assignment process
             # to the back of the list
             people = people + removed_people
 
-            self._update_paths(distances, assignments, people, path_endpoints, current_frame)
+            self._update_tracks(distances, assignments, people, track_endpoints, current_frame)
             closest_person_time = time() - min_person_start_time
 
             visualisation_start_time = time()
-            self.visualiser.draw_paths(
-                self.people_paths, image_with_keypoints, current_frame, self.only_track_arms)
+            self.visualiser.draw_tracks(
+                self.tracks, image_with_keypoints, current_frame, self.only_track_arms)
             visualisation_time = time() - visualisation_start_time
 
             # Write the frame to a video
             writer.write(image_with_keypoints)
 
-            logging.info("OpenPose: {:.5f}, Closest person: {:.5f}, Draw paths to img: {:.5f}".format(
+            logging.info("OpenPose: {:.5f}, Closest person: {:.5f}, Draw tracks to img: {:.5f}".format(
                 openpose_time, closest_person_time, visualisation_time))
 
             success, original_image = capture.read()
@@ -158,8 +158,10 @@ class Tracker(object):
         valid_assignment = False
         while not valid_assignment:
             assignments = scipy.optimize.linear_sum_assignment(distances)
+
             valid_assignment, distances, removed_person = self._is_assignment_valid(
                 assignments, distances, people, prev_people, current_frame)
+
             if removed_person is not None:
                 removed_people.append(removed_person)
 
@@ -167,13 +169,13 @@ class Tracker(object):
 
     def _is_assignment_valid(self, assignments, distances, people, prev_people, current_frame):
         for from_, to in zip(assignments[0], assignments[1]):
-            path_index = prev_people[from_].path_index
-            avg_speed = self.people_paths[path_index].get_average_speed_in_window(10)
+            track_index = prev_people[from_].track_index
+            avg_speed = self.tracks[track_index].get_average_speed_in_window(10)
             frames_since_last_update = current_frame - \
-                self.people_paths[path_index].last_frame_update
+                self.tracks[track_index].last_frame_update
 
             #  If the movement is too large, assume that the new item can't
-            # be associated well. (Which will force it to get a new path later
+            # be associated well. (Which will force it to get a new track later
             # in the processing).
             if distances[from_, to] > avg_speed * frames_since_last_update + self.speed_change_threshold:
                 logging.debug("Invalid association! from: {}, to: {}, dist: {}, avg_speed: {}, frames since last update: {}".format(
@@ -184,35 +186,35 @@ class Tracker(object):
 
         return True, distances, None
 
-    def _update_paths(self, distances, assignments, people, prev_people, current_frame):
+    def _update_tracks(self, distances, assignments, people, prev_people, current_frame):
         for from_, to in zip(assignments[0], assignments[1]):
             logging.debug("From: {}, to: {}  people: {}  prev_people: {}".format(
                 from_, to, len(people), len(prev_people)))
-            path_index = self._establish_index_of_path(from_, to, prev_people, distances)
+            track_index = self._establish_index_of_track(from_, to, prev_people, distances)
 
-            people[to].path_index = path_index
-            self.people_paths[path_index].add_person(people[to], current_frame)
+            people[to].track_index = track_index
+            self.tracks[track_index].add_person(people[to], current_frame)
 
-        # If a person is not assigned to a path yet, assign it to a new path
+        # If a person is not assigned to a track yet, assign it to a new track
         self._add_unassigned_people(assignments, people, current_frame)
 
     def _add_unassigned_people(self, assignments, people, current_frame):
         for i, _ in enumerate(people):
             if i not in assignments[1]:
-                path = Path()
-                people[i].path_index = len(self.people_paths)
-                path.add_person(people[i], current_frame)
-                self.people_paths.append(path)
+                track = Track()
+                people[i].track_index = len(self.tracks)
+                track.add_person(people[i], current_frame)
+                self.tracks.append(track)
 
-    def _establish_index_of_path(self, from_, to, prev_people, distances):
-        # Make sure we know to which path the requested index belongs to
+    def _establish_index_of_track(self, from_, to, prev_people, distances):
+        # Make sure we know to which track the requested index belongs to
         if from_ < len(prev_people):
-            path_index = prev_people[from_].path_index
+            track_index = prev_people[from_].track_index
         else:
-            path_index = len(self.people_paths)
-            self.people_paths.append(Path())
+            track_index = len(self.tracks)
+            self.tracks.append(Track())
 
-        return path_index
+        return track_index
 
     def _convert_to_persons(self, keypoints):
         return [Person(k) for k in keypoints]
