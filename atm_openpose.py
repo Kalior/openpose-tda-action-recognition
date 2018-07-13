@@ -1,16 +1,17 @@
 from tracker import Tracker
 import argparse
 import logging
+from detector import TFOpenpose, CaffeOpenpose
 
 
 def main(args):
     if args.tf_openpose:
-        tracker = Tracker(with_tf_openpose=args.tf_openpose,
-                          only_track_arms=args.arm_tracking, out_dir=args.output_directory)
+        detector = TFOpenpose()
     else:
-        tracker = Tracker(model_path=args.model_path,
-                          only_track_arms=args.arm_tracking, out_dir=args.output_directory)
+        detector = CaffeOpenpose(model_path=args.model_path)
 
+    tracker = Tracker(detector=detector,
+                      only_track_arms=args.arm_tracking, out_dir=args.output_directory)
     tracker.video(args.video)
 
 if __name__ == '__main__':

@@ -5,39 +5,20 @@ import cv2
 import os
 import logging
 
-# Install openpose globally where all other python packages are installed.
-from openpose import openpose as op
-
-# Tensorflow implementation of openpose:
-from tf_pose.estimator import TfPoseEstimator
-from tf_pose.networks import get_graph_path, model_wh
-
 from .track_visualiser import TrackVisualiser
 from .person import Person
 from .track import Track
 
-import util
-
 
 class Tracker(object):
 
-    def __init__(self, with_tf_openpose=False, model_path='/models/', no_openpose=False, only_track_arms=False, out_dir='output'):
+    def __init__(self, detector, model_path='/models/', only_track_arms=False, out_dir='output'):
         self.only_track_arms = only_track_arms
         Person.only_track_arms = only_track_arms
 
         self.tracks = []
-        self.with_tf_openpose = with_tf_openpose
-        if with_tf_openpose:
-            self.tf_openpose = TfPoseEstimator(get_graph_path("mobilenet_thin"),
-                                               target_size=(432, 368))
-        elif not no_openpose:
-            # Initialise openpose
-            params = self._openpose_parameters(model_path)
-            # Construct OpenPose object allocates GPU memory
-            self.openpose = op.OpenPose(params)
-        else:
-            # Used only for testing purposes.
-            self.openpose = None
+
+        self.detector = detector
 
         self.speed_change_threshold = 10
 
@@ -49,38 +30,6 @@ class Tracker(object):
         except:
             os.makedirs(out_dir)
 
-    def _openpose_parameters(self, model_path):
-        params = {
-            "logging_level": 3,
-            "output_resolution": "-1x-1",
-            "net_resolution": "-1x192",
-            "model_pose": "COCO",
-            "alpha_pose": 0.6,
-            "scale_gap": 0.3,
-            "scale_number": 1,
-            "render_threshold": 0.05,
-            # If GPU version is built, and multiple GPUs are available, set the ID here
-            "num_gpu_start": 0,
-            "disable_blending": False,
-            # Ensure you point to the correct path where models are located
-            "default_model_folder": model_path
-        }
-        return params
-
-    def _forward(self, original_image):
-        if self.with_tf_openpose:
-            image_height, image_width = original_image.shape[:2]
-
-            humans = self.tf_openpose.inference(original_image, resize_to_default=True)
-            image_with_keypoints = TfPoseEstimator.draw_humans(
-                original_image, humans, imgcopy=True)
-            people = np.array([util.tf_openpose_human_to_np(human, image_width, image_height)
-                               for human in humans])
-            return people, image_with_keypoints
-        else:
-            keypoints, image_with_keypoints = self.openpose.forward(original_image, True)
-            return keypoints, image_with_keypoints
-
     def video(self, file):
         capture = cv2.VideoCapture(file)
         self.speed_change_threshold = 10  # int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)) / 10
@@ -89,14 +38,14 @@ class Tracker(object):
 
         current_frame = 0
         success, original_image = capture.read()
-        for _ in range(10):
+        while success:
             track_endpoints = [track.get_last_person()
                                for track in self.tracks
                                if track.is_relevant(current_frame) and
                                track.get_last_person().is_relevant()]
 
             openpose_start_time = time()
-            keypoints, image_with_keypoints = self._forward(original_image)
+            keypoints, image_with_keypoints = self.detector.detect(original_image)
             people = [p for p in self._convert_to_persons(keypoints) if p.is_relevant()]
             openpose_time = time() - openpose_start_time
 

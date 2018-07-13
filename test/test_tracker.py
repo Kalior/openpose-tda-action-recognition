@@ -20,7 +20,7 @@ class TestTracker(unittest.TestCase):
                                                 [10000, 10000], [10000, 10000]]))
         self.far_away_people = [self.far_away_person]
 
-        self.tracker = Tracker(no_openpose=True)
+        self.tracker = Tracker(detector=None)
 
     def test_filter_nonzero(self):
         a = np.array([[1, 2, 3, 4], [0, 0, 2, 4]])
