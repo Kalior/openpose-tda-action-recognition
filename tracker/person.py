@@ -70,3 +70,13 @@ class Person(object):
             return np.any(self.get_arm_keypoints())
         else:
             return True
+
+    def fill_missing_keypoints(self, other):
+        for i, k in enumerate(self.keypoints):
+            if not np.any(k):
+                self.keypoints[i] = other.keypoints[i]
+
+    def interpolate(self, other, steps=1):
+        diff = self.keypoints - other.keypoints
+        step_diff = diff / steps
+        return [Person(other.keypoints + step_diff * i, self.track_index) for i in range(1, steps)]
