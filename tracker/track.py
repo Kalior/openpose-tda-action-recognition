@@ -59,8 +59,9 @@ class Track:
 
         number_of_chunks = int((len(self.track) - frames_per_chunk - 1) /
                                (frames_per_chunk - overlap) + 1)
+
         if number_of_chunks <= 0:
-            return np.array([])
+            return np.array([]), np.array([])
 
         number_of_keypoints = self.track[0].keypoints.shape[0]
         values_per_keypoint = self.track[0].keypoints.shape[1]
