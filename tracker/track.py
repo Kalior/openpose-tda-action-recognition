@@ -214,8 +214,12 @@ class Track:
                     new_track.append(person)
                     new_frame_assigned.append(self.frame_assigned[i - 1] + j + 1)
 
-        new_track.append(self.track[-1])
-        new_frame_assigned.append(self.frame_assigned[-1])
+                new_track.append(self.track[i])
+                new_frame_assigned.append(self.frame_assigned[i])
 
         self.track = new_track
         self.frame_assigned = new_frame_assigned
+
+    def translate_to_origin(self):
+        for person in self.track:
+            person.translate_to_origin()

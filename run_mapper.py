@@ -23,14 +23,16 @@ def main(args):
 
     logging.info("Chunking tracks.")
     chunks, chunk_frames = processor.chunk_tracks()
-    print(chunk_frames[0])
+    logging.info("Moving every person to the origin.")
+    # processor.translate_tracks_to_origin()
+    translated_chunks = processor.translate_chunks_to_origin(chunks)
     # print(chunks)
 
     # visualiser = TrackVisualiser()
     # visualiser.draw_video_with_tracks(processor.tracks, args.video, last_frame)
 
     logging.info("Applying mapping to tracks.")
-    mapper = Mapper(chunks, chunk_frames)
+    mapper = Mapper(translated_chunks[[2]], chunk_frames[[2]], chunks[[2]])
     mapper.mapper()
     mapper.visualise(args.video)
 

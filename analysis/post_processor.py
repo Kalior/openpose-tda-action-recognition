@@ -26,6 +26,10 @@ class PostProcessor:
         self.tracks = self._clean_tracks(self.tracks)
         self._fill_tracks(self.tracks)
 
+    def translate_tracks_to_origin(self):
+        for track in self.tracks:
+            track.translate_to_origin()
+
     def _clean_tracks(self, tracks):
         return [track for track in tracks if len(track) > 15]
 
@@ -69,3 +73,22 @@ class PostProcessor:
         chunk_frames = np.array(chunks_and_frames[1])
 
         return chunks, chunk_frames
+
+    def translate_chunks_to_origin(self, chunks):
+        translated_chunks = np.empty(chunks.shape, dtype=object)
+
+        # chunks = np.zeros((number_of_chunks, frames_per_chunk,
+        #                    number_of_keypoints, values_per_keypoint))
+
+        for i, track in enumerate(chunks):
+            translated_chunk = np.empty(chunks[i].shape)
+            for j, chunk in enumerate(track):
+                translated_chunk[j] = self._normalise_chunk(chunk)
+
+            translated_chunks[i] = translated_chunk
+
+        return translated_chunks
+
+    def _normalise_chunk(self, chunk):
+        mean = np.mean(np.mean(chunk, axis=0), axis=0)
+        return chunk - mean
