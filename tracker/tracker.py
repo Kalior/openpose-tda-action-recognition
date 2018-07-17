@@ -66,6 +66,9 @@ class Tracker(object):
                 self.tracks, image_with_keypoints, current_frame, self.only_track_arms)
             visualisation_time = time() - visualisation_start_time
 
+            cv2.imshow("output", image_with_keypoints)
+            cv2.waitKey(1)
+
             # Write the frame to a video
             writer.write(image_with_keypoints)
 
@@ -127,10 +130,12 @@ class Tracker(object):
             # be associated well. (Which will force it to get a new track later
             # in the processing).
             if distances[from_, to] > avg_speed * frames_since_last_update + self.speed_change_threshold:
-                logging.debug("Invalid association! from: {}, to: {}, dist: {}, avg_speed: {}, frames since last update: {}".format(
+                logging.debug("Invalid association! from: {}, to: {}, dist: {:.2f}, avg_speed: {:.2f}, frames since last update: {}".format(
                     from_, to, distances[from_, to], avg_speed, frames_since_last_update))
+
                 distances = np.delete(distances, to, axis=1)
                 removed_person = people.pop(to)
+
                 return False, distances, removed_person
 
         return True, distances, None

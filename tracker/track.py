@@ -1,5 +1,7 @@
 import numpy as np
 
+import logging
+
 
 class Track(object):
 
@@ -48,7 +50,8 @@ class Track(object):
         if current_frame == -1:
             current_frame = self.last_frame_update
 
-        return [p[idx][:2] for i, p in enumerate(self.track) if np.any(p[idx][:2]) and self.frame_assigned[i] <= current_frame]
+        return [p[idx][:2] for i, p in enumerate(self.track)
+                if np.any(p[idx][:2]) and self.frame_assigned[i] <= current_frame]
 
     def divide_into_chunks(self, frames_per_chunk, overlap=-1):
         if overlap == -1:
