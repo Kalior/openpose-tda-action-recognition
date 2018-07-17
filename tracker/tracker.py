@@ -78,6 +78,8 @@ class Tracker(object):
             success, original_image = capture.read()
             current_frame += 1
 
+        self._save_tracks(file)
+
         capture.release()
         writer.release()
 
@@ -172,3 +174,23 @@ class Tracker(object):
 
     def _convert_to_persons(self, keypoints):
         return [Person(k) for k in keypoints]
+
+    def _save_tracks(self, in_file):
+        basename = os.path.basename(in_file)
+        filename, _ = os.path.splitext(basename)
+
+        logging.debug("Creating output tracks.")
+        tracks_out = [track.to_np() for track in self.tracks]
+
+        file_path = os.path.join(self.out_dir, filename + '-tracks')
+        tracks = np.array([p[0] for p in tracks_out], dtype=object)
+        frames = np.array([p[1] for p in tracks_out], dtype=object)
+
+        logging.debug("Chunking paths.")
+        frames_per_chunk = 10
+        overlap = 5
+        all_chunks = np.array([track.divide_into_chunks(frames_per_chunk, overlap)
+                               for track in self.tracks], dtype=object)
+
+        logging.info("Saving tracks to {}".format(file_path))
+        np.savez(file_path, tracks=tracks, frames=frames, chunks=all_chunks)
