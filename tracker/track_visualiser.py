@@ -14,27 +14,68 @@ class TrackVisualiser:
 
         for i in range(last_frame):
             success, original_image = capture.read()
-            visualiser.draw_frame_number(original_image, i)
-            visualiser.draw_tracks(tracks, original_image, i)
+            self.draw_frame_number(original_image, i)
+            self.draw_tracks(tracks, original_image, i)
             cv2.imshow("output", original_image)
             cv2.waitKey(15)
 
-    def draw_tracks(self, tracks, img, current_frame, only_track_arms=False):
+    def draw_tracks(self, tracks, img, current_frame,
+                    keypoint_index=COCOKeypoints.Neck.value):
         for i, track in enumerate(tracks):
             track_color = self.colors[i % len(self.colors)]
-            self._add_lines_from_track(img, track, track_color, current_frame, only_track_arms)
-            self._add_index_of_track(img, i, track, track_color, current_frame)
+            self._add_lines_from_track(img, track, track_color,
+                                       current_frame, keypoint_index)
+            self._add_index_of_track(img, i, track, track_color, current_frame, keypoint_index)
+
+    def draw_people(self, tracks, img, current_frame):
+        for i, track in enumerate(tracks):
+            track_color = self.colors[i % len(self.colors)]
+            self._add_index_of_track(img, i, track, track_color,
+                                     current_frame, COCOKeypoints.Neck.value)
+            positions = [(0, 0)] * 15
+            for i in range(15):
+                path = track.get_keypoint_path(i, current_frame)
+                if len(path) > 0:
+                    original_pos = path[-1].astype(np.int)
+                    offset = np.array([250, 150])
+                    position = tuple(original_pos + offset)
+                    cv2.circle(img, position, 5, track_color, 3)
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    positions[i] = position
+
+            connections = [
+                (0, 1),
+                (1, 2),
+                (1, 5),
+                (2, 3),
+                (3, 4),
+                (5, 6),
+                (6, 7),
+                (1, 8),
+                (1, 11),
+                (8, 9),
+                (9, 10),
+                (11, 12),
+                (12, 13)
+            ]
+            if len(connections) > 0:
+                for from_, to in connections:
+                    self._add_line(img, positions[from_], positions[to], track_color)
+
+    def _add_line(self, img, from_, to, color):
+        if all((0, 0) != p for p in [from_, to]):
+            cv2.line(img, from_, to, color, 3)
 
     def draw_frame_number(self, img, current_frame):
         black = (255, 255, 255)
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(img, str(current_frame), (50, 50), font, 2, black, 2)
 
-    def _add_index_of_track(self, img, track_index, track, color, current_frame):
+    def _add_index_of_track(self, img, track_index, track, color, current_frame, keypoint_index):
         if track.last_frame_update <= current_frame - 10:
             return
 
-        path = track.get_keypoint_path(COCOKeypoints.Neck.value, current_frame)
+        path = track.get_keypoint_path(keypoint_index, current_frame)
 
         font = cv2.FONT_HERSHEY_SIMPLEX
         path_index = max(0, len(path) - 11)
@@ -42,15 +83,12 @@ class TrackVisualiser:
             keypoint = path[path_index].astype(np.int)
             cv2.putText(img, str(track_index), tuple(keypoint), font, 4, color)
 
-    def _add_lines_from_track(self, img, track, color, current_frame, only_track_arms):
+    def _add_lines_from_track(self, img, track, color, current_frame, keypoint_index):
         # Don't draw old paths
         if track.last_frame_update <= current_frame - 10:
             return
 
-        if only_track_arms:
-            path = track.get_keypoint_path(COCOKeypoints.RWrist.value, current_frame)
-        else:
-            path = track.get_keypoint_path(COCOKeypoints.Neck.value, current_frame)
+        path = track.get_keypoint_path(keypoint_index, current_frame)
 
         self._draw_path(img, path, color)
 

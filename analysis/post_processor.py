@@ -1,3 +1,5 @@
+import numpy as np
+
 from tracker import Person, Track
 
 
@@ -7,7 +9,8 @@ class PostProcessor:
         self.tracks = []
 
     def create_tracks(self, tracks_np, frames_np):
-        self.tracks = [self._create_track(p, f, i) for i, (p, f) in enumerate(zip(tracks, frames))]
+        self.tracks = [self._create_track(p, f, i)
+                       for i, (p, f) in enumerate(zip(tracks_np, frames_np))]
 
     def _create_track(self, saved_path, path_frames, path_index):
         track = Track()
@@ -29,6 +32,7 @@ class PostProcessor:
     def _fill_tracks(self, tracks):
         for track in tracks:
             track.fill_missing_keypoints()
+            track.fill_missing_frames()
 
     def _combine_tracks(self, tracks):
         # This looks ugly since there is some concurrent modification going on.
@@ -56,12 +60,12 @@ class PostProcessor:
 
     def chunk_tracks(self):
         frames_per_chunk = 10
-        overlap = 5
+        overlap = 0
 
         # Some python magic for getting the structure right here...
         chunks_and_frames = [t for t in zip(*[track.divide_into_chunks(frames_per_chunk, overlap)
-                                              for track in tracks])]
+                                              for track in self.tracks])]
         chunks = np.array(chunks_and_frames[0])
-        chunk_frames = chunks_and_frames[1]
+        chunk_frames = np.array(chunks_and_frames[1])
 
         return chunks, chunk_frames

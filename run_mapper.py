@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import numpy as np
 
 
 from tracker import Person, Track, TrackVisualiser
@@ -13,7 +14,7 @@ def main(args):
     np_frames = tracks_npz['frames']
     chunks = tracks_npz['chunks']
 
-    last_frame = np.amax([f[-1] for f in frames])
+    last_frame = np.amax([f[-1] for f in np_frames])
 
     logging.info("Combining, cleaning and removing tracks.")
     processor = PostProcessor()
