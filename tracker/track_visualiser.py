@@ -7,7 +7,8 @@ from util import COCOKeypoints
 class TrackVisualiser:
 
     def __init__(self):
-        self.colors = [(255, 0, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255), (255, 255, 255)]
+        self.colors = [(255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255),
+                       (255, 255, 0), (255, 0, 255), (0, 255, 255)]
 
     def draw_video_with_tracks(self, tracks, video, last_frame):
         capture = cv2.VideoCapture(video)
@@ -30,8 +31,6 @@ class TrackVisualiser:
     def draw_people(self, tracks, img, current_frame):
         for i, track in enumerate(tracks):
             track_color = self.colors[i % len(self.colors)]
-            self._add_index_of_track(img, i, track, track_color,
-                                     current_frame, COCOKeypoints.Neck.value)
             positions = [(0, 0)] * 15
             for i in range(15):
                 path = track.get_keypoint_path(i, current_frame)
@@ -40,7 +39,6 @@ class TrackVisualiser:
                     offset = np.array([250, 150])
                     position = tuple(original_pos + offset)
                     cv2.circle(img, position, 5, track_color, 3)
-                    font = cv2.FONT_HERSHEY_SIMPLEX
                     positions[i] = position
 
             connections = [
@@ -67,9 +65,9 @@ class TrackVisualiser:
             cv2.line(img, from_, to, color, 3)
 
     def draw_frame_number(self, img, current_frame):
-        black = (255, 255, 255)
+        white = (255, 255, 255)
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(img, str(current_frame), (50, 50), font, 2, black, 2)
+        cv2.putText(img, str(current_frame), (50, 50), font, 2, white, 2)
 
     def _add_index_of_track(self, img, track_index, track, color, current_frame, keypoint_index):
         if track.last_frame_update <= current_frame - 10:
@@ -81,7 +79,7 @@ class TrackVisualiser:
         path_index = max(0, len(path) - 11)
         if len(path) > 0:
             keypoint = path[path_index].astype(np.int)
-            cv2.putText(img, str(track_index), tuple(keypoint), font, 4, color)
+            cv2.putText(img, str(track_index), tuple(keypoint), font, 4, color, 3)
 
     def _add_lines_from_track(self, img, track, color, current_frame, keypoint_index):
         # Don't draw old paths
