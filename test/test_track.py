@@ -69,5 +69,28 @@ class TestTrack(unittest.TestCase):
         ]
         np.testing.assert_array_equal(keypoint_path, manual_path)
 
+    def test_fill_missing_frames(self):
+        track = Track()
+        track.add_person(self.people[0], 0)
+        track.add_person(self.people[4], 4)
+
+        track.fill_missing_frames()
+
+        diff = self.people[4].keypoints - self.people[0].keypoints
+        step = diff / 4
+        p1 = Person(self.people[0].keypoints + step)
+        p2 = Person(self.people[0].keypoints + step * 2)
+        p3 = Person(self.people[0].keypoints + step * 3)
+        manual_track = [
+            self.people[0].keypoints,
+            p1.keypoints,
+            p2.keypoints,
+            p3.keypoints,
+            self.people[4].keypoints
+        ]
+        keypoint_track = [p.keypoints for p in track.track]
+        np.testing.assert_array_equal(keypoint_track, manual_track)
+        np.testing.assert_array_equal(track.frame_assigned, [0, 1, 2, 3, 4])
+
 if __name__ == '__main__':
     unittest.main()
