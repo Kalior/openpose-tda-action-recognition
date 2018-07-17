@@ -9,6 +9,16 @@ class TrackVisualiser(object):
     def __init__(self):
         self.colors = [(255, 0, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255), (255, 255, 255)]
 
+    def draw_video_with_tracks(self, tracks, video, last_frame):
+        capture = cv2.VideoCapture(video)
+
+        for i in range(last_frame):
+            success, original_image = capture.read()
+            visualiser.draw_frame_number(original_image, i)
+            visualiser.draw_tracks(tracks, original_image, i)
+            cv2.imshow("output", original_image)
+            cv2.waitKey(15)
+
     def draw_tracks(self, tracks, img, current_frame, only_track_arms=False):
         for i, track in enumerate(tracks):
             track_color = self.colors[i % len(self.colors)]
