@@ -3,7 +3,7 @@ import numpy as np
 from util import COCOKeypoints
 
 
-class Person(object):
+class Person:
     only_track_arms = False
 
     def __init__(self, keypoints, track_index=-1):

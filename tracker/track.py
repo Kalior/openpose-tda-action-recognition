@@ -3,7 +3,7 @@ import numpy as np
 import logging
 
 
-class Track(object):
+class Track:
 
     def __init__(self):
         self.track = []

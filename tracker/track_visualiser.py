@@ -4,7 +4,7 @@ import numpy as np
 from util import COCOKeypoints
 
 
-class TrackVisualiser(object):
+class TrackVisualiser:
 
     def __init__(self):
         self.colors = [(255, 0, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255), (255, 255, 255)]
