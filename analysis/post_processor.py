@@ -63,22 +63,20 @@ class PostProcessor:
                  abs(end_track.frame_assigned[-1] - start_track.frame_assigned[0]) < 15))
 
     def chunk_tracks(self):
-        frames_per_chunk = 10
-        overlap = 0
+        frames_per_chunk = 20
+        overlap = 10
 
-        # Some python magic for getting the structure right here...
-        chunks_and_frames = [t for t in zip(*[track.divide_into_chunks(frames_per_chunk, overlap)
-                                              for track in self.tracks])]
-        chunks = np.array(chunks_and_frames[0])
-        chunk_frames = np.array(chunks_and_frames[1])
+        chunks = np.empty(len(self.tracks), dtype=object)
+        chunk_frames = np.empty(len(self.tracks), dtype=object)
+        for i, track in enumerate(self.tracks):
+            chunked, frames = track.divide_into_chunks(frames_per_chunk, overlap)
+            chunks[i] = chunked
+            chunk_frames[i] = frames
 
         return chunks, chunk_frames
 
     def translate_chunks_to_origin(self, chunks):
         translated_chunks = np.empty(chunks.shape, dtype=object)
-
-        # chunks = np.zeros((number_of_chunks, frames_per_chunk,
-        #                    number_of_keypoints, values_per_keypoint))
 
         for i, track in enumerate(chunks):
             translated_chunk = np.empty(chunks[i].shape)
