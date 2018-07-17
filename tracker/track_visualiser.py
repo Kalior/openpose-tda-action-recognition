@@ -11,11 +11,26 @@ class TrackVisualiser(object):
 
     def draw_tracks(self, tracks, img, current_frame, only_track_arms=False):
         for i, track in enumerate(tracks):
-            self._add_lines_from_track(img, track, self.colors[i % len(self.colors)],
-                                       current_frame, only_track_arms)
+            track_color = self.colors[i % len(self.colors)]
+            self._add_lines_from_track(img, track, track_color, current_frame, only_track_arms)
+            self._add_index_of_track(img, i, track, track_color, current_frame)
 
-        cv2.imshow("output", img)
-        cv2.waitKey(1)
+    def draw_frame_number(self, img, current_frame):
+        black = (255, 255, 255)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(img, str(current_frame), (50, 50), font, 2, black, 2)
+
+    def _add_index_of_track(self, img, track_index, track, color, current_frame):
+        if track.last_frame_update <= current_frame - 10:
+            return
+
+        path = track.get_keypoint_path(COCOKeypoints.Neck.value, current_frame)
+
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        path_index = max(0, len(path) - 11)
+        if len(path) > 0:
+            keypoint = path[path_index].astype(np.int)
+            cv2.putText(img, str(track_index), tuple(keypoint), font, 4, color)
 
     def _add_lines_from_track(self, img, track, color, current_frame, only_track_arms):
         # Don't draw old paths
