@@ -54,15 +54,27 @@ class Track(object):
         if overlap == -1:
             overlap = int(frames_per_chunk / 2)
 
-        #  Turn chunks into np array and preallocate if this turns into a speed
-        # issue.
-        chunks = []
+        number_of_chunks = int((len(self.track) - frames_per_chunk - 1) /
+                               (frames_per_chunk - overlap) + 1)
+        if number_of_chunks <= 0:
+            return np.array([])
+
+        number_of_keypoints = self.track[0].keypoints.shape[0]
+        values_per_keypoint = self.track[0].keypoints.shape[1]
+        chunks = np.zeros((number_of_chunks, frames_per_chunk,
+                           number_of_keypoints, values_per_keypoint))
+        chunk_start_frames = np.zeros(number_of_chunks)
         start_index = 0
+        index = 0
         while start_index + frames_per_chunk < len(self.track):
-            chunk = np.array([p.keypoints for p in self.track[start_index:frames_per_chunk]])
-            chunks.append(chunk)
-            start_index = frames_per_chunk - overlap
-        return np.array(chunks)
+            chunk = np.array([p.keypoints for p in self.track[
+                             start_index:(start_index + frames_per_chunk)]])
+            chunks[index] = chunk
+            chunk_start_frames[index] = self.frame_assigned[start_index]
+            start_index += frames_per_chunk - overlap
+            index += 1
+
+        return chunks, chunk_start_frames
 
     def to_np(self):
         np_path = np.array([p.keypoints for p in self.track])
