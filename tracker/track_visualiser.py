@@ -42,6 +42,9 @@ class TrackVisualiser(object):
         else:
             path = track.get_keypoint_path(COCOKeypoints.Neck.value, current_frame)
 
+        self._draw_path(img, path, color)
+
+    def _draw_path(self, img, path, color):
         start_index = max(1, len(path) - 10)
         for i in range(start_index, len(path)):
             keypoint = path[i].astype(np.int)
