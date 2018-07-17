@@ -42,23 +42,11 @@ class TrackVisualiser:
                     positions[i] = position
 
             connections = [
-                (0, 1),
-                (1, 2),
-                (1, 5),
-                (2, 3),
-                (3, 4),
-                (5, 6),
-                (6, 7),
-                (1, 8),
-                (1, 11),
-                (8, 9),
-                (9, 10),
-                (11, 12),
-                (12, 13)
+                (0, 1), (1, 2), (1, 5), (2, 3), (3, 4), (5, 6), (6, 7),
+                (1, 8), (1, 11), (8, 9), (9, 10), (11, 12), (12, 13)
             ]
-            if len(connections) > 0:
-                for from_, to in connections:
-                    self._add_line(img, positions[from_], positions[to], track_color)
+            for from_, to in connections:
+                self._add_line(img, positions[from_], positions[to], track_color)
 
     def _add_line(self, img, from_, to, color):
         if all((0, 0) != p for p in [from_, to]):
