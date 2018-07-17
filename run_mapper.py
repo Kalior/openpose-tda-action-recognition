@@ -22,7 +22,9 @@ def main(args):
     processor.post_process_tracks()
 
     logging.info("Chunking tracks.")
-    chunks, chunk_frames = processor.chunk_tracks()
+    frames_per_chunk = 20
+    overlap = 10
+    chunks, chunk_frames = processor.chunk_tracks(frames_per_chunk, overlap)
     logging.info("Moving every person to the origin.")
     # processor.translate_tracks_to_origin()
     translated_chunks = processor.translate_chunks_to_origin(chunks)
@@ -32,7 +34,8 @@ def main(args):
     # visualiser.draw_video_with_tracks(processor.tracks, args.video, last_frame)
 
     logging.info("Applying mapping to tracks.")
-    mapper = Mapper(translated_chunks[[2]], chunk_frames[[2]], chunks[[2]])
+    mapper = Mapper(translated_chunks[[2, 3]], chunk_frames[
+                    [2, 3]], chunks[[2, 3]], frames_per_chunk)
     mapper.mapper()
     mapper.visualise(args.video)
 

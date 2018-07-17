@@ -14,10 +14,11 @@ from util import COCOKeypoints
 
 class Mapper:
 
-    def __init__(self, chunks, chunk_frames, original_chunks):
+    def __init__(self, chunks, chunk_frames, original_chunks, frames_per_chunk):
         self.chunks = chunks
         self.chunk_frames = chunk_frames
         self.original_chunks = original_chunks
+        self.frames_per_chunk = frames_per_chunk
 
     def visualise(self, video):
         capture = cv2.VideoCapture(video)
@@ -133,7 +134,7 @@ class Mapper:
 
         writer = cv2.VideoWriter(out_file, fourcc, fps, (frame_width, frame_height))
         visualiser = TrackVisualiser()
-        for i in range(10):
+        for i in range(self.frames_per_chunk):
             translated_image = self._draw_translated_track(
                 translated_track, i, start_frame, visualiser)
             translated_image = cv2.resize(translated_image, (100, 100))
@@ -146,7 +147,7 @@ class Mapper:
 
         translated_track = self._chunk_to_track(translated_chunk, start_frame)
 
-        for i in range(10):
+        for i in range(self.frames_per_chunk):
             success, original_image = capture.read()
             visualiser.draw_tracks([track], original_image, i + start_frame)
             visualiser.draw_frame_number(original_image, i + start_frame)

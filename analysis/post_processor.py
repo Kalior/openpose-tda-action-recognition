@@ -62,10 +62,7 @@ class PostProcessor:
         return ((end_track[-1].distance(start_track[0]) < 15 and
                  abs(end_track.frame_assigned[-1] - start_track.frame_assigned[0]) < 15))
 
-    def chunk_tracks(self):
-        frames_per_chunk = 20
-        overlap = 10
-
+    def chunk_tracks(self, frames_per_chunk, overlap):
         chunks = np.empty(len(self.tracks), dtype=object)
         chunk_frames = np.empty(len(self.tracks), dtype=object)
         for i, track in enumerate(self.tracks):
