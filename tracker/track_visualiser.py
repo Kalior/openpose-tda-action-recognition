@@ -28,7 +28,7 @@ class TrackVisualiser:
                                        current_frame, keypoint_index)
             self._add_index_of_track(img, i, track, track_color, current_frame, keypoint_index)
 
-    def draw_people(self, tracks, img, current_frame):
+    def draw_people(self, tracks, img, current_frame, offset_person=True):
         for i, track in enumerate(tracks):
             track_color = self.colors[i % len(self.colors)]
             positions = [(0, 0)] * 15
@@ -36,8 +36,11 @@ class TrackVisualiser:
                 path = track.get_keypoint_path(i, current_frame)
                 if len(path) > 0:
                     original_pos = path[-1].astype(np.int)
-                    offset = np.array([250, 150])
-                    position = tuple(original_pos + offset)
+                    if offset_person:
+                        offset = np.array([250, 150])
+                        position = tuple(original_pos + offset)
+                    else:
+                        position = tuple(original_pos)
                     cv2.circle(img, position, 5, track_color, 3)
                     positions[i] = position
 
