@@ -43,7 +43,7 @@ class Mapper:
             original_chunk = self.original_chunks[person_index][chunk_index]
             translated_chunk = self.chunks[person_index][chunk_index]
 
-            self._draw_chunk(original_chunk, translated_chunk, start_frame, visualiser)
+            self._draw_chunk(capture, original_chunk, translated_chunk, start_frame, visualiser)
 
     def mapper(self):
         arm_keypoint_indicies = [COCOKeypoints.RWrist.value, COCOKeypoints.LWrist.value,
@@ -142,8 +142,8 @@ class Mapper:
 
         writer.release()
 
-    def _draw_chunk(self, chunk, translated_chunk, start_frame, visualiser):
-        track = self._chunk_to_track(original_chunk, start_frame)
+    def _draw_chunk(self, capture, chunk, translated_chunk, start_frame, visualiser):
+        track = self._chunk_to_track(chunk, start_frame)
 
         translated_track = self._chunk_to_track(translated_chunk, start_frame)
 
