@@ -73,17 +73,16 @@ class PostProcessor:
         return chunks, chunk_frames
 
     def translate_chunks_to_origin(self, chunks):
-        translated_chunks = np.empty(chunks.shape, dtype=object)
+        translated_chunks = np.copy(chunks)
 
-        for i, track in enumerate(chunks):
-            translated_chunk = np.empty(chunks[i].shape)
+        for i, track in enumerate(translated_chunks):
             for j, chunk in enumerate(track):
-                translated_chunk[j] = self._normalise_chunk(chunk)
-
-            translated_chunks[i] = translated_chunk
+                self._normalise_chunk(chunk)
 
         return translated_chunks
 
     def _normalise_chunk(self, chunk):
-        mean = np.mean(np.mean(chunk, axis=0), axis=0)
-        return chunk - mean
+        # Don't take unidentified keypoints into account:
+        mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
+
+        chunk[~np.all(chunk == 0, axis=2)] -= mean
