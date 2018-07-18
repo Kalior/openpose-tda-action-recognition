@@ -11,7 +11,7 @@ from .mapper_visualiser import MapperVisualiser
 
 class Mapper:
 
-    def __init__(self, chunks, chunk_frames, original_chunks, frames_per_chunk):
+    def __init__(self, chunks, chunk_frames, original_chunks, frames_per_chunk, video):
         self.chunks = chunks
         self.chunk_frames = chunk_frames
         self.original_chunks = original_chunks
@@ -19,12 +19,13 @@ class Mapper:
         self.selected_keypoints = [COCOKeypoints.RWrist.value, COCOKeypoints.LWrist.value,
                                    COCOKeypoints.RElbow.value, COCOKeypoints.LElbow.value]
         self.mapper_visualiser = MapperVisualiser(
-            chunks, chunk_frames, original_chunks, frames_per_chunk, self.selected_keypoints)
+            chunks, chunk_frames, original_chunks, frames_per_chunk, self.selected_keypoints, video)
 
-    def visualise(self, video, graph, labels):
-        self.mapper_visualiser.visualise(video, graph, labels)
+    def visualise(self, graph, labels):
+        self.mapper_visualiser.visualise(graph, labels)
 
     def mapper(self):
+        logging.info("Flattening data into a datapoint per chunk of a track.")
         data = np.array([[p for person in action for k in person[self.selected_keypoints] for p in k[:2]]
                          for path in self.chunks for action in path])
 
@@ -36,7 +37,7 @@ class Mapper:
 
         logging.info("Creating tooltip videos")
         tooltips = np.array([self._to_tooltip(action, j, i, self.chunk_frames[j][i])
-                             for j, path in enumerate(self.chunks) for i, action in enumerate(path)])
+                             for j, path in enumerate(self.original_chunks) for i, action in enumerate(path)])
 
         # We create a custom 1-D lens with Isolation Forest
         # model = ensemble.IsolationForest()
@@ -56,27 +57,38 @@ class Mapper:
         #                    coverer=km.Cover(10, 0.3),
         #                    clusterer=sklearn.cluster.KMeans(n_clusters=2))
         # # Initialize
+        logging.info("Applying the mapping algorithm.")
         mapper = km.KeplerMapper(verbose=2)
 
         # Fit to and transform the data
-        projected_data = mapper.fit_transform(data,
-                                              projection=sklearn.manifold.TSNE())
+        projected_data = mapper.fit_transform(
+            data,
+            projection=sklearn.manifold.TSNE(
+                n_components=2,
+                perplexity=20,
+                init='pca'
+            )
+        )
 
         # Create dictionary called 'graph' with nodes, edges and meta-information
-        graph = mapper.map(projected_data, coverer=km.Cover(5, 0.33),
-                           clusterer=sklearn.cluster.KMeans(n_clusters=3))
+        graph = mapper.map(projected_data, coverer=km.Cover(3, 0.3),
+                           clusterer=sklearn.cluster.KMeans(n_clusters=2))
 
-        # # Visualize it
-        mapper.visualize(graph, path_html="actions.html",
+        # Visualize it
+        mapper.visualize(graph,
+                         path_html="actions.html",
                          title="chunk",
                          custom_tooltips=tooltips)
 
         return graph, data, labels_int
 
     def _to_tooltip(self, chunk, person_index, chunk_index, start_frame):
-        out_file = os.path.join(
-            'output/tooltips', "{}-{}".format(person_index, chunk_index) + '.avi')
-        self.mapper_visualiser.chunk_to_video(chunk, out_file, start_frame)
+        out_file_pose = os.path.join(
+            'output/tooltips', "pose-{}-{}".format(person_index, chunk_index) + '.avi')
+        out_file_scene = os.path.join(
+            'output/tooltips', "scene-{}-{}".format(person_index, chunk_index) + '.avi')
+        self.mapper_visualiser.chunk_to_video_pose(chunk, out_file_pose, start_frame)
+        self.mapper_visualiser.chunk_to_video_scene(chunk, out_file_scene, start_frame)
 
         tooltip = """
             <video
@@ -87,6 +99,6 @@ class Mapper:
                 autoplay
                 src={}>
             </video>
-        """.format(out_file)
+        """.format(out_file_scene)
 
         return tooltip
