@@ -88,3 +88,32 @@ class PostProcessor:
         mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
 
         chunk[~np.all(chunk == 0, axis=2)] -= mean
+
+    def filter_moving_chunks(self, chunks, chunk_frames):
+        filtered_chunks = np.empty(chunks.shape[0], dtype=object)
+        filtered_frames = np.empty(chunks.shape[0], dtype=object)
+        for i, track in enumerate(chunks):
+            filtered_track = []
+            filtered_track_frames = []
+            for j, chunk in enumerate(track):
+                position = [820, 350]
+                mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
+                if np.linalg.norm(mean[:2] - position) < 100:
+                    filtered_track.append(chunk)
+                    filtered_track_frames.append(chunk_frames[i][j])
+            filtered_chunks[i] = np.array(filtered_track)
+            filtered_frames[i] = np.array(filtered_track_frames)
+
+        return filtered_chunks, filtered_frames
+
+    def chunks_to_tracks(self, chunks, chunk_frames):
+        tracks = []
+        for i, track in enumerate(chunks):
+            for j, chunk in enumerate(track):
+                t = self._create_track(
+                    chunk,
+                    [chunk_frames[i][j] + k for k in range(len(chunk))],
+                    i * len(track) + j)
+                tracks.append(t)
+
+        return tracks

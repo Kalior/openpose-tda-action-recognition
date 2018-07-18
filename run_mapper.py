@@ -25,19 +25,19 @@ def main(args):
     frames_per_chunk = 20
     overlap = 10
     chunks, chunk_frames = processor.chunk_tracks(frames_per_chunk, overlap)
-    logging.info("Moving every person to the origin.")
-    # processor.translate_tracks_to_origin()
-    translated_chunks = processor.translate_chunks_to_origin(chunks)
-    # print(chunks)
+    logging.info("Filtering out every path but the cachier standing still.")
+    static_chunks, static_frames = processor.filter_moving_chunks(chunks, chunk_frames)
+    logging.info("Moving every chunk to the origin.")
+    translated_chunks = processor.translate_chunks_to_origin(static_chunks)
 
     # visualiser = TrackVisualiser()
-    # visualiser.draw_video_with_tracks(processor.tracks, args.video, last_frame)
+    # filtered_tracks = processor.chunks_to_tracks(static_chunks, static_frames)
+    # visualiser.draw_video_with_tracks(filtered_tracks, args.video, last_frame)
 
     logging.info("Applying mapping to tracks.")
-    mapper = Mapper(translated_chunks[[2, 3]], chunk_frames[
-                    [2, 3]], chunks[[2, 3]], frames_per_chunk)
-    mapper.mapper()
-    mapper.visualise(args.video)
+    mapper = Mapper(translated_chunks, static_frames, static_chunks, frames_per_chunk, args.video)
+    graph, _, labels = mapper.mapper()
+    mapper.visualise(graph, labels)
 
 
 if __name__ == '__main__':
