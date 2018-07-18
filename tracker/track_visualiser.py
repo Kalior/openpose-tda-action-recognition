@@ -57,6 +57,11 @@ class TrackVisualiser:
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(img, str(current_frame), (50, 50), font, 2, white, 2)
 
+    def draw_text(self, img, text, position=(50, 50)):
+        white = (255, 255, 255)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(img, text, position, font, 2, white, 2)
+
     def _add_index_of_track(self, img, track_index, track, color, current_frame, keypoint_index):
         if track.last_frame_update <= current_frame - 10:
             return
