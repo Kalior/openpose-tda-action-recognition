@@ -32,8 +32,11 @@ class Mapper:
     def _draw_node(self, capture, node):
         visualiser = TrackVisualiser()
 
-        for point in node:
+        self._draw_average_shape(capture, node, visualiser)
+        self._draw_every_chunk(capture, node, visualiser)
 
+    def _draw_every_chunk(self, capture, node, visualiser):
+        for point in node:
             chunk_index = self.labels_int[point][0]
             person_index = self.labels_int[point][1]
 
@@ -44,6 +47,27 @@ class Mapper:
             translated_chunk = self.chunks[person_index][chunk_index]
 
             self._draw_chunk(capture, original_chunk, translated_chunk, start_frame, visualiser)
+
+    def _draw_average_shape(self, capture, node, visualiser):
+        tracks = []
+        for point in node:
+            chunk_index = self.labels_int[point][0]
+            person_index = self.labels_int[point][1]
+            start_frame = self.labels_int[point][2]
+
+            chunk = self.chunks[person_index][chunk_index]
+            track = self._chunk_to_track(chunk, start_frame)
+            tracks.append((start_frame, track))
+
+        opacity = 1 / len(tracks) + 0.05
+        for i in range(self.frames_per_chunk):
+            blank_image = np.zeros((500, 500, 3), np.uint8)
+            for start_frame, track in tracks:
+                overlay = blank_image.copy()
+                visualiser.draw_people([track], overlay, i + start_frame)
+                cv2.addWeighted(overlay, opacity, blank_image, 1 - opacity, 0, blank_image)
+            cv2.imshow("average person", blank_image)
+            cv2.waitKey(1)
 
     def mapper(self):
         arm_keypoint_indicies = [COCOKeypoints.RWrist.value, COCOKeypoints.LWrist.value,
