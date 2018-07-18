@@ -27,15 +27,13 @@ def main(args):
     chunks, chunk_frames = processor.chunk_tracks(frames_per_chunk, overlap)
     logging.info("Filtering out every path but the cachier standing still.")
     static_chunks, static_frames = processor.filter_moving_chunks(chunks, chunk_frames)
-    logging.info("Moving every chunk to the origin.")
-    translated_chunks = processor.translate_chunks_to_origin(static_chunks)
 
     # visualiser = TrackVisualiser()
     # filtered_tracks = processor.chunks_to_tracks(static_chunks, static_frames)
     # visualiser.draw_video_with_tracks(filtered_tracks, args.video, last_frame)
 
     logging.info("Applying mapping to tracks.")
-    mapper = Mapper(translated_chunks, static_frames, static_chunks, frames_per_chunk, args.video)
+    mapper = Mapper(static_chunks, static_frames, frames_per_chunk, args.video)
     graph, _, labels = mapper.mapper()
     mapper.visualise(graph, labels)
 

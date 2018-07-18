@@ -7,10 +7,10 @@ from tracker import TrackVisualiser, Track, Person
 
 class MapperVisualiser:
 
-    def __init__(self, chunks, chunk_frames, original_chunks, frames_per_chunk, selected_keypoints, video):
+    def __init__(self, chunks, chunk_frames, translated_chunks, frames_per_chunk, selected_keypoints, video):
         self.chunks = chunks
         self.chunk_frames = chunk_frames
-        self.original_chunks = original_chunks
+        self.translated_chunks = translated_chunks
         self.frames_per_chunk = frames_per_chunk
         self.selected_keypoints = selected_keypoints
         self.video = video
@@ -37,8 +37,8 @@ class MapperVisualiser:
             start_frame = labels[point][2]
             capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
-            original_chunk = self.original_chunks[person_index][chunk_index]
-            translated_chunk = self.chunks[person_index][chunk_index]
+            original_chunk = self.chunks[person_index][chunk_index]
+            translated_chunk = self.translated_chunks[person_index][chunk_index]
 
             self._draw_chunk(capture, name, original_chunk,
                              translated_chunk, start_frame, visualiser, average_frames)
@@ -70,7 +70,7 @@ class MapperVisualiser:
             person_index = labels[point][1]
             start_frame = labels[point][2]
 
-            chunk = self.chunks[person_index][chunk_index]
+            chunk = self.translated_chunks[person_index][chunk_index]
             track = self._chunk_to_track(chunk, start_frame)
             tracks.append((start_frame, track))
 

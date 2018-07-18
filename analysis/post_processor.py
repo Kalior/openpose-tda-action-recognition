@@ -72,23 +72,6 @@ class PostProcessor:
 
         return chunks, chunk_frames
 
-    def translate_chunks_to_origin(self, chunks):
-        translated_chunks = np.zeros(chunks.shape, dtype=object)
-
-        for i, track in enumerate(chunks):
-            track = np.copy(track)
-            for j, chunk in enumerate(track):
-                self._normalise_chunk(chunk)
-            translated_chunks[i] = track
-
-        return translated_chunks
-
-    def _normalise_chunk(self, chunk):
-        # Don't take unidentified keypoints into account:
-        mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
-
-        chunk[~np.all(chunk == 0, axis=2)] -= mean
-
     def filter_moving_chunks(self, chunks, chunk_frames):
         filtered_chunks = np.empty(chunks.shape[0], dtype=object)
         filtered_frames = np.empty(chunks.shape[0], dtype=object)

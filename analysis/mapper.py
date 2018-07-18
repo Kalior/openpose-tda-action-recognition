@@ -11,15 +11,15 @@ from .mapper_visualiser import MapperVisualiser
 
 class Mapper:
 
-    def __init__(self, chunks, chunk_frames, original_chunks, frames_per_chunk, video):
+    def __init__(self, chunks, chunk_frames, frames_per_chunk, video):
         self.chunks = chunks
         self.chunk_frames = chunk_frames
-        self.original_chunks = original_chunks
         self.frames_per_chunk = frames_per_chunk
         self.selected_keypoints = [COCOKeypoints.RWrist.value, COCOKeypoints.LWrist.value,
                                    COCOKeypoints.RElbow.value, COCOKeypoints.LElbow.value]
+        self.translated_chunks = self._translate_chunks_to_origin(self.chunks)
         self.mapper_visualiser = MapperVisualiser(
-            chunks, chunk_frames, original_chunks, frames_per_chunk, self.selected_keypoints, video)
+            chunks, chunk_frames, translated_chunks, frames_per_chunk, self.selected_keypoints, video)
 
     def visualise(self, graph, labels):
         self.mapper_visualiser.visualise(graph, labels)
@@ -102,3 +102,20 @@ class Mapper:
         """.format(out_file_scene)
 
         return tooltip
+
+    def _translate_chunks_to_origin(self):
+        translated_chunks = np.zeros(self.chunks.shape, dtype=object)
+
+        for i, track in enumerate(self.chunks):
+            track = np.copy(track)
+            for j, chunk in enumerate(track):
+                self._normalise_chunk(chunk)
+            translated_chunks[i] = track
+
+        return translated_chunks
+
+    def _normalise_chunk(self, chunk):
+        # Don't take unidentified keypoints into account:
+        mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
+
+        chunk[~np.all(chunk == 0, axis=2)] -= mean
