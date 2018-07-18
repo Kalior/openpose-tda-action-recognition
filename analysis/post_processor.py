@@ -73,11 +73,13 @@ class PostProcessor:
         return chunks, chunk_frames
 
     def translate_chunks_to_origin(self, chunks):
-        translated_chunks = np.copy(chunks)
+        translated_chunks = np.zeros(chunks.shape, dtype=object)
 
-        for i, track in enumerate(translated_chunks):
+        for i, track in enumerate(chunks):
+            track = np.copy(track)
             for j, chunk in enumerate(track):
                 self._normalise_chunk(chunk)
+            translated_chunks[i] = track
 
         return translated_chunks
 
