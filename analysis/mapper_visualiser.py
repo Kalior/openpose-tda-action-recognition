@@ -26,10 +26,10 @@ class MapperVisualiser:
     def _draw_node(self, capture, name, node, labels):
         visualiser = TrackVisualiser()
 
-        self._draw_average_shape(capture, name, node, labels, visualiser)
-        self._draw_every_chunk(capture, name, node, labels, visualiser)
+        average_frames = self._draw_average_shape(capture, name, node, labels, visualiser)
+        self._draw_every_chunk(capture, name, node, labels, visualiser, average_frames)
 
-    def _draw_every_chunk(self, capture, name, node, labels, visualiser):
+    def _draw_every_chunk(self, capture, name, node, labels, visualiser, average_frames):
         for point in node:
             chunk_index = labels[point][0]
             person_index = labels[point][1]
@@ -41,9 +41,9 @@ class MapperVisualiser:
             translated_chunk = self.chunks[person_index][chunk_index]
 
             self._draw_chunk(capture, name, original_chunk,
-                             translated_chunk, start_frame, visualiser)
+                             translated_chunk, start_frame, visualiser, average_frames)
 
-    def _draw_chunk(self, capture, name, chunk, translated_chunk, start_frame, visualiser):
+    def _draw_chunk(self, capture, name, chunk, translated_chunk, start_frame, visualiser, average_frames):
         track = self._chunk_to_track(chunk, start_frame)
 
         translated_track = self._chunk_to_track(translated_chunk, start_frame)
@@ -60,6 +60,7 @@ class MapperVisualiser:
             visualiser.draw_text(original_image, name, position=(1400, 50))
             cv2.imshow("output", original_image)
             cv2.imshow("translated_person", translated_image)
+            cv2.imshow("average person", average_frames[i])
             cv2.waitKey(1)
 
     def _draw_average_shape(self, capture, name, node, labels, visualiser):
@@ -73,6 +74,7 @@ class MapperVisualiser:
             track = self._chunk_to_track(chunk, start_frame)
             tracks.append((start_frame, track))
 
+        frames = []
         opacity = 1 / len(tracks) + 0.05
         for i in range(self.frames_per_chunk):
             blank_image = np.zeros((500, 500, 3), np.uint8)
@@ -81,8 +83,10 @@ class MapperVisualiser:
                 visualiser.draw_people([track], overlay, i + start_frame)
                 cv2.addWeighted(overlay, opacity, blank_image, 1 - opacity, 0, blank_image)
             visualiser.draw_text(blank_image, name, position=(20, 50))
-            cv2.imshow("average person", blank_image)
-            cv2.waitKey(1)
+
+            frames.append(blank_image)
+
+        return frames
 
     def _chunk_to_track(self, chunk, start_frame):
         track = Track()
