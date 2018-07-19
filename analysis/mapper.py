@@ -118,7 +118,29 @@ class Mapper:
                           dtype=np.int)
 
         return data, labels
-     
+
+    def _velocity_of_chunks(self):
+        data = np.array([self._relative_velocity_of_chunk(action)
+                         for path in self.chunks for action in path])
+
+        labels = np.array([(i, j, self.chunk_frames[j][i])
+                           for j, path in enumerate(self.chunks) for i, _ in enumerate(path)],
+                          dtype=np.int)
+
+        return data, labels
+
+    def _relative_velocity_of_chunk(self, chunk):
+        velocity = np.empty(
+            (chunk.shape[0] - 1, len(self.selected_keypoints), 2))
+
+        for i in range(1, len(chunk)):
+            for j, keypoint_index in enumerate(self.selected_keypoints):
+                keypoint = chunk[i, keypoint_index]
+                prev_keypoint = chunk[i - 1, keypoint_index]
+                velocity[i - 1, j] = prev_keypoint[:2] - keypoint[:2]
+
+        return velocity.flatten()
+
     def _translate_chunks_to_origin(self):
         translated_chunks = np.zeros(self.chunks.shape, dtype=object)
 
