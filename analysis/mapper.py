@@ -35,8 +35,8 @@ class Mapper:
         # data, labels = self._velocity_of_chunks()
 
         logging.info("Creating tooltip videos")
-        tooltips = np.array([self._to_tooltip(action, j, i, self.chunk_frames[j][i])
-                             for j, path in enumerate(self.chunks) for i, action in enumerate(path)])
+        tooltips = np.array([self._to_tooltip(chunk, i, self.chunk_frames[i])
+                             for i, chunk in enumerate(self.chunks)])
 
         # Initialize
         logging.info("Applying the mapping algorithm.")
@@ -87,14 +87,14 @@ class Mapper:
         else:
             return 255
 
-    def _to_tooltip(self, chunk, person_index, chunk_index, start_frame):
+    def _to_tooltip(self, chunk, chunk_index, start_frame):
         out_file_pose = os.path.join(
-            'output/tooltips', "pose-{}-{}".format(person_index, chunk_index) + '.avi')
+            'output/tooltips', "pose-{}".format(chunk_index) + '.avi')
         out_file_scene = os.path.join(
-            'output/tooltips', "scene-{}-{}".format(person_index, chunk_index) + '.avi')
+            'output/tooltips', "scene-{}".format(chunk_index) + '.avi')
         # self.chunk_visualiser.chunk_to_video_pose(chunk, out_file_pose, start_frame)
-        self.chunk_visualiser.chunk_to_video_scene(
-            chunk, out_file_scene, start_frame, self.labels[str(chunk_index)])
+        # self.chunk_visualiser.chunk_to_video_scene(
+        #     chunk, out_file_scene, start_frame, self.labels[str(chunk_index)])
 
         tooltip = """
             <video
@@ -110,21 +110,20 @@ class Mapper:
         return tooltip
 
     def _flatten_chunks(self):
-        data = np.array([action[:, self.selected_keypoints, :2].flatten()
-                         for path in self.chunks for action in path])
+        data = np.array([chunk[:, self.selected_keypoints, :2].flatten() for chunk in self.chunks])
 
-        labels = np.array([(i, j, self.chunk_frames[j][i])
-                           for j, path in enumerate(self.chunks) for i, _ in enumerate(path)],
+        labels = np.array([(i, start_frame)
+                           for i, start_frame in enumerate(self.chunk_frames)],
                           dtype=np.int)
 
         return data, labels
 
     def _velocity_of_chunks(self):
-        data = np.array([self._relative_velocity_of_chunk(action)
-                         for path in self.chunks for action in path])
+        data = np.array([self._relative_velocity_of_chunk(chunk)
+                         for chunk in self.chunks])
 
-        labels = np.array([(i, j, self.chunk_frames[j][i])
-                           for j, path in enumerate(self.chunks) for i, _ in enumerate(path)],
+        labels = np.array([(i, start_frame)
+                           for i, start_frame in enumerate(self.chunk_frames)],
                           dtype=np.int)
 
         return data, labels
@@ -142,13 +141,10 @@ class Mapper:
         return velocity.flatten()
 
     def _translate_chunks_to_origin(self):
-        translated_chunks = np.zeros(self.chunks.shape, dtype=object)
+        translated_chunks = np.copy(self.chunks)
 
-        for i, track in enumerate(self.chunks):
-            track = np.copy(track)
-            for j, chunk in enumerate(track):
-                self._normalise_chunk(chunk)
-            translated_chunks[i] = track
+        for i, chunk in enumerate(translated_chunks):
+            self._normalise_chunk(chunk)
 
         return translated_chunks
 

@@ -63,40 +63,39 @@ class PostProcessor:
                  abs(end_track.frame_assigned[-1] - start_track.frame_assigned[0]) < 15))
 
     def chunk_tracks(self, frames_per_chunk, overlap):
-        chunks = np.empty(len(self.tracks), dtype=object)
-        chunk_frames = np.empty(len(self.tracks), dtype=object)
+        number_of_keypoints = 18
+        number_of_coordinates = 3
+        chunks = np.empty((0, frames_per_chunk, number_of_keypoints, number_of_coordinates))
+        chunk_frames = np.empty((0,))
         for i, track in enumerate(self.tracks):
             chunked, frames = track.divide_into_chunks(frames_per_chunk, overlap)
-            chunks[i] = chunked
-            chunk_frames[i] = frames
+            if chunked.shape[0] > 0:
+                chunks = np.append(chunks, chunked, axis=0)
+                chunk_frames = np.append(chunk_frames, frames, axis=0)
 
         return chunks, chunk_frames
 
     def filter_moving_chunks(self, chunks, chunk_frames):
-        filtered_chunks = np.empty(chunks.shape[0], dtype=object)
-        filtered_frames = np.empty(chunks.shape[0], dtype=object)
-        for i, track in enumerate(chunks):
-            filtered_track = []
-            filtered_track_frames = []
-            for j, chunk in enumerate(track):
-                position = [820, 350]
-                mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
-                if np.linalg.norm(mean[:2] - position) < 100:
-                    filtered_track.append(chunk)
-                    filtered_track_frames.append(chunk_frames[i][j])
-            filtered_chunks[i] = np.array(filtered_track)
-            filtered_frames[i] = np.array(filtered_track_frames)
+        number_of_keypoints = 18
+        number_of_coordinates = 3
+        filtered_chunks = np.empty((0, chunks.shape[1], chunks.shape[2], chunks.shape[3]))
+        filtered_frames = np.empty((0,))
+
+        for i, chunk in enumerate(chunks):
+            position = [820, 350]
+            mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
+            if np.linalg.norm(mean[:2] - position) < 100:
+                filtered_chunks = np.append(filtered_chunks, [chunk], axis=0)
+                filtered_frames = np.append(filtered_frames, [chunk_frames[i]], axis=0)
 
         return filtered_chunks, filtered_frames
 
     def chunks_to_tracks(self, chunks, chunk_frames):
         tracks = []
-        for i, track in enumerate(chunks):
-            for j, chunk in enumerate(track):
-                t = self._create_track(
-                    chunk,
-                    [chunk_frames[i][j] + k for k in range(len(chunk))],
-                    i * len(track) + j)
-                tracks.append(t)
+        for i, chunk in enumerate(chunks):
+            t = self._create_track(
+                chunk,
+                [chunk_frames[i] + k for k in range(len(chunk))], i)
+            tracks.append(t)
 
         return tracks

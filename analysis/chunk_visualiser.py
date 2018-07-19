@@ -32,13 +32,12 @@ class ChunkVisualiser:
     def _draw_every_chunk(self, capture, name, node, labels, visualiser, average_frames):
         for point in node:
             chunk_index = labels[point][0]
-            person_index = labels[point][1]
 
-            start_frame = labels[point][2]
+            start_frame = labels[point][1]
             capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
-            original_chunk = self.chunks[person_index][chunk_index]
-            translated_chunk = self.translated_chunks[person_index][chunk_index]
+            original_chunk = self.chunks[chunk_index]
+            translated_chunk = self.translated_chunks[chunk_index]
 
             self._draw_chunk(capture, name, original_chunk,
                              translated_chunk, start_frame, visualiser, average_frames)
@@ -67,10 +66,9 @@ class ChunkVisualiser:
         tracks = []
         for point in node:
             chunk_index = labels[point][0]
-            person_index = labels[point][1]
-            start_frame = labels[point][2]
+            start_frame = labels[point][1]
 
-            chunk = self.translated_chunks[person_index][chunk_index]
+            chunk = self.translated_chunks[chunk_index]
             track = self._chunk_to_track(chunk, start_frame)
             tracks.append((start_frame, track))
 
