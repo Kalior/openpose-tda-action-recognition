@@ -10,10 +10,11 @@ class TrackVisualiser:
         self.colors = [(255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255),
                        (255, 255, 0), (255, 0, 255), (0, 255, 255)]
 
-    def draw_video_with_tracks(self, tracks, video, last_frame):
+    def draw_video_with_tracks(self, tracks, video, last_frame, start_frame=0):
         capture = cv2.VideoCapture(video)
+        capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
-        for i in range(last_frame):
+        for i in range(start_frame, last_frame):
             success, original_image = capture.read()
             self.draw_frame_number(original_image, i)
             self.draw_tracks(tracks, original_image, i)

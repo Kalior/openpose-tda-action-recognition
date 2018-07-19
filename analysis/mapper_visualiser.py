@@ -125,7 +125,7 @@ class MapperVisualiser:
 
         return blank_image
 
-    def chunk_to_video_scene(self, chunk, out_file, start_frame):
+    def chunk_to_video_scene(self, chunk, out_file, start_frame, label):
         mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
         crop_size = 500
         start_y = int(mean[0] - crop_size / 2)
@@ -142,15 +142,17 @@ class MapperVisualiser:
         for i in range(self.frames_per_chunk):
             sucess, image = capture.read()
             cropped_image = self._draw_track_scene(
-                track, i, start_frame, visualiser, image, start_x, start_y, crop_size)
+                track, i, start_frame, visualiser, image, start_x, start_y, crop_size, label)
             scaled_image = cv2.resize(cropped_image, (frame_width, frame_height))
             writer.write(scaled_image)
 
         writer.release()
 
     def _draw_track_scene(self, track, i, start_frame, visualiser,
-                          original_image, start_x, start_y, crop_size):
-        visualiser.draw_frame_number(original_image, i + start_frame)
+                          original_image, start_x, start_y, crop_size, label):
         visualiser.draw_people([track], original_image, i + start_frame, offset_person=False)
-
-        return original_image[start_x:(start_x + crop_size), start_y:(start_y + crop_size)]
+        cropped_image = original_image[
+            start_x:(start_x + crop_size), start_y:(start_y + crop_size)]
+        visualiser.draw_frame_number(cropped_image, i + start_frame)
+        visualiser.draw_text(cropped_image, label, position=(20, 450))
+        return cropped_image
