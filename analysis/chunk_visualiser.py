@@ -5,7 +5,7 @@ from time import sleep
 from tracker import TrackVisualiser, Track, Person
 
 
-class MapperVisualiser:
+class ChunkVisualiser:
 
     def __init__(self, chunks, chunk_frames, translated_chunks, frames_per_chunk, selected_keypoints, video):
         self.chunks = chunks
