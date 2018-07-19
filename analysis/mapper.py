@@ -6,7 +6,7 @@ import os
 import logging
 
 from util import COCOKeypoints
-from .mapper_visualiser import MapperVisualiser
+from .chunk_visualiser import ChunkVisualiser
 
 
 class Mapper:
@@ -22,12 +22,12 @@ class Mapper:
             COCOKeypoints.LElbow.value
         ]
         self.translated_chunks = self._translate_chunks_to_origin()
-        self.mapper_visualiser = MapperVisualiser(
+        self.chunk_visualiser = ChunkVisualiser(
             chunks, chunk_frames, self.translated_chunks, frames_per_chunk, self.selected_keypoints, video)
         self.labels = labels
 
     def visualise(self, graph, labels):
-        self.mapper_visualiser.visualise(graph, labels)
+        self.chunk_visualiser.visualise(graph, labels)
 
     def mapper(self):
         logging.info("Flattening data into a datapoint per chunk of a track.")
@@ -92,8 +92,8 @@ class Mapper:
             'output/tooltips', "pose-{}-{}".format(person_index, chunk_index) + '.avi')
         out_file_scene = os.path.join(
             'output/tooltips', "scene-{}-{}".format(person_index, chunk_index) + '.avi')
-        # self.mapper_visualiser.chunk_to_video_pose(chunk, out_file_pose, start_frame)
-        self.mapper_visualiser.chunk_to_video_scene(
+        # self.chunk_visualiser.chunk_to_video_pose(chunk, out_file_pose, start_frame)
+        self.chunk_visualiser.chunk_to_video_scene(
             chunk, out_file_scene, start_frame, self.labels[str(chunk_index)])
 
         tooltip = """
