@@ -54,12 +54,14 @@ def main(args):
     # visualiser = TrackVisualiser()
     # filtered_tracks = processor.chunks_to_tracks(static_chunks, static_frames)
     # visualiser.draw_video_with_tracks(filtered_tracks, args.video, last_frame)
+    if args.tda:
+        run_tda(static_chunks, static_frames, frames_per_chunk, args.video, labels, data, meta)
+    if args.mapper:
+        run_mapper(static_chunks, static_frames, translated_chunks, frames_per_chunk, args.video,
+                   labels, data, meta)
 
-    run_mapper(static_chunks, static_frames, translated_chunks, frames_per_chunk, args.video,
-               labels, data, meta)
 
-
-def run_tda(chunks, frames, frames_per_chunk, video, labels):
+def run_tda(chunks, frames, frames_per_chunk, video, labels, data, meta):
     logging.info("Applying TDA with gudhi to chunks.")
     tda = TDA()
 
@@ -79,6 +81,10 @@ if __name__ == '__main__':
                         help='The video from which the paths were generated.')
     parser.add_argument('--tracks-file', type=str, default='output/paths/',
                         help='The file with the saved tracks.')
+    parser.add_argument('--mapper', action='store_true',
+                        help='Run the mapper algorithm on the data')
+    parser.add_argument('--tda', action='store_true',
+                        help='Run a different TDA algorith on the data.')
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()
