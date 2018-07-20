@@ -6,7 +6,7 @@ import json
 
 
 from tracker import Person, Track, TrackVisualiser
-from analysis import PostProcessor, Mapper, Labelling
+from analysis import PostProcessor, Mapper, TDA, Labelling
 from util import COCOKeypoints
 
 
@@ -57,6 +57,11 @@ def main(args):
 
     run_mapper(static_chunks, static_frames, translated_chunks, frames_per_chunk, args.video,
                labels, data, meta)
+
+
+def run_tda(chunks, frames, frames_per_chunk, video, labels):
+    logging.info("Applying TDA with gudhi to chunks.")
+    tda = TDA()
 
 
 def run_mapper(chunks, frames, translated_chunks, frames_per_chunk, video, labels, data, meta):
