@@ -57,9 +57,13 @@ class ChunkVisualiser:
 
             visualiser.draw_text(translated_image, name, position=(20, 450))
             visualiser.draw_text(original_image, name, position=(1400, 50))
-            cv2.imshow("output", original_image)
-            cv2.imshow("translated_person", translated_image)
-            cv2.imshow("average person", average_frames[i])
+
+            smaller_original = cv2.resize(original_image, (0, 0), fx=0.5, fy=0.5)
+            smaller_translated = cv2.resize(translated_image, (0, 0), fx=0.5, fy=0.5)
+            smaller_average = cv2.resize(average_frames[i], (0, 0), fx=0.5, fy=0.5)
+            cv2.imshow("output", smaller_original)
+            cv2.imshow("translated_person", smaller_translated)
+            cv2.imshow("average person", smaller_average)
             cv2.waitKey(1)
 
     def _draw_average_shape(self, capture, name, node, labels, visualiser):
