@@ -52,7 +52,7 @@ class Mapper:
             data,
             projection=sklearn.manifold.TSNE(
                 n_components=2,
-                perplexity=50,
+                perplexity=20,
                 init='pca'
             )
         )
@@ -62,7 +62,7 @@ class Mapper:
         # Create dictionary called 'graph' with nodes, edges and meta-information
         graph = mapper.map(tsne_projection,
                            coverer=km.Cover(10, 0.2),
-                           clusterer=sklearn.cluster.DBSCAN(eps=1.0, min_samples=10))
+                           clusterer=sklearn.cluster.DBSCAN(eps=1.0, min_samples=2))
 
         color_function = np.array([self._label_to_color(self.labels[str(i)])
                                    for i in range(len(data))])
@@ -76,16 +76,17 @@ class Mapper:
         return graph, labels
 
     def _label_to_color(self, label):
+        max_value = 1000
         if label == 'scan':
             return 0
         elif label == 'cash':
-            return 255 / 4
+            return max_value / 4
         elif label == 'moving':
-            return (255 / 4) * 2
+            return (max_value / 4) * 2
         elif label == 'still':
-            return (255 / 4) * 3
+            return (max_value / 4) * 3
         else:
-            return 255
+            return max_value
 
     def _to_tooltip(self, chunk, chunk_index, start_frame):
         out_file_pose = os.path.join(
