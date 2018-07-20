@@ -99,3 +99,49 @@ class PostProcessor:
             tracks.append(t)
 
         return tracks
+
+    def flatten_chunks(self, chunks, chunk_frames, selected_keypoints):
+        data = np.array([chunk[:, selected_keypoints, :2].flatten()
+                         for chunk in chunks])
+
+        meta = np.array([(i, start_frame)
+                         for i, start_frame in enumerate(chunk_frames)],
+                        dtype=np.int)
+
+        return data, meta
+
+    def velocity_of_chunks(self, chunks, chunk_frames, selected_keypoints):
+        data = np.array([self._relative_velocity_of_chunk(chunk, selected_keypointsl)
+                         for chunk in chunks])
+
+        meta = np.array([(i, start_frame)
+                         for i, start_frame in enumerate(chunk_frames)],
+                        dtype=np.int)
+
+        return data, meta
+
+    def _relative_velocity_of_chunk(self, chunk, selected_keypoints):
+        velocity = np.empty(
+            (chunk.shape[0] - 1, len(selected_keypoints), 2))
+
+        for i in range(1, len(chunk)):
+            for j, keypoint_index in enumerate(selected_keypoints):
+                keypoint = chunk[i, keypoint_index]
+                prev_keypoint = chunk[i - 1, keypoint_index]
+                velocity[i - 1, j] = prev_keypoint[:2] - keypoint[:2]
+
+        return velocity.flatten()
+
+    def translate_chunks_to_origin(self, chunks):
+        translated_chunks = np.copy(chunks)
+
+        for i, chunk in enumerate(translated_chunks):
+            self._normalise_chunk(chunk)
+
+        return translated_chunks
+
+    def _normalise_chunk(self, chunk):
+        # Don't take unidentified keypoints into account:
+        mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
+
+        chunk[~np.all(chunk == 0, axis=2)] -= mean

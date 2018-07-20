@@ -7,16 +7,14 @@ from tracker import TrackVisualiser, Track, Person
 
 class ChunkVisualiser:
 
-    def __init__(self, chunks, chunk_frames, translated_chunks, frames_per_chunk, selected_keypoints, video):
+    def __init__(self, chunks, chunk_frames, translated_chunks, frames_per_chunk):
         self.chunks = chunks
         self.chunk_frames = chunk_frames
         self.translated_chunks = translated_chunks
         self.frames_per_chunk = frames_per_chunk
-        self.selected_keypoints = selected_keypoints
-        self.video = video
 
-    def visualise(self, graph, labels):
-        capture = cv2.VideoCapture(self.video)
+    def visualise(self, video, graph, labels):
+        capture = cv2.VideoCapture(video)
 
         nodes = graph['nodes']
         for name, node in nodes.items():
@@ -127,13 +125,13 @@ class ChunkVisualiser:
 
         return blank_image
 
-    def chunk_to_video_scene(self, chunk, out_file, start_frame, label):
+    def chunk_to_video_scene(self, video, chunk, out_file, start_frame, label):
         mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
         crop_size = 500
         start_y = int(mean[0] - crop_size / 2)
         start_x = int(mean[1] - crop_size / 2)
 
-        capture = cv2.VideoCapture(self.video)
+        capture = cv2.VideoCapture(video)
         capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
         track = self._chunk_to_track(chunk, start_frame)
