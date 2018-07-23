@@ -104,21 +104,13 @@ class PostProcessor:
         data = np.array([chunk[:, selected_keypoints, :2].flatten()
                          for chunk in chunks])
 
-        meta = np.array([(i, start_frame)
-                         for i, start_frame in enumerate(chunk_frames)],
-                        dtype=np.int)
-
-        return data, meta
+        return data
 
     def velocity_of_chunks(self, chunks, chunk_frames, selected_keypoints):
         data = np.array([self._relative_velocity_of_chunk(chunk, selected_keypointsl)
                          for chunk in chunks])
 
-        meta = np.array([(i, start_frame)
-                         for i, start_frame in enumerate(chunk_frames)],
-                        dtype=np.int)
-
-        return data, meta
+        return data
 
     def _relative_velocity_of_chunk(self, chunk, selected_keypoints):
         velocity = np.empty(

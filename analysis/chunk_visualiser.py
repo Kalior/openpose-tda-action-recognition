@@ -7,35 +7,31 @@ from tracker import TrackVisualiser, Track, Person
 
 class ChunkVisualiser:
 
-    def __init__(self, chunks, chunk_frames, translated_chunks, frames_per_chunk):
+    def __init__(self, chunks, chunk_frames, translated_chunks):
         self.chunks = chunks
         self.chunk_frames = chunk_frames
         self.translated_chunks = translated_chunks
-        self.frames_per_chunk = frames_per_chunk
 
-    def visualise(self, video, graph, labels):
-        capture = cv2.VideoCapture(video)
-
+    def visualise(self, videos, graph):
         nodes = graph['nodes']
         for name, node in nodes.items():
-            self._draw_node(capture, name, node, labels)
+            self._draw_node(videos, name, node)
             sleep(1)
 
-    def _draw_node(self, capture, name, node, labels):
+    def _draw_node(self, videos, name, node):
         visualiser = TrackVisualiser()
 
-        average_frames = self._draw_average_shape(capture, name, node, labels, visualiser)
-        self._draw_every_chunk(capture, name, node, labels, visualiser, average_frames)
+        average_frames = self._draw_average_shape(name, node, visualiser)
+        self._draw_every_chunk(videos, name, node, visualiser, average_frames)
 
-    def _draw_every_chunk(self, capture, name, node, labels, visualiser, average_frames):
+    def _draw_every_chunk(self, videos, name, node, visualiser, average_frames):
         for point in node:
-            chunk_index = labels[point][0]
-
-            start_frame = labels[point][1]
+            capture = cv2.VideoCapture(videos[point])
+            start_frame = self.chunk_frames[point]
             capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
-            original_chunk = self.chunks[chunk_index]
-            translated_chunk = self.translated_chunks[chunk_index]
+            original_chunk = self.chunks[point]
+            translated_chunk = self.translated_chunks[point]
 
             self._draw_chunk(capture, name, original_chunk,
                              translated_chunk, start_frame, visualiser, average_frames)
@@ -45,7 +41,7 @@ class ChunkVisualiser:
 
         translated_track = self._chunk_to_track(translated_chunk, start_frame)
 
-        for i in range(self.frames_per_chunk):
+        for i in range(len(chunk)):
             success, original_image = capture.read()
             visualiser.draw_tracks([track], original_image, i + start_frame)
             visualiser.draw_frame_number(original_image, i + start_frame)
@@ -64,19 +60,18 @@ class ChunkVisualiser:
             cv2.imshow("average person", smaller_average)
             cv2.waitKey(1)
 
-    def _draw_average_shape(self, capture, name, node, labels, visualiser):
+    def _draw_average_shape(self, name, node, visualiser):
         tracks = []
         for point in node:
-            chunk_index = labels[point][0]
-            start_frame = labels[point][1]
+            start_frame = self.chunk_frames[point]
 
-            chunk = self.translated_chunks[chunk_index]
+            chunk = self.translated_chunks[point]
             track = self._chunk_to_track(chunk, start_frame)
             tracks.append((start_frame, track))
 
         frames = []
         opacity = 1 / len(tracks) + 0.05
-        for i in range(self.frames_per_chunk):
+        for i in range(len(tracks[0][1])):
             blank_image = np.zeros((500, 500, 3), np.uint8)
             for start_frame, track in tracks:
                 overlay = blank_image.copy()
@@ -101,7 +96,7 @@ class ChunkVisualiser:
         writer, frame_width, frame_height = self._create_writer(out_file)
         visualiser = TrackVisualiser()
 
-        for i in range(self.frames_per_chunk):
+        for i in range(len(chunk)):
             translated_image = self._draw_translated_track(
                 translated_track, i, start_frame, visualiser)
             translated_image = cv2.resize(translated_image, (frame_width, frame_height))
@@ -139,7 +134,7 @@ class ChunkVisualiser:
 
         writer, frame_width, frame_height = self._create_writer(out_file)
 
-        for i in range(self.frames_per_chunk):
+        for i in range(len(chunk)):
             sucess, image = capture.read()
             cropped_image = self._draw_track_scene(
                 track, i, start_frame, visualiser, image, start_x, start_y, crop_size, label)

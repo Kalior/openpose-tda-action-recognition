@@ -18,7 +18,9 @@ class TrackVisualiser:
             success, original_image = capture.read()
             self.draw_frame_number(original_image, i)
             self.draw_tracks(tracks, original_image, i)
-            cv2.imshow("output", original_image)
+
+            smaller_original = cv2.resize(original_image, (0, 0), fx=0.5, fy=0.5)
+            cv2.imshow("output", smaller_original)
             cv2.waitKey(15)
 
     def draw_tracks(self, tracks, img, current_frame,

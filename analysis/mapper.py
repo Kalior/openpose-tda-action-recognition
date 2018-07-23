@@ -11,18 +11,16 @@ from .post_processor import PostProcessor
 
 class Mapper:
 
-    def __init__(self, chunks, chunk_frames, translated_chunks, frames_per_chunk, labels):
+    def __init__(self, chunks, chunk_frames, translated_chunks, labels):
         self.chunks = chunks
         self.chunk_frames = chunk_frames
-        self.frames_per_chunk = frames_per_chunk
         self.translated_chunks = translated_chunks
-        self.chunk_visualiser = ChunkVisualiser(
-            chunks, chunk_frames, translated_chunks, frames_per_chunk)
+        self.chunk_visualiser = ChunkVisualiser(chunks, chunk_frames, translated_chunks)
         self.labels = labels
         self.tooltips = labels
 
-    def visualise(self, video, graph, labels):
-        self.chunk_visualiser.visualise(video, graph, labels)
+    def visualise(self, video, graph):
+        self.chunk_visualiser.visualise(video, graph)
 
     def mapper(self, data):
         # Initialize
@@ -51,7 +49,7 @@ class Mapper:
                            coverer=km.Cover(10, 0.2),
                            clusterer=sklearn.cluster.DBSCAN(eps=1.0, min_samples=2))
 
-        color_function = np.array([self._label_to_color(self.labels[str(i)])
+        color_function = np.array([self._label_to_color(self.labels[i])
                                    for i in range(len(data))])
         # Visualize it
         mapper.visualize(graph,
@@ -75,9 +73,9 @@ class Mapper:
         else:
             return max_value
 
-    def create_tooltips(self, video):
+    def create_tooltips(self, videos):
         logging.info("Creating tooltip videos")
-        self.tooltips = np.array([self._to_tooltip(video, chunk, i, self.chunk_frames[i])
+        self.tooltips = np.array([self._to_tooltip(videos[i], chunk, i, self.chunk_frames[i])
                                   for i, chunk in enumerate(self.chunks)])
 
     def _to_tooltip(self, video, chunk, chunk_index, start_frame):
