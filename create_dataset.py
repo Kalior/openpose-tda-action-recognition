@@ -4,7 +4,7 @@ import numpy as np
 import os
 import json
 
-from analysis import PostProcessor
+from analysis import PostProcessor, Labelling
 from tracker import TrackVisualiser
 
 
@@ -25,7 +25,8 @@ def main(args):
         tracks_file = args.tracks_files[i]
         video = args.videos[i]
         logging.info("Processing video: {}".format(video))
-        chunks, frames, labels = process_tracks(tracks_file, video, frames_per_chunk, overlap)
+        chunks, frames, labels = process_tracks(
+            tracks_file, video, frames_per_chunk, overlap, args.filter_moving)
         videos = [video] * len(chunks)
 
         all_chunks = np.append(all_chunks, chunks, axis=0)
@@ -49,13 +50,13 @@ def main(args):
         prev_labels = dataset_npz['labels']
         all_labels = np.append(prev_labels, all_labels, axis=0)
         prev_videos = dataset_npz['videos']
-        all_labels = np.append(prev_labels, all_labels, axis=0)
+        all_videos = np.append(prev_videos, all_videos, axis=0)
 
     np.savez(args.out_file, chunks=all_chunks, frames=all_frames,
              labels=all_labels, videos=all_videos)
 
 
-def process_tracks(tracks_file, video, frames_per_chunk, overlap):
+def process_tracks(tracks_file, video, frames_per_chunk, overlap, automatic_moving_filter):
     tracks_npz = np.load(tracks_file)
     np_tracks = tracks_npz['tracks']
     np_frames = tracks_npz['frames']
@@ -66,9 +67,14 @@ def process_tracks(tracks_file, video, frames_per_chunk, overlap):
     processor.post_process_tracks()
 
     logging.info("Chunking tracks.")
-    chunks, chunk_frames = processor.chunk_tracks(frames_per_chunk, overlap)
-    logging.info("Filtering out every path but the cachier standing still.")
-    static_chunks, static_frames = processor.filter_moving_chunks(chunks, chunk_frames)
+    chunks, frames = processor.chunk_tracks(frames_per_chunk, overlap)
+    logging.info("Identified {} chunks".format(len(chunks)))
+    if automatic_moving_filter:
+        chunks_before_filtering = chunks.shape[0]
+        logging.info("Filtering out every path but the cachier standing still.")
+        chunks, frames = processor.filter_moving_chunks(chunks, frames)
+        logging.info("Automatically removed {} chunks".format(
+            chunks_before_filtering - chunks.shape[0]))
 
     base_name = os.path.splitext(tracks_file)[0]
     labels_file = base_name + '.labels'
@@ -76,17 +82,23 @@ def process_tracks(tracks_file, video, frames_per_chunk, overlap):
         with open(labels_file, 'r') as f:
             labels = json.load(f)
     else:
-        labels = Labelling.label_chunks(static_chunks, static_frames, video, processor)
-        j = json.dump(labels)
+        labels = Labelling.label_chunks(chunks, frames, video, processor)
+        j = json.dumps(labels)
         with open(labels_file, 'w') as f:
             f.write(j)
 
+    # Filter the chunks that aren't/didn't get labelled
+    logging.info("{} chunks labelled, and {} chunks removed".format(
+        len(labels.keys()), chunks.shape[0] - len(labels.keys())))
+    chunks = chunks[np.array(list(labels.keys()), dtype=np.int)]
+    frames = frames[np.array(list(labels.keys()), dtype=np.int)]
+
     # last_frame = np.amax([f[-1] for f in np_frames])
     # visualiser = TrackVisualiser()
-    # filtered_tracks = processor.chunks_to_tracks(static_chunks, static_frames)
+    # filtered_tracks = processor.chunks_to_tracks(chunks, frames)
     # visualiser.draw_video_with_tracks(filtered_tracks, video, last_frame)
 
-    return static_chunks, static_frames, labels
+    return chunks, frames, labels
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Dataset creation for analysis of tracks.')
@@ -98,6 +110,8 @@ if __name__ == '__main__':
                         help='The path to the file where the data will be saved')
     parser.add_argument('--append', action='store_true',
                         help='Specify if the data should be added to the out-file (if it exists) or overwritten.')
+    parser.add_argument('--filter-moving', action='store_true',
+                        help='Specify if you want to automatically filter chunks with large movement.')
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()
