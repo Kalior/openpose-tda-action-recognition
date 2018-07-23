@@ -121,12 +121,14 @@ class ChunkVisualiser:
         return blank_image
 
     def chunk_to_video_scene(self, video, chunk, out_file, start_frame, label):
-        mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
-        crop_size = 500
-        start_y = int(mean[0] - crop_size / 2)
-        start_x = int(mean[1] - crop_size / 2)
-
         capture = cv2.VideoCapture(video)
+
+        mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
+        crop_size = int(min(500,  min(capture.get(cv2.CAP_PROP_FRAME_WIDTH),
+                                      capture.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+        start_y = max(0, int(mean[0] - crop_size / 2))
+        start_x = max(0, int(mean[1] - crop_size / 2))
+
         capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
         track = self._chunk_to_track(chunk, start_frame)
