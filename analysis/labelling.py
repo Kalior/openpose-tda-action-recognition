@@ -1,3 +1,8 @@
+import numpy as np
+
+from tracker import TrackVisualiser
+
+
 class Labelling:
 
     @staticmethod
@@ -10,8 +15,8 @@ class Labelling:
         for i, track in enumerate(tracks):
             visualiser.draw_video_with_tracks(
                 [track], video, track.frame_assigned[-1].astype(np.int), track.frame_assigned[0].astype(np.int))
-            label = input('Label? (Scan, Cash, sTill, Moving, Other)')
-            if label in ['s', 'c', 'o', 'm', 't']:
+            label = input('Label? (Scan, Cash, sTill, Moving, Other, q(skip))')
+            if label in ['s', 'c', 'o', 'm', 't', 'q']:
                 if label == 's':
                     label = 'scan'
                 elif label == 'c':
@@ -20,11 +25,12 @@ class Labelling:
                     label = 'moving'
                 elif label == 't':
                     label = 'still'
+                elif label == 'q':
+                    continue
                 else:
                     label = 'other'
             else:
                 label = 'other'
             labels[i] = label
-            print()
 
         return labels
