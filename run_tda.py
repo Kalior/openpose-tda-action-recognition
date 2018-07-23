@@ -6,7 +6,7 @@ import json
 
 
 from tracker import Person, Track, TrackVisualiser
-from analysis import PostProcessor, Mapper, TDA, Labelling
+from analysis import PostProcessor, Mapper, TDA
 from util import COCOKeypoints
 
 
@@ -17,15 +17,21 @@ def main(args):
     labels = dataset_npz['labels']
     videos = dataset_npz['videos']
 
-    logging.info("Flattening data into a datapoint per chunk of a track.")
+    processor = PostProcessor()
+    logging.info("Normalising every limb to a fixed size.")
+    normalised_chunks = processor.normalise_limb_lengths_of_chunks(chunks)
+    # logging.info("Translating every chunk by the average position of that chunk.")
+    # translated_chunks = processor.translate_chunks_to_origin(normalised_chunks)
+    logging.info("Translating every body part by the average position of that body part in the chunk.")
+    translated_chunks = processor.translate_chunks_to_origin_by_keypoint(normalised_chunks)
+
     selected_keypoints = [
         COCOKeypoints.RWrist.value,
         COCOKeypoints.LWrist.value,
         COCOKeypoints.RElbow.value,
         COCOKeypoints.LElbow.value
     ]
-    processor = PostProcessor()
-    translated_chunks = processor.translate_chunks_to_origin(chunks)
+    logging.info("Flattening data into a datapoint per chunk of a track.")
     data = processor.flatten_chunks(translated_chunks, frames, selected_keypoints)
     # data = processor.velocity_of_chunks(translated_chunks, frames, selected_keypoints)
 
@@ -33,13 +39,13 @@ def main(args):
     # filtered_tracks = processor.chunks_to_tracks(chunks, frames)
     # visualiser.draw_video_with_tracks(filtered_tracks, args.video, last_frame)
     if args.tda:
-        run_tda(chunks, frames, args.video, labels, data)
+        run_tda(chunks, frames, videos, labels, data)
     if args.mapper:
         run_mapper(chunks, frames, translated_chunks, videos,
                    labels, data)
 
 
-def run_tda(chunks, frames, video, labels, data):
+def run_tda(chunks, frames, videos, labels, data):
     logging.info("Applying TDA with gudhi to chunks.")
     tda = TDA()
     # betti_numbers = tda.persistence(data)

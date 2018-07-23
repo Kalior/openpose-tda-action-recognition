@@ -1,1 +1,1 @@
-from .coco_keypoints import COCOKeypoints
+from .coco_keypoints import COCOKeypoints, coco_connections

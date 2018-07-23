@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from util import COCOKeypoints
+from util import COCOKeypoints, coco_connections
 
 
 class TrackVisualiser:
@@ -47,11 +47,7 @@ class TrackVisualiser:
                     cv2.circle(img, position, 5, track_color, 3)
                     positions[i] = position
 
-            connections = [
-                (0, 1), (1, 2), (1, 5), (2, 3), (3, 4), (5, 6), (6, 7),
-                (1, 8), (1, 11), (8, 9), (9, 10), (11, 12), (12, 13)
-            ]
-            for from_, to in connections:
+            for from_, to in coco_connections:
                 self._add_line(img, positions[from_], positions[to], track_color)
 
     def _add_line(self, img, from_, to, color):

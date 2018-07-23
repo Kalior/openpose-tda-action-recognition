@@ -28,3 +28,8 @@ class COCOKeypoints(Enum):
     RSmallToe = 23
     RHeel = 24
     Background = 25
+
+coco_connections = [
+    (0, 1), (1, 2), (1, 5), (2, 3), (3, 4), (5, 6), (6, 7),
+    (1, 8), (1, 11), (8, 9), (9, 10), (11, 12), (12, 13)
+]

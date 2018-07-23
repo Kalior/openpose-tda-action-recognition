@@ -1,6 +1,7 @@
 import numpy as np
 
 from tracker import Person, Track
+from util import coco_connections
 
 
 class PostProcessor:
@@ -153,3 +154,35 @@ class PostProcessor:
             if keypoints.shape[0] != 0:
                 keypoint_mean = chunk[:, i][~np.all(chunk[:, i] == 0, axis=1)].mean(axis=0)
                 chunk[:, i][~np.all(chunk[:, i] == 0, axis=1)] -= keypoint_mean
+
+    def normalise_limb_lengths_of_chunks(self, chunks):
+        """
+            Attempt to remove some perspective and scaling differences by normalising
+            the length of every limb.
+        """
+        normalised_keypoints = np.zeros(chunks.shape)
+        for i, chunk in enumerate(chunks):
+            for j, keypoints in enumerate(chunk):
+                normalised_keypoints[i, j] = self._normalise_limb_length(keypoints)
+
+        return normalised_keypoints
+
+    def _normalise_limb_length(self, keypoints):
+        normalised_keypoints = np.copy(keypoints)
+        for from_, to in coco_connections:
+            delta = self._normalise_limb(keypoints, from_, to)
+            normalised_keypoints[to, :2] = normalised_keypoints[from_, :2] - delta
+
+        return normalised_keypoints
+
+    def _normalise_limb(self, keypoints, from_, to):
+        """
+            Return the distance in x and y that to should have from from_.
+        """
+        diff = keypoints[from_] - keypoints[to]
+        distance = np.linalg.norm(diff)
+        if distance != 0:
+            delta = 100 * diff[:2] / distance
+        else:
+            delta = 0
+        return delta
