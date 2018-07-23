@@ -151,5 +151,5 @@ class ChunkVisualiser:
         cropped_image = original_image[
             start_x:(start_x + crop_size), start_y:(start_y + crop_size)]
         visualiser.draw_frame_number(cropped_image, i + start_frame)
-        visualiser.draw_text(cropped_image, label, position=(20, 450))
+        visualiser.draw_text(cropped_image, label, position=(20, 450), color=(255, 255, 0))
         return cropped_image
