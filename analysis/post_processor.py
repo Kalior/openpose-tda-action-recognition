@@ -101,7 +101,7 @@ class PostProcessor:
 
         return tracks
 
-    def flatten_chunks(self, chunks, chunk_frames, selected_keypoints):
+    def flatten_chunks(self, chunks, selected_keypoints):
         data = np.array([chunk[:, selected_keypoints, :2].flatten()
                          for chunk in chunks])
 
@@ -186,3 +186,31 @@ class PostProcessor:
         else:
             delta = 0
         return delta
+
+    def rotate_chunks(self, chunks):
+        rotated_keypoints = np.zeros(chunks.shape)
+        for i, chunk in enumerate(chunks):
+            for j, keypoints in enumerate(chunk):
+                rotated_keypoints[i, j] = rotate(keypoints, )
+
+        return rotated_keypoints
+
+    def _rotate_chunk(self, chunk, angle):
+        theta = np.radians(angle)
+        c, s = np.cos(theta), np.sin(theta)
+        Rx = np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
+        Ry = np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
+        Rz = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+
+        rotated_chunk = np.copy(chunk)
+        for frame in rotated_chunk:
+            # Make sure the rotation is done around (0, 0)
+            conf = frame[:, 2]
+            frame[:, 2] = np.arange(conf.shape[0] * 5, -conf.shape[0] * 5, -10)
+            mean = frame[~np.all(frame == 0, axis=1)].mean(axis=0)
+            frame[~np.all(frame == 0, axis=1)] -= mean
+            frame[~np.all(frame == 0, axis=1)] = frame[~np.all(frame == 0, axis=1)] @ Ry @ Rx @ Rz
+            frame[~np.all(frame == 0, axis=1)] += mean
+            frame[:, 2] = conf
+
+        return rotated_chunk
