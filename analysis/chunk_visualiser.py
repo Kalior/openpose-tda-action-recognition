@@ -15,10 +15,24 @@ class ChunkVisualiser:
     def visualise(self, videos, graph):
         nodes = graph['nodes']
         for name, node in nodes.items():
-            self._draw_node(videos, name, node)
+            self.draw_node(videos, name, node)
             sleep(1)
 
-    def _draw_node(self, videos, name, node):
+    def visualise_averages(self, nodes):
+        visualiser = TrackVisualiser()
+        all_average_frames = []
+        for name, node in nodes.items():
+            average_frames = self._draw_average_shape(name, node, visualiser)
+            all_average_frames.append(average_frames)
+
+        while True:
+            for i in range(20):
+                for j, average_frames in enumerate(all_average_frames):
+                    smaller_average = cv2.resize(average_frames[i], (0, 0), fx=0.5, fy=0.5)
+                    cv2.imshow("average person" + str(j), smaller_average)
+                    cv2.waitKey(15)
+
+    def draw_node(self, videos, name, node):
         visualiser = TrackVisualiser()
 
         average_frames = self._draw_average_shape(name, node, visualiser)

@@ -3,10 +3,10 @@ import logging
 import os
 import numpy as np
 import json
-
+import cv2
 
 from tracker import Person, Track, TrackVisualiser
-from analysis import PostProcessor, Mapper, TDA
+from analysis import PostProcessor, Mapper, TDA, ChunkVisualiser
 from util import COCOKeypoints
 
 
@@ -43,6 +43,26 @@ def main(args):
     if args.mapper:
         run_mapper(chunks, frames, translated_chunks, videos,
                    labels, data)
+    if args.visualise:
+        visualise_classes(chunks, frames, translated_chunks, labels)
+
+
+def visualise_classes(chunks, frames, translated_chunks, labels):
+    visualiser = ChunkVisualiser(chunks, frames, translated_chunks)
+    unique_labels = set(labels)
+    nodes = {}
+    for k in unique_labels:
+        if k == -1:
+            continue
+
+        class_member_mask = (labels == k)
+        node = np.where(class_member_mask)[0]
+        name = str(k)
+        nodes[name] = node
+
+    visualiser.visualise_averages(nodes)
+
+
 
 
 def run_tda(chunks, frames, videos, labels, data):
@@ -68,6 +88,8 @@ if __name__ == '__main__':
                         help='Run the mapper algorithm on the data')
     parser.add_argument('--tda', action='store_true',
                         help='Run a different TDA algorith on the data.')
+    parser.add_argument('--visualise', action='store_true',
+                        help='Specify if you wish to only visualise the classes in the dataset.')
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()
