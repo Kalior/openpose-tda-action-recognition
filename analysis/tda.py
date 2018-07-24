@@ -96,15 +96,15 @@ class TDA:
         print("Silhouette Coefficient: {:.3f}".format(
               metrics.silhouette_score(data, labels)))
 
-        # set up a figure twice as wide as it is tall
-        fig = plt.figure(figsize=plt.figaspect(0.5))
+        # Set up a figure twice as wide as it is tall
+        fig, [true_ax, cluster_ax] = plt.subplots(1, 2, figsize=plt.figaspect(0.5))
 
-        true_ax = fig.add_subplot(1, 2, 1)
-        cluster_ax = fig.add_subplot(1, 2, 2)
+        # Perturb the datapoints so we see multiple points in the visualisation
+        data = data + np.random.normal(loc=0, scale=0.1, size=data.shape)
 
         self._plot_clusters(data, labels_true, core_samples_mask, "True", le, true_ax)
         self._plot_clusters(data, labels, core_samples_mask, "Estimated", le, cluster_ax)
-        plt.show(block=False)
+        plt.show()
 
         return labels
 
