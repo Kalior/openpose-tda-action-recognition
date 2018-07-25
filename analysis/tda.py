@@ -104,6 +104,8 @@ class TDA:
 
         self._plot_clusters(data, labels_true, core_samples_mask, "True", le, true_ax)
         self._plot_clusters(data, labels, core_samples_mask, "Estimated", le, cluster_ax)
+
+        self._add_on_click(fig, data, true_ax, cluster_ax)
         plt.show()
 
         return labels
@@ -137,8 +139,8 @@ class TDA:
         ax.legend()
         ax.set_title('{} number of clusters: {}'.format(title, n_clusters_))
 
-    def visualise(self, labels, chunks, frames, translated_chunks, videos):
-        visualiser = ChunkVisualiser(chunks, frames, translated_chunks)
+    def visualise(self, labels, videos):
+        visualiser = ChunkVisualiser(self.chunks, self.frames, self.translated_chunks)
         unique_labels = set(labels)
         for k in unique_labels:
             if k == -1:
@@ -148,3 +150,17 @@ class TDA:
             node = np.where(class_member_mask)[0]
             name = "Cluster " + str(k)
             visualiser.draw_node(videos, name, node)
+
+    def _add_on_click(self, fig, data, true_ax, cluster_ax):
+        for ax in [true_ax, cluster_ax]:
+            ax.plot(data[:, 0], data[:, 1], 'o', markerfacecolor='b',
+                    markeredgecolor='b', markersize=0, picker=5)
+
+        def onpick(event):
+            visualiser = ChunkVisualiser(self.chunks, self.frames, self.translated_chunks)
+            ind = event.ind
+            print(ind)
+            nodes = {'Picked points': ind}
+            visualiser.visualise_averages(nodes)
+
+        fig.canvas.mpl_connect('pick_event', onpick)

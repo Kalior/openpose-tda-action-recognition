@@ -65,11 +65,13 @@ def visualise_classes(chunks, frames, translated_chunks, labels):
 
 
 
-def run_tda(chunks, frames, videos, labels, data):
+def run_tda(chunks, frames, translated_chunks, videos, labels, data):
     logging.info("Applying TDA with gudhi to chunks.")
-    tda = TDA()
-    # betti_numbers = tda.persistence(data)
-    tda.cluster(data, labels)
+    tda = TDA(chunks, frames, translated_chunks, labels)
+    betti_numbers = tda.persistence(data)
+    logging.info("Clustering the betti numbers.")
+    cluster_labels = tda.cluster(betti_numbers, labels)
+    # tda.visualise(cluster_labels, videos)
 
 
 def run_mapper(chunks, frames, translated_chunks, videos, labels, data):
