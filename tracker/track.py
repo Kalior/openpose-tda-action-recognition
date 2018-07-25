@@ -67,14 +67,15 @@ class Track:
         values_per_keypoint = self.track[0].keypoints.shape[1]
         chunks = np.zeros((number_of_chunks, frames_per_chunk,
                            number_of_keypoints, values_per_keypoint))
-        chunk_start_frames = np.zeros(number_of_chunks)
+        chunk_start_frames = np.zeros((number_of_chunks, frames_per_chunk), dtype=np.int)
         start_index = 0
         index = 0
         while start_index + frames_per_chunk < len(self.track):
+            end_index = start_index + frames_per_chunk
             chunk = np.array([p.keypoints for p in self.track[
-                             start_index:(start_index + frames_per_chunk)]])
+                             start_index:end_index]])
             chunks[index] = chunk
-            chunk_start_frames[index] = self.frame_assigned[start_index]
+            chunk_start_frames[index] = np.array(self.frame_assigned[start_index:end_index])
             start_index += frames_per_chunk - overlap
             index += 1
 

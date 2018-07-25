@@ -78,14 +78,14 @@ class Mapper:
         self.tooltips = np.array([self._to_tooltip(videos[i], chunk, i, self.chunk_frames[i])
                                   for i, chunk in enumerate(self.chunks)])
 
-    def _to_tooltip(self, video, chunk, chunk_index, start_frame):
+    def _to_tooltip(self, video, chunk, chunk_index, frames):
         out_file_pose = os.path.join(
             'output/tooltips', "pose-{}".format(chunk_index) + '.avi')
         out_file_scene = os.path.join(
             'output/tooltips', "scene-{}".format(chunk_index) + '.avi')
-        # self.chunk_visualiser.chunk_to_video_pose(chunk, out_file_pose, start_frame)
+        # self.chunk_visualiser.chunk_to_video_pose(chunk, out_file_pose, frames)
         # self.chunk_visualiser.chunk_to_video_scene(
-        #     video, chunk, out_file_scene, start_frame, self.labels[str(chunk_index)])
+        #     video, chunk, out_file_scene, frames, self.labels[chunk_index])
 
         tooltip = """
             <video

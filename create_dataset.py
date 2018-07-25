@@ -3,6 +3,7 @@ import argparse
 import numpy as np
 import os
 import json
+import cv2
 
 from analysis import PostProcessor, Labelling
 from tracker import TrackVisualiser
@@ -13,12 +14,13 @@ def main(args):
         logging.warn("Number of track files does not correspond to number of videos.")
         return
 
+    seconds_per_chunk = 20 / 15
+    overlap_percentage = 0.5
     frames_per_chunk = 20
-    overlap = 10
     number_of_keypoints = 18
     number_of_coordinates = 3
     all_chunks = np.empty((0, frames_per_chunk, number_of_keypoints, number_of_coordinates))
-    all_frames = np.empty((0,))
+    all_frames = np.empty((0, frames_per_chunk))
     all_labels = np.empty((0,), dtype=str)
     all_videos = np.empty((0,), dtype=str)
     for i in range(len(args.tracks_files)):
@@ -26,7 +28,7 @@ def main(args):
         video = args.videos[i]
         logging.info("Processing video: {}".format(video))
         chunks, frames, labels = process_tracks(
-            tracks_file, video, frames_per_chunk, overlap, args.filter_moving)
+            tracks_file, video, frames_per_chunk, overlap_percentage, seconds_per_chunk, args.filter_moving)
         videos = [video] * len(chunks)
 
         all_chunks = np.append(all_chunks, chunks, axis=0)
@@ -56,7 +58,7 @@ def main(args):
              labels=all_labels, videos=all_videos)
 
 
-def process_tracks(tracks_file, video, frames_per_chunk, overlap, automatic_moving_filter):
+def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percentage, seconds_per_chunk, automatic_moving_filter):
     tracks_npz = np.load(tracks_file)
     np_tracks = tracks_npz['tracks']
     np_frames = tracks_npz['frames']
@@ -66,9 +68,15 @@ def process_tracks(tracks_file, video, frames_per_chunk, overlap, automatic_movi
     processor.create_tracks(np_tracks, np_frames)
     processor.post_process_tracks()
 
+    capture = cv2.VideoCapture(video)
+    fps = capture.get(cv2.CAP_PROP_FPS)
+    frames_per_chunk_for_seconds = int(seconds_per_chunk * fps)
+    overlap = int(frames_per_chunk_for_seconds * overlap_percentage)
+
     logging.info("Chunking tracks.")
-    chunks, frames = processor.chunk_tracks(frames_per_chunk, overlap)
-    logging.info("Identified {} chunks".format(len(chunks)))
+    chunks, frames = processor.chunk_tracks(
+        frames_per_chunk_for_seconds, overlap, target_frames_per_chunk)
+    logging.info("Identified {} chunks".format(chunks.shape[0]))
     if automatic_moving_filter:
         chunks_before_filtering = chunks.shape[0]
         logging.info("Filtering out every path but the cachier standing still.")
@@ -92,11 +100,6 @@ def process_tracks(tracks_file, video, frames_per_chunk, overlap, automatic_movi
         len(labels.keys()), chunks.shape[0] - len(labels.keys())))
     chunks = chunks[np.array(list(labels.keys()), dtype=np.int)]
     frames = frames[np.array(list(labels.keys()), dtype=np.int)]
-
-    # last_frame = np.amax([f[-1] for f in np_frames])
-    # visualiser = TrackVisualiser()
-    # filtered_tracks = processor.chunks_to_tracks(chunks, frames)
-    # visualiser.draw_video_with_tracks(filtered_tracks, video, last_frame)
 
     return chunks, frames, labels
 

@@ -9,6 +9,17 @@ class PostProcessor:
     def __init__(self):
         self.tracks = []
 
+    def chunks_to_tracks(self, chunks, chunk_frames):
+        tracks = []
+        for i, chunk in enumerate(chunks):
+            t = self._create_track(
+                chunk,
+                chunk_frames[i], i)
+            t.fill_missing_frames()
+            tracks.append(t)
+
+        return tracks
+
     def create_tracks(self, tracks_np, frames_np):
         self.tracks = [self._create_track(p, f, i)
                        for i, (p, f) in enumerate(zip(tracks_np, frames_np))]
@@ -63,24 +74,36 @@ class PostProcessor:
         return ((end_track[-1].distance(start_track[0]) < 15 and
                  abs(end_track.frame_assigned[-1] - start_track.frame_assigned[0]) < 15))
 
-    def chunk_tracks(self, frames_per_chunk, overlap):
+    def chunk_tracks(self, frames_per_chunk, overlap, target_frames_per_chunk):
         number_of_keypoints = 18
         number_of_coordinates = 3
-        chunks = np.empty((0, frames_per_chunk, number_of_keypoints, number_of_coordinates))
-        chunk_frames = np.empty((0,))
+        chunks = np.empty((0, target_frames_per_chunk, number_of_keypoints, number_of_coordinates))
+        chunk_frames = np.empty((0, target_frames_per_chunk), dtype=np.int)
         for i, track in enumerate(self.tracks):
             chunked, frames = track.divide_into_chunks(frames_per_chunk, overlap)
             if chunked.shape[0] > 0:
+                chunked, frames = self._decrease_frames_per_chunk(
+                    chunked, frames, target_frames_per_chunk)
                 chunks = np.append(chunks, chunked, axis=0)
                 chunk_frames = np.append(chunk_frames, frames, axis=0)
 
         return chunks, chunk_frames
 
+    def _decrease_frames_per_chunk(self, chunked, chunk_frames, target_frames_per_chunk):
+        indicies = np.arange(0, chunked.shape[1],
+                             chunked.shape[1] / target_frames_per_chunk).astype(np.int)
+        target_chunked = np.empty((chunked.shape[0], target_frames_per_chunk, *chunked.shape[2:]))
+        target_frames = np.empty((chunk_frames.shape[0], target_frames_per_chunk), dtype=np.int)
+        for i, chunk in enumerate(chunked):
+            target_chunked[i] = chunk[indicies]
+            target_frames[i] = chunk_frames[i, indicies]
+        return target_chunked, target_frames
+
     def filter_moving_chunks(self, chunks, chunk_frames):
         number_of_keypoints = 18
         number_of_coordinates = 3
-        filtered_chunks = np.empty((0, chunks.shape[1], chunks.shape[2], chunks.shape[3]))
-        filtered_frames = np.empty((0,))
+        filtered_chunks = np.empty((0, *chunks.shape[1:]))
+        filtered_frames = np.empty((0, chunk_frames.shape[1]))
 
         for i, chunk in enumerate(chunks):
             position = [820, 350]
@@ -91,24 +114,14 @@ class PostProcessor:
 
         return filtered_chunks, filtered_frames
 
-    def chunks_to_tracks(self, chunks, chunk_frames):
-        tracks = []
-        for i, chunk in enumerate(chunks):
-            t = self._create_track(
-                chunk,
-                [chunk_frames[i] + k for k in range(len(chunk))], i)
-            tracks.append(t)
-
-        return tracks
-
-    def flatten_chunks(self, chunks, selected_keypoints):
+    def flatten_chunks(self, chunks, selected_keypoints, connect_keypoints):
         data = np.array([chunk[:, selected_keypoints, :2].flatten()
                          for chunk in chunks])
 
         return data
 
-    def velocity_of_chunks(self, chunks, chunk_frames, selected_keypoints):
-        data = np.array([self._relative_velocity_of_chunk(chunk, selected_keypointsl)
+    def velocity_of_chunks(self, chunks, selected_keypoints):
+        data = np.array([self._relative_velocity_of_chunk(chunk, selected_keypoints)
                          for chunk in chunks])
 
         return data
