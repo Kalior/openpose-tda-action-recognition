@@ -87,7 +87,6 @@ class Track:
 
         return np_path, np_frames
 
-    # Standard merge algorithm
     def combine(self, other):
         new_track = []
         new_frame_assigned = []
@@ -121,10 +120,8 @@ class Track:
         self.remove_frame_duplicates()
 
     def overlaps(self, other):
-        # print("Checking overlap")
         if self.frame_assigned[-1] < other.frame_assigned[0] or \
                 self.frame_assigned[0] > other.frame_assigned[-1]:
-            # print("Can't overlap")
             return False
 
         start_frame = max(self.frame_assigned[0], other.frame_assigned[0])
@@ -160,12 +157,6 @@ class Track:
             next_frame_diff = frame_diff - 1
 
         distance = track[index].distance(other_track[other_index])
-        # print("Frames: {}, {}, indicies: {}, {}, distance: {}".format(
-        #     frame_assigned[index],
-        #     other_frame_assigned[other_index],
-        #     index,
-        #     other_index,
-        #     distance))
 
         if next_frame_diff > frame_diff and next_frame_diff <= 0:
             return True
@@ -221,7 +212,3 @@ class Track:
 
         self.track = new_track
         self.frame_assigned = new_frame_assigned
-
-    def translate_to_origin(self):
-        for person in self.track:
-            person.translate_to_origin()

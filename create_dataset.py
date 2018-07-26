@@ -77,12 +77,9 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
     chunks, frames = processor.chunk_tracks(
         frames_per_chunk_for_seconds, overlap, target_frames_per_chunk)
     logging.info("Identified {} chunks".format(chunks.shape[0]))
+
     if automatic_moving_filter:
-        chunks_before_filtering = chunks.shape[0]
-        logging.info("Filtering out every path but the cachier standing still.")
-        chunks, frames = processor.filter_moving_chunks(chunks, frames)
-        logging.info("Automatically removed {} chunks".format(
-            chunks_before_filtering - chunks.shape[0]))
+        chunks, frames = filter_moving(chunks, frames)
 
     base_name = os.path.splitext(tracks_file)[0]
     labels_file = base_name + '.labels'
@@ -102,6 +99,15 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
     frames = frames[np.array(list(labels.keys()), dtype=np.int)]
 
     return chunks, frames, labels
+
+
+def filter_moving(chunks, frames):
+    chunks_before_filtering = chunks.shape[0]
+    logging.info("Filtering out every path but the cachier standing still.")
+    chunks, frames = processor.filter_moving_chunks(chunks, frames)
+    logging.info("Automatically removed {} chunks".format(
+        chunks_before_filtering - chunks.shape[0]))
+    return chunks, frames
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Dataset creation for analysis of tracks.')

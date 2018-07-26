@@ -39,10 +39,6 @@ class PostProcessor:
         self.tracks = self._clean_tracks(self.tracks)
         self._fill_tracks(self.tracks)
 
-    def translate_tracks_to_origin(self):
-        for track in self.tracks:
-            track.translate_to_origin()
-
     def _clean_tracks(self, tracks):
         return [track for track in tracks if len(track) > 15]
 
@@ -61,7 +57,7 @@ class PostProcessor:
             while j < len(tracks):
                 start_track = tracks[j]
                 if i != j and (end_track.overlaps(start_track) or
-                               self._paths_close(end_track, start_track)):
+                               self._paths_nearby(end_track, start_track)):
                     end_track.combine(start_track)
                     end_track.fill_missing_keypoints()
                     tracks.remove(start_track)
@@ -71,7 +67,7 @@ class PostProcessor:
             if not have_removed:
                 i += 1
 
-    def _paths_close(self, end_track, start_track):
+    def _paths_nearby(self, end_track, start_track):
         return ((end_track[-1].distance(start_track[0]) < 15 and
                  abs(end_track.frame_assigned[-1] - start_track.frame_assigned[0]) < 15))
 
@@ -135,24 +131,6 @@ class PostProcessor:
             selected_keypoints) + len(connect_keypoints) * 2)
         return np.c_[flat_chunk, third_dimension]
 
-    def velocity_of_chunks(self, chunks, selected_keypoints):
-        data = np.array([self._relative_velocity_of_chunk(chunk, selected_keypoints)
-                         for chunk in chunks])
-
-        return data
-
-    def _relative_velocity_of_chunk(self, chunk, selected_keypoints):
-        velocity = np.empty(
-            (chunk.shape[0] - 1, len(selected_keypoints), 2))
-
-        for i in range(1, len(chunk)):
-            for j, keypoint_index in enumerate(selected_keypoints):
-                keypoint = chunk[i, keypoint_index]
-                prev_keypoint = chunk[i - 1, keypoint_index]
-                velocity[i - 1, j] = prev_keypoint[:2] - keypoint[:2]
-
-        return velocity.flatten()
-
     def translate_chunks_to_origin(self, chunks):
         translated_chunks = np.copy(chunks)
 
@@ -180,68 +158,8 @@ class PostProcessor:
             # Don't take unidentified keypoints into account:
             keypoints = chunk[:, i][~np.all(chunk[:, i] == 0, axis=1)]
             if keypoints.shape[0] != 0:
-                keypoint_mean = chunk[:, i][~np.all(chunk[:, i] == 0, axis=1)].mean(axis=0)
+                keypoint_mean = keypoints.mean(axis=0)
                 chunk[:, i][~np.all(chunk[:, i] == 0, axis=1)] -= keypoint_mean
-
-    def normalise_limb_lengths_of_chunks(self, chunks):
-        """
-            Attempt to remove some perspective and scaling differences by normalising
-            the length of every limb.
-        """
-        normalised_keypoints = np.zeros(chunks.shape)
-        for i, chunk in enumerate(chunks):
-            for j, keypoints in enumerate(chunk):
-                normalised_keypoints[i, j] = self._normalise_limb_length(keypoints)
-
-        return normalised_keypoints
-
-    def _normalise_limb_length(self, keypoints):
-        normalised_keypoints = np.copy(keypoints)
-        for from_, to in coco_connections:
-            delta = self._normalise_limb(keypoints, from_, to)
-            normalised_keypoints[to, :2] = normalised_keypoints[from_, :2] - delta
-
-        return normalised_keypoints
-
-    def _normalise_limb(self, keypoints, from_, to):
-        """
-            Return the distance in x and y that to should have from from_.
-        """
-        diff = keypoints[from_] - keypoints[to]
-        distance = np.linalg.norm(diff)
-        if distance != 0:
-            delta = 100 * diff[:2] / distance
-        else:
-            delta = 0
-        return delta
-
-    def rotate_chunks(self, chunks):
-        rotated_keypoints = np.zeros(chunks.shape)
-        for i, chunk in enumerate(chunks):
-            for j, keypoints in enumerate(chunk):
-                rotated_keypoints[i, j] = rotate(keypoints, )
-
-        return rotated_keypoints
-
-    def _rotate_chunk(self, chunk, angle):
-        theta = np.radians(angle)
-        c, s = np.cos(theta), np.sin(theta)
-        Rx = np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
-        Ry = np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
-        Rz = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
-
-        rotated_chunk = np.copy(chunk)
-        for frame in rotated_chunk:
-            # Make sure the rotation is done around (0, 0)
-            conf = frame[:, 2]
-            frame[:, 2] = np.arange(conf.shape[0] * 5, -conf.shape[0] * 5, -10)
-            mean = frame[~np.all(frame == 0, axis=1)].mean(axis=0)
-            frame[~np.all(frame == 0, axis=1)] -= mean
-            frame[~np.all(frame == 0, axis=1)] = frame[~np.all(frame == 0, axis=1)] @ Ry @ Rx @ Rz
-            frame[~np.all(frame == 0, axis=1)] += mean
-            frame[:, 2] = conf
-
-        return rotated_chunk
 
     def _connect_keypoints(self, chunk, connect_keypoints, number_of_points=3):
         # return chunk

@@ -186,11 +186,5 @@ class Tracker:
         tracks = np.array([p[0] for p in tracks_out], dtype=object)
         frames = np.array([p[1] for p in tracks_out], dtype=object)
 
-        logging.debug("Chunking paths.")
-        frames_per_chunk = 10
-        overlap = 5
-        all_chunks = np.array([track.divide_into_chunks(frames_per_chunk, overlap)
-                               for track in self.tracks], dtype=object)
-
         logging.info("Saving tracks to {}".format(file_path))
-        np.savez(file_path, tracks=tracks, frames=frames, chunks=all_chunks)
+        np.savez(file_path, tracks=tracks, frames=frames)

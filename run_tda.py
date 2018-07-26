@@ -13,7 +13,7 @@ from util import COCOKeypoints
 def main(args):
     dataset_npz = np.load(args.dataset)
     chunks = dataset_npz['chunks']
-    frames = dataset_npz['frames']
+    frames = dataset_npz['frames'].astype(np.int)
     labels = dataset_npz['labels']
     videos = dataset_npz['videos']
 
@@ -61,7 +61,7 @@ def visualise_classes(chunks, frames, translated_chunks, labels):
         name = str(k)
         nodes[name] = node
 
-    visualiser.visualise_averages(nodes)
+    visualiser.visualise_averages(nodes, True)
 
 
 

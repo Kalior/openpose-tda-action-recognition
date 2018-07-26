@@ -80,10 +80,3 @@ class Person:
         diff = self.keypoints - other.keypoints
         step_diff = diff / steps
         return [Person(other.keypoints + step_diff * i, self.track_index) for i in range(1, steps)]
-
-    def translate_to_origin(self):
-        neck = np.copy(self.keypoints[COCOKeypoints.Neck.value])
-
-        for i, keypoint in enumerate(self.keypoints):
-            if np.any(keypoint):
-                self.keypoints[i] = keypoint - neck

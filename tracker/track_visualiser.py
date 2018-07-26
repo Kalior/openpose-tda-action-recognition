@@ -17,7 +17,7 @@ class TrackVisualiser:
         for i in range(start_frame, last_frame):
             success, original_image = capture.read()
             self.draw_frame_number(original_image, i)
-            self.draw_tracks(tracks, original_image, i)
+            self.draw_people(tracks, original_image, i, False)
 
             smaller_original = cv2.resize(original_image, (0, 0), fx=0.5, fy=0.5)
             cv2.imshow("output", smaller_original)
