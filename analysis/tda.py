@@ -1,4 +1,4 @@
-import gudhi.gudhi as gudhi
+import gudhi as gd
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.axes3d import Axes3D
@@ -38,10 +38,10 @@ class TDA:
                 ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=5)
                 plt.show()
 
-            rips = gudhi.RipsComplex(max_edge_length=0.5, points=points)
+            rips = gd.RipsComplex(max_edge_length=0.5, points=points)
             simplex_tree = rips.create_simplex_tree(max_dimension=3)
 
-            # alpha = gudhi.AlphaComplex(points=points)
+            # alpha = gd.AlphaComplex(points=points)
             # simplex_tree = alpha.create_simplex_tree(max_alpha_square=0.1)
 
             diag_alpha = simplex_tree.persistence()
@@ -50,7 +50,7 @@ class TDA:
             tda_diag_df = self._construct_dataframe(clean_diag_alpha)
             # self._betti_curve(tda_diag_df)
 
-            # gudhi.plot_persistence_diagram(diag_alpha)
+            # gd.plot_persistence_diagram(diag_alpha)
             # plt.show()
 
             betti = simplex_tree.betti_numbers()
