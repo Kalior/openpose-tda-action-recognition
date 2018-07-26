@@ -18,12 +18,12 @@ def main(args):
     videos = dataset_npz['videos']
 
     processor = PostProcessor()
-    logging.info("Normalising every limb to a fixed size.")
-    normalised_chunks = processor.normalise_limb_lengths_of_chunks(chunks)
-    # logging.info("Translating every chunk by the average position of that chunk.")
-    # translated_chunks = processor.translate_chunks_to_origin(normalised_chunks)
-    logging.info("Translating every body part by the average position of that body part in the chunk.")
-    translated_chunks = processor.translate_chunks_to_origin_by_keypoint(normalised_chunks)
+    logging.info("Translating every chunk by the average position of that chunk.")
+    translated_chunks = processor.translate_chunks_to_origin(chunks)
+    # logging.info("Translating every body part by the average position of that body part in the chunk.")
+    # translated_chunks = processor.translate_chunks_to_origin_by_keypoint(chunks)
+    logging.info("Smoothing the path of the keypoints.")
+    translated_chunks = processor.smooth_chunks(translated_chunks)
 
     selected_keypoints = [
         COCOKeypoints.RWrist.value,
