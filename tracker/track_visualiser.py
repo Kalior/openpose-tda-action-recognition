@@ -35,7 +35,15 @@ class TrackVisualiser:
         for i, track in enumerate(tracks):
             track_color = self.colors[i % len(self.colors)]
             positions = [(0, 0)] * 15
-            for i in range(15):
+            selected_keypoints = [
+                COCOKeypoints.RShoulder.value,
+                COCOKeypoints.LShoulder.value,
+                COCOKeypoints.RWrist.value,
+                COCOKeypoints.LWrist.value,
+                COCOKeypoints.RElbow.value,
+                COCOKeypoints.LElbow.value
+            ]
+            for i in selected_keypoints:
                 path = track.get_keypoint_path(i, current_frame)
                 if len(path) > 0:
                     original_pos = path[-1].astype(np.int)
