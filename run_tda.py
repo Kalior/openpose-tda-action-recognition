@@ -26,23 +26,24 @@ def main(args):
     translated_chunks = processor.smooth_chunks(translated_chunks)
 
     selected_keypoints = [
-        COCOKeypoints.RWrist.value,
-        COCOKeypoints.LWrist.value,
+        COCOKeypoints.RShoulder.value,
+        COCOKeypoints.LShoulder.value,
         COCOKeypoints.RElbow.value,
-        COCOKeypoints.LElbow.value
+        COCOKeypoints.LElbow.value,
+        COCOKeypoints.RWrist.value,
+        COCOKeypoints.LWrist.value
     ]
-    logging.info("Flattening data into a datapoint per chunk of a track.")
-    data = processor.flatten_chunks(translated_chunks, frames, selected_keypoints)
-    # data = processor.velocity_of_chunks(translated_chunks, frames, selected_keypoints)
+    connect_keypoints = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5)]
 
-    # visualiser = TrackVisualiser()
-    # filtered_tracks = processor.chunks_to_tracks(chunks, frames)
-    # visualiser.draw_video_with_tracks(filtered_tracks, args.video, last_frame)
     if args.tda:
-        run_tda(chunks, frames, videos, labels, data)
+        logging.info("Flattening data into 3D, with third dimension as time.")
+        data = processor.flatten_chunks_3D(
+            translated_chunks, selected_keypoints, connect_keypoints)
+        run_tda(chunks, frames, translated_chunks, videos, labels, data)
     if args.mapper:
-        run_mapper(chunks, frames, translated_chunks, videos,
-                   labels, data)
+        logging.info("Flattening data into a datapoint per chunk.")
+        data = processor.flatten_chunks(translated_chunks, selected_keypoints, connect_keypoints)
+        run_mapper(chunks, frames, translated_chunks, videos, labels, data)
     if args.visualise:
         visualise_classes(chunks, frames, translated_chunks, labels)
 
