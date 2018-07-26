@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 
 from sklearn.cluster import DBSCAN
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import RobustScaler
 from sklearn import metrics
 from sklearn import preprocessing
 from sklearn import decomposition
@@ -18,20 +18,33 @@ from .chunk_visualiser import ChunkVisualiser
 
 class TDA:
 
+    def __init__(self, chunks, frames, translated_chunks, labels):
+        self.chunks = chunks
+        self.frames = frames
+        self.translated_chunks = translated_chunks
+        self.labels = labels
+
     def persistence(self, data):
-        dim = 2
-        betti_numbers = np.empty((data.shape[0], dim))
+        dim = 3
+        betti_numbers = np.zeros((data.shape[0], dim))
+        scaler = RobustScaler()
+        scaler.fit(data.reshape(-1, 3))
         for i, d in enumerate(data):
-            points = d.reshape(-1, 2)
-            points = StandardScaler().fit_transform(points)
-            # plt.plot(points[:, 0], points[:, 1], 'bo')
-            # plt.show()
-            rips = gudhi.RipsComplex(max_edge_length=0.8,
-                                     points=points)
+            points = scaler.transform(d)
 
-            simplex_tree = rips.create_simplex_tree(max_dimension=2)
+            if i < 5:
+                fig = plt.figure()
+                ax = fig.add_subplot(111, projection='3d')
+                ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=5)
+                plt.show()
 
-            diag_alpha = simplex_tree.persistence(homology_coeff_field=11)
+            rips = gudhi.RipsComplex(max_edge_length=0.5, points=points)
+            simplex_tree = rips.create_simplex_tree(max_dimension=3)
+
+            # alpha = gudhi.AlphaComplex(points=points)
+            # simplex_tree = alpha.create_simplex_tree(max_alpha_square=0.1)
+
+            diag_alpha = simplex_tree.persistence()
             # Removing the points who don't die
             clean_diag_alpha = [p for p in diag_alpha if p[1][1] < np.inf]
             tda_diag_df = self._construct_dataframe(clean_diag_alpha)
@@ -45,7 +58,6 @@ class TDA:
             pad = np.pad(betti, (0, dim - len(betti)), 'constant')
             betti_numbers[i] = pad
 
-        print(betti_numbers)
         return betti_numbers
 
     def _construct_dataframe(self, clean_diag_alpha):
@@ -77,12 +89,54 @@ class TDA:
         le = preprocessing.LabelEncoder()
         labels_true = le.fit_transform(labels_true)
 
-        db = DBSCAN(eps=0.8, min_samples=10).fit(data)
+        db = DBSCAN(eps=0.3, min_samples=2).fit(data)
 
-        core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
-        core_samples_mask[db.core_sample_indices_] = True
         labels = db.labels_
+        self._print_cluster_metrics(labels_true, labels, data)
 
+        # Set up a figure twice as wide as it is tall
+        true_fig = plt.figure(figsize=plt.figaspect(0.5))
+        true_ax = true_fig.add_subplot(1, 1, 1, projection='3d')
+        cluster_fig = plt.figure(figsize=plt.figaspect(0.5))
+        cluster_ax = cluster_fig.add_subplot(1, 1, 1, projection='3d')
+
+        # Perturb the datapoints so we see multiple points in the visualisation
+        data = data + np.random.normal(loc=0, scale=0.1, size=data.shape)
+
+        self._plot_clusters(data, labels_true, "True", le, true_ax)
+        self._plot_clusters(data, labels, "Estimated", le, cluster_ax)
+
+        self._add_on_click([true_fig, cluster_fig], data, [true_ax, cluster_ax])
+        plt.show()
+
+        return labels
+
+    def _plot_clusters(self, data, labels, title, le, ax):
+        unique_labels = set(labels)
+        colors = [plt.cm.Spectral(each)
+                  for each in np.linspace(0, 1, len(unique_labels))]
+
+        for k, col in zip(unique_labels, colors):
+            if k == -1:
+                # Black used for noise.
+                col = [0, 0, 0, 1]
+
+            class_member_mask = (labels == k)
+
+            if title is "True":
+                class_name = le.classes_[k]
+            else:
+                class_name = k
+
+            xy = data[class_member_mask]
+            ax.plot(xy[:, 0], xy[:, 1], xy[:, 2], 'o', markerfacecolor=tuple(col),
+                    markeredgecolor='k', markersize=6, label=class_name)
+
+        ax.legend()
+        n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+        ax.set_title('{} number of clusters: {}'.format(title, n_clusters_))
+
+    def _print_cluster_metrics(self, labels_true, labels, data):
         n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
 
         print('Estimated number of clusters: {}'.format(n_clusters_))
@@ -96,49 +150,6 @@ class TDA:
         print("Silhouette Coefficient: {:.3f}".format(
               metrics.silhouette_score(data, labels)))
 
-        # Set up a figure twice as wide as it is tall
-        fig, [true_ax, cluster_ax] = plt.subplots(1, 2, figsize=plt.figaspect(0.5))
-
-        # Perturb the datapoints so we see multiple points in the visualisation
-        data = data + np.random.normal(loc=0, scale=0.1, size=data.shape)
-
-        self._plot_clusters(data, labels_true, core_samples_mask, "True", le, true_ax)
-        self._plot_clusters(data, labels, core_samples_mask, "Estimated", le, cluster_ax)
-
-        self._add_on_click(fig, data, true_ax, cluster_ax)
-        plt.show()
-
-        return labels
-
-    def _plot_clusters(self, data, labels, core_samples_mask, title, le, ax):
-        n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
-
-        unique_labels = set(labels)
-        colors = [plt.cm.Spectral(each)
-                  for each in np.linspace(0, 1, len(unique_labels))]
-        for k, col in zip(unique_labels, colors):
-            if k == -1:
-                # Black used for noise.
-                col = [0, 0, 0, 1]
-
-            class_member_mask = (labels == k)
-
-            if title is "True":
-                class_name = le.classes_[k]
-            else:
-                class_name = k
-
-            xy = data[class_member_mask & core_samples_mask]
-            ax.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
-                    markeredgecolor='k', markersize=14, label=class_name)
-
-            xy = data[class_member_mask & ~core_samples_mask]
-            ax.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
-                    markeredgecolor='k', markersize=6)
-
-        ax.legend()
-        ax.set_title('{} number of clusters: {}'.format(title, n_clusters_))
-
     def visualise(self, labels, videos):
         visualiser = ChunkVisualiser(self.chunks, self.frames, self.translated_chunks)
         unique_labels = set(labels)
@@ -151,16 +162,16 @@ class TDA:
             name = "Cluster " + str(k)
             visualiser.draw_node(videos, name, node)
 
-    def _add_on_click(self, fig, data, true_ax, cluster_ax):
-        for ax in [true_ax, cluster_ax]:
-            ax.plot(data[:, 0], data[:, 1], 'o', markerfacecolor='b',
+    def _add_on_click(self, figs, data, axes):
+        for ax in axes:
+            ax.plot(data[:, 0], data[:, 1], data[:, 2], 'o', markerfacecolor='b',
                     markeredgecolor='b', markersize=0, picker=5)
 
         def onpick(event):
             visualiser = ChunkVisualiser(self.chunks, self.frames, self.translated_chunks)
             ind = event.ind
-            print(ind)
             nodes = {'Picked points': ind}
             visualiser.visualise_averages(nodes)
 
-        fig.canvas.mpl_connect('pick_event', onpick)
+        for fig in figs:
+            fig.canvas.mpl_connect('pick_event', onpick)
