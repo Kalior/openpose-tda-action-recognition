@@ -18,15 +18,19 @@ class ChunkVisualiser:
             self.draw_node(videos, name, node)
             sleep(1)
 
-    def visualise_averages(self, nodes):
+    def visualise_averages(self, nodes, forever=False):
         visualiser = TrackVisualiser()
         all_average_frames = []
         for name, node in nodes.items():
             average_frames = self._draw_average_shape(name, node, visualiser)
             all_average_frames.append(average_frames)
 
-        while True:
-            for i in range(20):
+        if forever:
+            iteration_length = 99999
+        else:
+            iteration_length = 10
+        for _ in range(iteration_length):
+            for i in range(len(all_average_frames[0])):
                 for j, average_frames in enumerate(all_average_frames):
                     smaller_average = cv2.resize(average_frames[i], (0, 0), fx=0.5, fy=0.5)
                     cv2.imshow("average person" + str(j), smaller_average)
