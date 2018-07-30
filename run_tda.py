@@ -69,18 +69,19 @@ def visualise_classes(chunks, frames, translated_chunks, labels):
 def run_tda(chunks, frames, translated_chunks, videos, labels, data):
     logging.info("Applying TDA with gudhi to chunks.")
     tda = TDA(chunks, frames, translated_chunks, labels)
+    # tda.visualise_point_clouds(data)
     diags = tda.persistence(data)
 
-    out_dir = "output/persistence-graphs"
-    if not os.stat(out_dir):
-        os.makedirs(out_dir)
-    logging.info("Saving persistence diagrams and betti curves to {}".format(out_dir))
-    tda.save_persistences(out_dir)
-    tda.save_betti_curves(out_dir)
+    # out_dir = "output/persistence-graphs"
+    # if not os.stat(out_dir):
+    #     os.makedirs(out_dir)
+    # logging.info("Saving persistence diagrams and betti curves to {}".format(out_dir))
+    # tda.save_persistences(out_dir)
+    # tda.save_betti_curves(out_dir)
 
-    logging.info("Clustering the betti numbers.")
-    cluster_labels = tda.cluster(diags, labels)
-    # tda.visualise(cluster_labels, videos)
+    logging.info("Clustering.")
+    pred_labels = tda.classify(diags, labels)
+    # tda.visualise(pred_labels, videos)
 
 
 def run_mapper(chunks, frames, translated_chunks, videos, labels, data):
