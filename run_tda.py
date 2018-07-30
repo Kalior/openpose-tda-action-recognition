@@ -6,7 +6,8 @@ import json
 import cv2
 
 from tracker import Person, Track, TrackVisualiser
-from analysis import PostProcessor, Mapper, TDA, ChunkVisualiser
+from analysis import Mapper, TDA, ChunkVisualiser
+from transforms import Flatten, FlattenTo3D, SmoothChunks, TranslateChunks, TranslateChunksByKeypoints
 from util import COCOKeypoints
 
 
@@ -19,11 +20,11 @@ def main(args):
 
     processor = PostProcessor()
     logging.info("Translating every chunk by the average position of that chunk.")
-    translated_chunks = processor.translate_chunks_to_origin(chunks)
+    translated_chunks = TranslateChunks().transform(chunks)
     # logging.info("Translating every body part by the average position of that body part in the chunk.")
-    # translated_chunks = processor.translate_chunks_to_origin_by_keypoint(chunks)
+    # translated_chunks = TranslateChunksByKeypoints().transform(chunks)
     logging.info("Smoothing the path of the keypoints.")
-    translated_chunks = processor.smooth_chunks(translated_chunks)
+    translated_chunks = SmoothChunks().transform(translated_chunks)
 
     selected_keypoints = [
         COCOKeypoints.RShoulder.value,
@@ -37,12 +38,11 @@ def main(args):
 
     if args.tda:
         logging.info("Flattening data into 3D, with third dimension as time.")
-        data = processor.flatten_chunks_3D(
-            translated_chunks, selected_keypoints, connect_keypoints)
+        data = FlattenTo3D(selected_keypoints, connect_keypoints).transform(translated_chunks)
         run_tda(chunks, frames, translated_chunks, videos, labels, data)
     if args.mapper:
         logging.info("Flattening data into a datapoint per chunk.")
-        data = processor.flatten_chunks(translated_chunks, selected_keypoints, connect_keypoints)
+        data = Flatten(selected_keypoints).transform(translated_chunks)
         run_mapper(chunks, frames, translated_chunks, videos, labels, data)
     if args.visualise:
         visualise_classes(chunks, frames, translated_chunks, labels)

@@ -1,8 +1,6 @@
 import numpy as np
-import scipy.signal
 
 from tracker import Person, Track
-from util import coco_connections
 
 
 class PostProcessor:
@@ -110,90 +108,3 @@ class PostProcessor:
                 filtered_frames = np.append(filtered_frames, [chunk_frames[i]], axis=0)
 
         return filtered_chunks, filtered_frames
-
-    def flatten_chunks(self, chunks, selected_keypoints):
-        data = np.array([chunk[:, selected_keypoints, :2].flatten()
-                         for chunk in chunks])
-
-        return data
-
-    def flatten_chunks_3D(self, chunks, selected_keypoints, connect_keypoints):
-        data = np.array([self._chunk_to_3D(chunk, selected_keypoints, connect_keypoints)
-                         for chunk in chunks])
-
-        return data
-
-    def _chunk_to_3D(self, chunk, selected_keypoints, connect_keypoints):
-        number_of_frames = chunk.shape[0]
-        flat_chunk = np.vstack(self._connect_keypoints(
-            chunk[:, selected_keypoints, :2], connect_keypoints, 2))
-        third_dimension = np.repeat(np.arange(0, number_of_frames), len(
-            selected_keypoints) + len(connect_keypoints) * 2)
-        return np.c_[flat_chunk, third_dimension]
-
-    def translate_chunks_to_origin(self, chunks):
-        translated_chunks = np.copy(chunks)
-
-        for i, chunk in enumerate(translated_chunks):
-            self._normalise_chunk(chunk)
-
-        return translated_chunks
-
-    def _normalise_chunk(self, chunk):
-        # Don't take unidentified keypoints into account:
-        mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
-
-        chunk[~np.all(chunk == 0, axis=2)] -= mean
-
-    def translate_chunks_to_origin_by_keypoint(self, chunks):
-        translated_chunks = np.copy(chunks)
-
-        for i, chunk in enumerate(translated_chunks):
-            self._translate_by_keypoint(chunk)
-
-        return translated_chunks
-
-    def _translate_by_keypoint(self, chunk):
-        for i in range(chunk.shape[1]):
-            # Don't take unidentified keypoints into account:
-            keypoints = chunk[:, i][~np.all(chunk[:, i] == 0, axis=1)]
-            if keypoints.shape[0] != 0:
-                keypoint_mean = keypoints.mean(axis=0)
-                chunk[:, i][~np.all(chunk[:, i] == 0, axis=1)] -= keypoint_mean
-
-    def _connect_keypoints(self, chunk, connect_keypoints, number_of_points=3):
-        # return chunk
-        new_number_of_keypoints = chunk.shape[1] + len(connect_keypoints) * number_of_points
-        connected_chunk = np.zeros((chunk.shape[0], new_number_of_keypoints, chunk.shape[2]))
-        connected_chunk[:, :chunk.shape[1]] = chunk
-        for i, frame in enumerate(chunk):
-            for j, (from_, to) in enumerate(connect_keypoints):
-                start_index = j * number_of_points + chunk.shape[1]
-                intermediate_points = self._intermediate_points(frame, from_, to, number_of_points)
-                for k, points in enumerate(intermediate_points):
-                    connected_chunk[i, start_index + k] = points
-
-        return connected_chunk
-
-    def _intermediate_points(self, frame, from_, to, number_of_points):
-        from_point = frame[from_]
-        to_point = frame[to]
-        diff = from_point - to_point
-        step = diff / (number_of_points + 1)
-        step_array = np.tile(step, number_of_points).reshape(-1, step.shape[0])
-
-        intermediate_points = to_point + step_array * \
-            np.arange(1, number_of_points + 1)[:, np.newaxis]
-        return intermediate_points
-
-    def smooth_chunks(self, chunks):
-        smooth = np.copy(chunks)
-        for chunk in smooth:
-            self._smooth_chunk(chunk)
-        return smooth
-
-    def _smooth_chunk(self, chunk):
-        window_length = int(chunk.shape[0] / 4)
-        for i in range(chunk.shape[1]):
-            for j in range(2):
-                chunk[:, i, j] = scipy.signal.savgol_filter(chunk[:, i, j], window_length, 3)
