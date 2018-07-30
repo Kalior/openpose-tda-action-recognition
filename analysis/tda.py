@@ -13,10 +13,13 @@ from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 
+import seaborn as sn
+
 import numpy as np
 import pandas as pd
 import os
 import logging
+import itertools
 
 from .chunk_visualiser import ChunkVisualiser
 
@@ -120,94 +123,46 @@ class TDA:
                 plt.savefig(file_path, bbox_inches='tight')
                 plt.close()
 
-    def cluster(self, data, labels_true):
+    def classify(self, data, labels_true):
         le = LabelEncoder()
         labels_true = le.fit_transform(labels_true)
         # data = RobustScaler().fit_transform(data)
 
-        logging.info("Shuffling the data")
-        p = np.random.permutation(len(data))
-        data = data[p]
-        labels_true = labels_true[p]
+        logging.debug("Splitting data into test/train")
+        train_data, test_data, train_labels, test_labels = sklearn.model_selection.train_test_split(
+            data, labels_true)
 
-        test_split = int(len(data) / 3)
-        train_data = data[test_split:]
-        train_labels = labels_true[test_split:]
-        test_data = data[:test_split]
-        test_labels = labels_true[:test_split]
-
-        logging.info("Cross-validating to find best model.")
-        model = self._cross_validate_pipeline()
+        logging.debug("Cross-validating to find best model.")
+        model = self._pipeline()
         model = model.fit(train_data, train_labels)
-        print(model.best_params_)
-        print("Train accuracy = " + str(model.score(train_data, train_labels)))
-        print("Test accuracy  = " + str(model.score(test_data,  test_labels)))
+        # print(model.best_params_)
+        # logging.info("Train accuracy = {}".format(model.score(train_data, train_labels)))
         labels = model.predict(test_data)
-        transform_data = model.transform(test_data)
-
-        # self._print_cluster_metrics(labels_true, labels, data)
-
-        # Set up a figure twice as wide as it is tall
-        true_fig = plt.figure(figsize=plt.figaspect(0.5))
-        true_ax = true_fig.add_subplot(1, 1, 1, projection='3d')
-        cluster_fig = plt.figure(figsize=plt.figaspect(0.5))
-        cluster_ax = cluster_fig.add_subplot(1, 1, 1, projection='3d')
-
-        # Perturb the datapoints so we see multiple points in the visualisation
-        # data = data + np.random.normal(loc=0, scale=0.1, size=data.shape)
-
-        self._plot_clusters(transform_data, test_labels, "True", le, true_ax)
-        self._plot_clusters(transform_data, labels, "Estimated", le, cluster_ax)
-
-        self._add_on_click([true_fig, cluster_fig], data, [true_ax, cluster_ax])
-        plt.show()
+        test_accuracy = metrics.accuracy_score(test_labels, labels)
+        logging.info("Test accuracy: {}".format(test_accuracy))
+        self._plot_confusion_matrix(labels, test_labels, le)
 
         return labels
 
-    def _cross_validate_pipeline(self):
+    def _plot_confusion_matrix(self, labels, test_labels, le):
+        confusion_matrix = metrics.confusion_matrix(test_labels, labels).astype(np.float32)
+        confusion_matrix = confusion_matrix / confusion_matrix.sum(axis=1)[:, np.newaxis]
+        class_names = list(le.classes_)
+        df_cm = pd.DataFrame(confusion_matrix, index=class_names, columns=class_names)
+        plt.figure(figsize=(10, 7))
+        sn.heatmap(df_cm, annot=True)
+        plt.show()
+
+    def _pipeline(self):
 
         # Definition of pipeline# Defin
         pipe = Pipeline([
             ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
-            ("Rotator",   tda.DiagramPreprocessor(
-                scaler=tda.BirthPersistenceTransform())),
-            ("TDA",       tda.PersistenceImage()),
-            ("Estimator", SVC())
+            ("TDA",       tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
+            ("Estimator", SVC(kernel='precomputed'))
         ])
 
-        # Parameters of pipeline. This is the place where you specify the methods
-        # you want to use to handle diagrams
-        param = [
-            {
-                "Rotator__use":        [False],
-                "TDA":                 [tda.SlicedWasserstein()],
-                "TDA__bandwidth":      [0.1, 1.0],
-                "TDA__num_directions": [20],
-                "Estimator":           [SVC(kernel="precomputed")]
-            },
-            {
-                "Rotator__use":        [False],
-                "TDA":                 [tda.PersistenceWeightedGaussian()],
-                "TDA__bandwidth":      [0.1, 1.0],
-                "TDA__weight":         [lambda x: np.arctan(x[1] - x[0])],
-                "Estimator":           [SVC(kernel="precomputed")]
-            },
-
-            {
-                "Rotator__use":        [True],
-                "TDA":                 [tda.PersistenceImage()],
-                "TDA__resolution":     [[5, 5], [6, 6]],
-                "TDA__bandwidth":      [0.01, 0.1, 1.0, 10.0],
-                "Estimator":           [SVC()]
-            },
-            {
-                "Rotator__use":        [False],
-                "TDA":                 [tda.Landscape()],
-                "TDA__resolution":     [1000],
-                "Estimator":           [RandomForestClassifier()]
-            }
-        ]
-        return sklearn.model_selection.GridSearchCV(pipe, param, cv=3)
+        return pipe
 
     def _plot_clusters(self, data, labels, title, le, ax):
         unique_labels = set(labels)
@@ -233,20 +188,6 @@ class TDA:
         ax.legend()
         n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
         ax.set_title('{} number of clusters: {}'.format(title, n_clusters_))
-
-    def _print_cluster_metrics(self, labels_true, labels, data):
-        n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
-
-        print('Estimated number of clusters: {}'.format(n_clusters_))
-        print("Homogeneity: {:.3f}".format(metrics.homogeneity_score(labels_true, labels)))
-        print("Completeness: {:.3f}".format(metrics.completeness_score(labels_true, labels)))
-        print("V-measure: {:.3f}".format(metrics.v_measure_score(labels_true, labels)))
-        print("Adjusted Rand Index: {:.3f}".format(
-            metrics.adjusted_rand_score(labels_true, labels)))
-        print("Adjusted Mutual Information: {:.3f}".format(
-            metrics.adjusted_mutual_info_score(labels_true, labels)))
-        print("Silhouette Coefficient: {:.3f}".format(
-              metrics.silhouette_score(data, labels)))
 
     def visualise(self, labels, videos):
         visualiser = ChunkVisualiser(self.chunks, self.frames, self.translated_chunks)
