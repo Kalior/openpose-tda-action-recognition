@@ -14,7 +14,7 @@ def main(args):
         logging.warn("Number of track files does not correspond to number of videos.")
         return
 
-    seconds_per_chunk = 20 / 15
+    seconds_per_chunk = 20 / 30
     overlap_percentage = 0.5
     frames_per_chunk = 20
     number_of_keypoints = 18
@@ -45,17 +45,19 @@ def main(args):
             out_file = args.out_file + '.npz'
 
         dataset_npz = np.load(out_file)
-        prev_chunks = dataset_npz['chunks']
-        all_chunks = np.append(prev_chunks, all_chunks, axis=0)
-        prev_frames = dataset_npz['frames']
-        all_frames = np.append(prev_frames, all_frames, axis=0)
-        prev_labels = dataset_npz['labels']
-        all_labels = np.append(prev_labels, all_labels, axis=0)
-        prev_videos = dataset_npz['videos']
-        all_videos = np.append(prev_videos, all_videos, axis=0)
+
+        all_chunks = load_and_append(dataset_npz, 'chunks', all_chunks)
+        all_frames = load_and_append(dataset_npz, 'frames', all_frames)
+        all_labels = load_and_append(dataset_npz, 'labels', all_labels)
+        all_videos = load_and_append(dataset_npz, 'videos', all_videos)
 
     np.savez(args.out_file, chunks=all_chunks, frames=all_frames,
              labels=all_labels, videos=all_videos)
+
+
+def load_and_append(npz, name, array):
+    prev_array = npz[name]
+    return np.append(prev_array, array, axis=0)
 
 
 def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percentage, seconds_per_chunk, automatic_moving_filter):
@@ -71,6 +73,8 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
     capture = cv2.VideoCapture(video)
     fps = capture.get(cv2.CAP_PROP_FPS)
     frames_per_chunk_for_seconds = int(seconds_per_chunk * fps)
+    logging.debug("Frames per chunks to get same #seconds: {}".format(
+        frames_per_chunk_for_seconds))
     overlap = int(frames_per_chunk_for_seconds * overlap_percentage)
 
     logging.info("Chunking tracks.")
@@ -115,7 +119,7 @@ if __name__ == '__main__':
                         help='The video from which the paths were generated.')
     parser.add_argument('--tracks-files', type=str, nargs='+',
                         help='The file with the saved tracks.')
-    parser.add_argument('--out-file', type=str, default='output/dataset',
+    parser.add_argument('--out-file', type=str, default='dataset/dataset.npz',
                         help='The path to the file where the data will be saved')
     parser.add_argument('--append', action='store_true',
                         help='Specify if the data should be added to the out-file (if it exists) or overwritten.')
