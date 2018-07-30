@@ -1,17 +1,22 @@
 import gudhi as gd
+import sklearn_tda as tda
+
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 
 from sklearn.cluster import DBSCAN
-from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import RobustScaler, LabelEncoder
 from sklearn import metrics
-from sklearn import preprocessing
-from sklearn import decomposition
-from sklearn import manifold
+import sklearn
+from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 
 import numpy as np
 import pandas as pd
+import os
+import logging
 
 from .chunk_visualiser import ChunkVisualiser
 
@@ -23,12 +28,15 @@ class TDA:
         self.frames = frames
         self.translated_chunks = translated_chunks
         self.labels = labels
+        self.persistences = []
 
     def persistence(self, data):
         dim = 3
         betti_numbers = np.zeros((data.shape[0], dim))
         scaler = RobustScaler()
         scaler.fit(data.reshape(-1, 3))
+
+        diags = []
         for i, d in enumerate(data):
             points = scaler.transform(d)
 
@@ -47,18 +55,17 @@ class TDA:
             diag_alpha = simplex_tree.persistence()
             # Removing the points who don't die
             clean_diag_alpha = [p for p in diag_alpha if p[1][1] < np.inf]
-            tda_diag_df = self._construct_dataframe(clean_diag_alpha)
+            self.persistences.append(clean_diag_alpha)
+            # tda_diag_df = self._construct_dataframe(clean_diag_alpha)
             # self._betti_curve(tda_diag_df)
 
-            # gd.plot_persistence_diagram(diag_alpha)
-            # plt.show()
-
+            diags.append(np.array([(p[1][1], p[1][0]) for p in clean_diag_alpha]))
             betti = simplex_tree.betti_numbers()
             # Make sure we fill the 2 dimensions
             pad = np.pad(betti, (0, dim - len(betti)), 'constant')
             betti_numbers[i] = pad
 
-        return betti_numbers
+        return np.array(diags)
 
     def _construct_dataframe(self, clean_diag_alpha):
         tda_diag_df = pd.DataFrame()
