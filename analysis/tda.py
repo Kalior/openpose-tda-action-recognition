@@ -76,9 +76,8 @@ class TDA:
         tda_diag_df['Lifespan'] = tda_diag_df['Death'] - tda_diag_df['Birth']
         return tda_diag_df
 
-    def _betti_curve(self, tda_diag_df):
+    def _betti_curve(self, tda_diag_df, dim):
         betti_points = 100
-        dim = 0
 
         betti_curve_0 = []
         min_birth = tda_diag_df.loc[tda_diag_df.Dimension == dim].Birth.min()
@@ -90,16 +89,59 @@ class TDA:
             betti_curve_0.append([death, nb_points_alive])
         betti_curve_0 = np.array(betti_curve_0)
         plt.plot(betti_curve_0[:, 0], betti_curve_0[:, 1])
-        plt.show()
+
+    def save_persistences(self, out_dir):
+
+        for i, diag in enumerate(self.persistences):
+            fig = gd.plot_persistence_diagram(diag)
+
+            label = self.labels[i]
+            plt.title(label)
+
+            file_path = os.path.join(out_dir, 'persistence-{}.png'.format(i))
+            plt.savefig(file_path, bbox_inches='tight')
+            plt.close()
+
+    def save_betti_curves(self, out_dir):
+        for i, diag in enumerate(self.persistences):
+            tda_diag_df = self._construct_dataframe(diag)
+
+            label = self.labels[i]
+            plt.title(label)
+
+            for dim in range(3):
+                self._betti_curve(tda_diag_df, dim)
+
+                file_path = os.path.join(out_dir, 'betti-curve-{}-{}.png'.format(i, dim))
+                plt.savefig(file_path, bbox_inches='tight')
+                plt.close()
 
     def cluster(self, data, labels_true):
-        le = preprocessing.LabelEncoder()
+        le = LabelEncoder()
         labels_true = le.fit_transform(labels_true)
+        # data = RobustScaler().fit_transform(data)
 
-        db = DBSCAN(eps=0.3, min_samples=2).fit(data)
+        logging.info("Shuffling the data")
+        p = np.random.permutation(len(data))
+        data = data[p]
+        labels_true = labels_true[p]
 
-        labels = db.labels_
-        self._print_cluster_metrics(labels_true, labels, data)
+        test_split = int(len(data) / 3)
+        train_data = data[test_split:]
+        train_labels = labels_true[test_split:]
+        test_data = data[:test_split]
+        test_labels = labels_true[:test_split]
+
+        logging.info("Cross-validating to find best model.")
+        model = self._cross_validate_pipeline()
+        model = model.fit(train_data, train_labels)
+        print(model.best_params_)
+        print("Train accuracy = " + str(model.score(train_data, train_labels)))
+        print("Test accuracy  = " + str(model.score(test_data,  test_labels)))
+        labels = model.predict(test_data)
+        transform_data = model.transform(test_data)
+
+        # self._print_cluster_metrics(labels_true, labels, data)
 
         # Set up a figure twice as wide as it is tall
         true_fig = plt.figure(figsize=plt.figaspect(0.5))
@@ -108,15 +150,60 @@ class TDA:
         cluster_ax = cluster_fig.add_subplot(1, 1, 1, projection='3d')
 
         # Perturb the datapoints so we see multiple points in the visualisation
-        data = data + np.random.normal(loc=0, scale=0.1, size=data.shape)
+        # data = data + np.random.normal(loc=0, scale=0.1, size=data.shape)
 
-        self._plot_clusters(data, labels_true, "True", le, true_ax)
-        self._plot_clusters(data, labels, "Estimated", le, cluster_ax)
+        self._plot_clusters(transform_data, test_labels, "True", le, true_ax)
+        self._plot_clusters(transform_data, labels, "Estimated", le, cluster_ax)
 
         self._add_on_click([true_fig, cluster_fig], data, [true_ax, cluster_ax])
         plt.show()
 
         return labels
+
+    def _cross_validate_pipeline(self):
+
+        # Definition of pipeline# Defin
+        pipe = Pipeline([
+            ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
+            ("Rotator",   tda.DiagramPreprocessor(
+                scaler=tda.BirthPersistenceTransform())),
+            ("TDA",       tda.PersistenceImage()),
+            ("Estimator", SVC())
+        ])
+
+        # Parameters of pipeline. This is the place where you specify the methods
+        # you want to use to handle diagrams
+        param = [
+            {
+                "Rotator__use":        [False],
+                "TDA":                 [tda.SlicedWasserstein()],
+                "TDA__bandwidth":      [0.1, 1.0],
+                "TDA__num_directions": [20],
+                "Estimator":           [SVC(kernel="precomputed")]
+            },
+            {
+                "Rotator__use":        [False],
+                "TDA":                 [tda.PersistenceWeightedGaussian()],
+                "TDA__bandwidth":      [0.1, 1.0],
+                "TDA__weight":         [lambda x: np.arctan(x[1] - x[0])],
+                "Estimator":           [SVC(kernel="precomputed")]
+            },
+
+            {
+                "Rotator__use":        [True],
+                "TDA":                 [tda.PersistenceImage()],
+                "TDA__resolution":     [[5, 5], [6, 6]],
+                "TDA__bandwidth":      [0.01, 0.1, 1.0, 10.0],
+                "Estimator":           [SVC()]
+            },
+            {
+                "Rotator__use":        [False],
+                "TDA":                 [tda.Landscape()],
+                "TDA__resolution":     [1000],
+                "Estimator":           [RandomForestClassifier()]
+            }
+        ]
+        return sklearn.model_selection.GridSearchCV(pipe, param, cv=3)
 
     def _plot_clusters(self, data, labels, title, le, ax):
         unique_labels = set(labels)
