@@ -2,20 +2,17 @@ import ffmpy
 from threading import Thread
 from time import sleep
 
-file_name = "checkout-"
-args = "ffmpeg -f v4l2 -video_size 640x480 -i /dev/video0 -c:v libx264 -preset ultrafast".split(
-    " ")
-
+file_name = "cash-"
 
 run = True
-i = 16
+i = 0
 while run:
     val = input("(n)ew, (d)one\n")
     if val == 'n':
         out_file = file_name + str(i) + ".mp4"
         ff = ffmpy.FFmpeg(
             global_options=['-video_size 640x480'],
-            inputs={'/dev/video2': None},
+            inputs={'/dev/video1': None},
             outputs={out_file: None}
         )
 
