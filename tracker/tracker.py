@@ -30,7 +30,7 @@ class Tracker:
         except:
             os.makedirs(out_dir)
 
-    def video(self, file):
+    def video(self, file, draw_frames):
         capture = cv2.VideoCapture(file)
         self.speed_change_threshold = 10  # int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)) / 10
 
@@ -66,8 +66,9 @@ class Tracker:
                 self.tracks, image_with_keypoints, current_frame, self.only_track_arms)
             visualisation_time = time() - visualisation_start_time
 
-            cv2.imshow("output", image_with_keypoints)
-            cv2.waitKey(1)
+            if draw_frames:
+                cv2.imshow("output", image_with_keypoints)
+                cv2.waitKey(1)
 
             # Write the frame to a video
             writer.write(image_with_keypoints)
@@ -178,11 +179,11 @@ class Tracker:
     def _save_tracks(self, in_file):
         basename = os.path.basename(in_file)
         filename, _ = os.path.splitext(basename)
+        file_path = os.path.join(self.out_dir, filename + '-tracks')
 
         logging.debug("Creating output tracks.")
         tracks_out = [track.to_np() for track in self.tracks]
 
-        file_path = os.path.join(self.out_dir, filename + '-tracks')
         tracks = np.array([p[0] for p in tracks_out], dtype=object)
         frames = np.array([p[1] for p in tracks_out], dtype=object)
 

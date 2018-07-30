@@ -12,7 +12,7 @@ def main(args):
 
     tracker = Tracker(detector=detector,
                       only_track_arms=args.arm_tracking, out_dir=args.output_directory)
-    tracker.video(args.video)
+    tracker.video(args.video, args.draw_frames)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Openpose tracking system.')
@@ -26,6 +26,8 @@ if __name__ == '__main__':
                         help='Use for arm/hand specific tracking.')
     parser.add_argument('--output-directory', type=str, default='output',
                         help='Directory to where the annotated video is saved.')
+    parser.add_argument('--draw-frames', action='store_true',
+                        help='Flag for if the frames with identified frames should be drawn or not.')
 
     args = parser.parse_args()
 
