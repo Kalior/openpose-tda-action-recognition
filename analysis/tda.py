@@ -30,6 +30,16 @@ class TDA:
         self.labels = labels
         self.persistences = []
 
+    def visualise_point_clouds(self, data):
+        scaler = RobustScaler()
+        scaler.fit(data.reshape(-1, 3))
+        for i, d in enumerate(data):
+            points = scaler.transform(d)
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=5)
+            plt.show()
+
     def persistence(self, data):
         dim = 3
         betti_numbers = np.zeros((data.shape[0], dim))
@@ -39,12 +49,6 @@ class TDA:
         diags = []
         for i, d in enumerate(data):
             points = scaler.transform(d)
-
-            if i < 5:
-                fig = plt.figure()
-                ax = fig.add_subplot(111, projection='3d')
-                ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=5)
-                plt.show()
 
             rips = gd.RipsComplex(max_edge_length=0.5, points=points)
             simplex_tree = rips.create_simplex_tree(max_dimension=3)
