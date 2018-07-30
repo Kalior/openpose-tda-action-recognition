@@ -4,6 +4,7 @@ import os
 import numpy as np
 import json
 import cv2
+from collections import Counter
 
 from tracker import Person, Track, TrackVisualiser
 from analysis import Mapper, TDA, ChunkVisualiser
@@ -18,7 +19,8 @@ def main(args):
     labels = dataset_npz['labels']
     videos = dataset_npz['videos']
 
-    processor = PostProcessor()
+    logging.info("Number of dataset labels: {}".format(Counter(labels)))
+
     logging.info("Translating every chunk by the average position of that chunk.")
     translated_chunks = TranslateChunks().transform(chunks)
     # logging.info("Translating every body part by the average position of that body part in the chunk.")
