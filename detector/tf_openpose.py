@@ -1,8 +1,11 @@
 import numpy as np
 
 # Tensorflow implementation of openpose:
-from tf_pose.estimator import TfPoseEstimator
-from tf_pose.networks import get_graph_path, model_wh
+try:
+    from tf_pose.estimator import TfPoseEstimator
+    from tf_pose.networks import get_graph_path, model_wh
+except ImportError:
+    print("Tensorflow openpose not available.")
 
 from util import COCOKeypoints
 # ^ Should be the same as tf_pose.common.CocoPart
