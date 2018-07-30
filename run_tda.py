@@ -36,7 +36,7 @@ def main(args):
         COCOKeypoints.RWrist.value,
         COCOKeypoints.LWrist.value
     ]
-    connect_keypoints = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5)]
+    connect_keypoints = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5), (4, 5)]
 
     if args.tda:
         logging.info("Flattening data into 3D, with third dimension as time.")
@@ -66,14 +66,20 @@ def visualise_classes(chunks, frames, translated_chunks, labels):
     visualiser.visualise_averages(nodes, True)
 
 
-
-
 def run_tda(chunks, frames, translated_chunks, videos, labels, data):
     logging.info("Applying TDA with gudhi to chunks.")
     tda = TDA(chunks, frames, translated_chunks, labels)
-    betti_numbers = tda.persistence(data)
+    diags = tda.persistence(data)
+
+    out_dir = "output/persistence-graphs"
+    if not os.stat(out_dir):
+        os.makedirs(out_dir)
+    logging.info("Saving persistence diagrams and betti curves to {}".format(out_dir))
+    tda.save_persistences(out_dir)
+    tda.save_betti_curves(out_dir)
+
     logging.info("Clustering the betti numbers.")
-    cluster_labels = tda.cluster(betti_numbers, labels)
+    cluster_labels = tda.cluster(diags, labels)
     # tda.visualise(cluster_labels, videos)
 
 
@@ -92,7 +98,7 @@ if __name__ == '__main__':
     parser.add_argument('--mapper', action='store_true',
                         help='Run the mapper algorithm on the data')
     parser.add_argument('--tda', action='store_true',
-                        help='Run a different TDA algorith on the data.')
+                        help='Run a TDA algorithm on the data.')
     parser.add_argument('--visualise', action='store_true',
                         help='Specify if you wish to only visualise the classes in the dataset.')
 
