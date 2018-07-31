@@ -73,7 +73,7 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             ("Persistence", Persistence()),
             ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
             ("TDA",         tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
-            ("Estimator",   SVC(kernel='precomputed'))
+            ("Estimator",   SVC(kernel='precomputed', probability=True))
         ])
 
         return pipe
@@ -87,7 +87,7 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             ("Persistence", Persistence()),
             ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
             ("TDA",         tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
-            ("Estimator",   SVC(kernel='precomputed'))
+            ("Estimator",   SVC(kernel='precomputed', probability=True))
         ])
 
         params = [
