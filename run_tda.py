@@ -13,7 +13,8 @@ from sklearn.model_selection import train_test_split
 from sklearn import metrics
 
 from tracker import Person, Track, TrackVisualiser
-from analysis import Mapper, TDAClassifier, ChunkVisualiser
+from analysis import Mapper, TDAClassifier, \
+    ChunkVisualiser, ClassificationVisualiser
 from transforms import Flatten, FlattenTo3D, SmoothChunks, \
     TranslateChunks, TranslateChunksByKeypoints, AverageSpeed, AngleChangeSpeed, AmountOfMovement
 from util import COCOKeypoints, coco_connections
@@ -36,15 +37,19 @@ def main(args):
     if args.mapper:
         run_mapper(chunks, frames, translated_chunks, videos, labels)
     if args.visualise:
-        chunk_speed = AverageSpeed(range(18)).transform(chunks)
-        plot_feature_per_class(chunk_speed, labels, 'Average Speed')
-        angle_change_speed = AngleChangeSpeed(coco_connections).transform(chunks)
-        plot_feature_per_class(angle_change_speed, labels, 'Average Angle Change')
-        movement = AmountOfMovement(range(18)).transform(chunks)
-        plot_feature_per_class(movement, labels, 'Total distance')
-        plt.show(block=False)
+        visualise_features(chunks, labels)
         visualise_classes(chunks, frames, translated_chunks, labels)
         plt.show()
+
+
+def visualise_features(chunks, labels):
+    chunk_speed = AverageSpeed(range(18)).transform(chunks)
+    plot_feature_per_class(chunk_speed, labels, 'Average Speed')
+    angle_change_speed = AngleChangeSpeed(coco_connections).transform(chunks)
+    plot_feature_per_class(angle_change_speed, labels, 'Average Angle Change')
+    movement = AmountOfMovement(range(18)).transform(chunks)
+    plot_feature_per_class(movement, labels, 'Total distance')
+    plt.show(block=False)
 
 
 def plot_feature_per_class(feature, labels, title):
@@ -96,8 +101,9 @@ def run_tda(chunks, frames, translated_chunks, videos, labels):
     logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
         accuracy, precision, recall))
 
-    classifier.plot_confusion_matrix(pred_labels, test_labels, le)
-    classifier.visualise_incorrect_classifications(
+    visualiser = ClassificationVisualiser()
+    visualser.plot_confusion_matrix(pred_labels, test_labels, le)
+    visualiser.visualise_incorrect_classifications(
         pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
 
 
