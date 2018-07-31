@@ -7,6 +7,9 @@ import os
 from sklearn.preprocessing import RobustScaler
 from sklearn.base import BaseEstimator, TransformerMixin
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 
 class Persistence(BaseEstimator, TransformerMixin):
 
@@ -62,7 +65,6 @@ class Persistence(BaseEstimator, TransformerMixin):
         return np.array(diags)
 
     def save_persistences(self, out_dir):
-
         for i, diag in enumerate(self.persistences):
             fig = gd.plot_persistence_diagram(diag)
 
