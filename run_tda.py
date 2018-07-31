@@ -15,7 +15,7 @@ from sklearn import metrics
 from tracker import Person, Track, TrackVisualiser
 from analysis import Mapper, TDAClassifier, ChunkVisualiser
 from transforms import Flatten, FlattenTo3D, SmoothChunks, \
-    TranslateChunks, TranslateChunksByKeypoints, AverageSpeed, AngleChangeSpeed
+    TranslateChunks, TranslateChunksByKeypoints, AverageSpeed, AngleChangeSpeed, AmountOfMovement
 from util import COCOKeypoints, coco_connections
 
 
@@ -38,7 +38,8 @@ def main(args):
     if args.visualise:
         chunk_speed = AverageSpeed(range(18)).transform(chunks)
         angle_change_speed = AngleChangeSpeed(coco_connections).transform(chunks)
-        plot_feature_per_class(angle_change_speed, labels)
+        movement = AmountOfMovement(range(18)).transform(chunks)
+        plot_feature_per_class(movement, labels)
         visualise_classes(chunks, frames, translated_chunks, labels)
 
 
