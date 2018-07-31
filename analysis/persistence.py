@@ -4,11 +4,20 @@ import numpy as np
 import pandas as pd
 import os
 
+from sklearn.preprocessing import RobustScaler
+from sklearn.base import BaseEstimator, TransformerMixin
 
-class Persistence:
+
+class Persistence(BaseEstimator, TransformerMixin):
 
     def __init__(self):
         self.persistences = []
+
+    def fit(self, X, y, **fit_params):
+        return self
+
+    def transform(self, data):
+        return self.persistence(data)
 
     def visualise_point_clouds(self, data, number_of_points):
         scaler = RobustScaler()
