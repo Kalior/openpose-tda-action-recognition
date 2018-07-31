@@ -1,12 +1,16 @@
 import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class FlattenTo3D:
+class FlattenTo3D(BaseEstimator, TransformerMixin):
 
     def __init__(self, selected_keypoints, connect_keypoints, interpolate_points=False):
         self.selected_keypoints = selected_keypoints
         self.connect_keypoints = connect_keypoints
         self.interpolate_points = interpolate_points
+
+    def fit(self, X, y=None, **fit_params):
+        return self
 
     def transform(self, chunks):
         data = np.array([self._chunk_to_3D(chunk) for chunk in chunks])

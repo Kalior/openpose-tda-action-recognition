@@ -4,18 +4,29 @@ import numpy as np
 import pandas as pd
 import os
 
+from sklearn.preprocessing import RobustScaler
+from sklearn.base import BaseEstimator, TransformerMixin
 
-class Persistence:
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+
+class Persistence(BaseEstimator, TransformerMixin):
 
     def __init__(self):
         self.persistences = []
+
+    def fit(self, X, y, **fit_params):
+        return self
+
+    def transform(self, data):
+        return self.persistence(data)
 
     def visualise_point_clouds(self, data, number_of_points):
         scaler = RobustScaler()
         scaler.fit(data.reshape(-1, 3))
         for i in range(number_of_points):
-            d = data[i]
-            points = scaler.transform(d)
+            points = scaler.transform(data[i])
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
             ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=5)
@@ -53,7 +64,6 @@ class Persistence:
         return np.array(diags)
 
     def save_persistences(self, out_dir):
-
         for i, diag in enumerate(self.persistences):
             fig = gd.plot_persistence_diagram(diag)
 
