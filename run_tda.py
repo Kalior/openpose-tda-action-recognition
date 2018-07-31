@@ -3,15 +3,20 @@ import logging
 import os
 import numpy as np
 from collections import Counter
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+
 
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 
-from tracker import Person, Track, TrackVisualiser
-from analysis import Mapper, TDAClassifier, ChunkVisualiser
-from transforms import Flatten, FlattenTo3D, SmoothChunks, TranslateChunks, TranslateChunksByKeypoints
-from util import COCOKeypoints
+from analysis import Mapper, ChunkVisualiser
+from classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser
+from transforms import Flatten, FlattenTo3D, SmoothChunks, \
+    TranslateChunks, AverageSpeed, AngleChangeSpeed, AmountOfMovement
+from util import COCOKeypoints, coco_connections
 
 
 def main(args):
@@ -30,8 +35,34 @@ def main(args):
         run_tda(chunks, frames, translated_chunks, videos, labels)
     if args.mapper:
         run_mapper(chunks, frames, translated_chunks, videos, labels)
+    if args.ensemble:
+        run_ensemble(chunks, frames, translated_chunks, videos, labels)
     if args.visualise:
+        visualise_features(chunks, labels)
         visualise_classes(chunks, frames, translated_chunks, labels)
+        plt.show()
+
+
+def visualise_features(chunks, labels):
+    chunk_speed = AverageSpeed(range(18)).transform(chunks)
+    plot_feature_per_class(chunk_speed, labels, 'Average Speed')
+    angle_change_speed = AngleChangeSpeed(coco_connections).transform(chunks)
+    plot_feature_per_class(angle_change_speed, labels, 'Average Angle Change')
+    movement = AmountOfMovement(range(18)).transform(chunks)
+    plot_feature_per_class(movement, labels, 'Total distance')
+    plt.show(block=False)
+
+
+def plot_feature_per_class(feature, labels, title):
+    logging.debug('Constructing dataframe')
+    rows = [{'value': feature[i, j], 'keypoint': j, 'action': labels[i]}
+            for i in range(feature.shape[0]) for j in range(feature.shape[1])]
+    df = pd.DataFrame(rows, columns=['value', 'keypoint', 'action'])
+
+    logging.debug('Preparing plot.')
+    plt.figure()
+    sns.lineplot(x='keypoint', y='value', hue='action', style='action', data=df)
+    plt.title(title)
 
 
 def visualise_classes(chunks, frames, translated_chunks, labels):
@@ -48,6 +79,33 @@ def visualise_classes(chunks, frames, translated_chunks, labels):
         nodes[name] = node
 
     visualiser.visualise_averages(nodes, True)
+
+
+def run_ensemble(chunks, frames, translated_chunks, videos, labels):
+    le = LabelEncoder()
+    enc_labels = le.fit_transform(labels)
+    logging.debug("Splitting data into test/train")
+    train_chunks, test_chunks, train_labels, test_labels, \
+        _, test_frames, \
+        _, test_videos, \
+        _, test_translated_chunks = train_test_split(
+            chunks, enc_labels, frames, videos, translated_chunks)
+
+    classifier = EnsembleClassifier()
+    classifier.fit(train_chunks, train_labels)
+    pred_labels = classifier.predict(test_chunks)
+
+    accuracy = metrics.accuracy_score(test_labels, pred_labels)
+    precision = metrics.precision_score(test_labels, pred_labels, average='weighted')
+    recall = metrics.recall_score(test_labels, pred_labels, average='weighted')
+
+    logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
+        accuracy, precision, recall))
+
+    visualiser = ClassificationVisualiser()
+    visualiser.plot_confusion_matrix(pred_labels, test_labels, le)
+    visualiser.visualise_incorrect_classifications(
+        pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
 
 
 def run_tda(chunks, frames, translated_chunks, videos, labels):
@@ -71,8 +129,9 @@ def run_tda(chunks, frames, translated_chunks, videos, labels):
     logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
         accuracy, precision, recall))
 
-    classifier.plot_confusion_matrix(pred_labels, test_labels, le)
-    classifier.visualise_incorrect_classifications(
+    visualiser = ClassificationVisualiser()
+    visualiser.plot_confusion_matrix(pred_labels, test_labels, le)
+    visualiser.visualise_incorrect_classifications(
         pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
 
 
@@ -107,6 +166,8 @@ if __name__ == '__main__':
                         help='Run a TDA algorithm on the data.')
     parser.add_argument('--visualise', action='store_true',
                         help='Specify if you wish to only visualise the classes in the dataset.')
+    parser.add_argument('--ensemble', action='store_true',
+                        help='Runs a voting classifier on TDA and feature engineering on the dataset.')
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()
