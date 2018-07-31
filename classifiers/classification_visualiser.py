@@ -16,6 +16,8 @@ class ClassificationVisualiser:
         df_cm = pd.DataFrame(confusion_matrix, index=class_names, columns=class_names)
         plt.figure(figsize=(10, 7))
         sns.heatmap(df_cm, annot=True)
+        plt.ylabel('True label')
+        plt.xlabel('Predicted label')
         plt.show(block=False)
 
     def visualise_incorrect_classifications(self, pred_labels, test_labels, le, chunks, frames, translated_chunks, videos):
@@ -32,7 +34,7 @@ class ClassificationVisualiser:
                 name = "P {}, T {}".format(le.classes_[pred_label], le.classes_[true_label])
 
                 if len(node) != 0:
-                    c = 'c'
-                    while c == 'c':
+                    repeat = 'y'
+                    while repeat == 'y':
                         visualiser.draw_node(videos, name, node)
-                        c = input("again? (c)")
+                        repeat = input("again? (y/n)")
