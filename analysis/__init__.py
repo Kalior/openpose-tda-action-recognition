@@ -1,5 +1,6 @@
 from .post_processor import PostProcessor
 from .mapper import Mapper
-from .tda import TDA
+from .persistence import Persistence
 from .labelling import Labelling
 from .chunk_visualiser import ChunkVisualiser
+from .tda_classifier import TDAClassifier
