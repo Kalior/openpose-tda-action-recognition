@@ -3,13 +3,11 @@ import sklearn_tda as tda
 import matplotlib.pyplot as plt
 
 import sklearn
-from sklearn.cluster import DBSCAN
-from sklearn.preprocessing import LabelEncoder
+from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import GridSearchCV
 
 import seaborn as sn
 
@@ -25,46 +23,40 @@ from util import COCOKeypoints, coco_connections
 from transforms import TranslateChunks, SmoothChunks, FlattenTo3D
 
 
-class TDAClassifier:
+class TDAClassifier(BaseEstimator, ClassifierMixin):
 
-    def __init__(self, chunks, frames, translated_chunks, labels, videos):
-        self.chunks = chunks
-        self.frames = frames
-        self.translated_chunks = translated_chunks
-        self.labels = labels
-        self.videos = videos
+    def __init__(self, cross_validate=False):
+        self.cross_validate = cross_validate
+        self.arm_keypoints = [
+            COCOKeypoints.RShoulder.value,
+            COCOKeypoints.LShoulder.value,
+            COCOKeypoints.RElbow.value,
+            COCOKeypoints.LElbow.value,
+            COCOKeypoints.RWrist.value,
+            COCOKeypoints.LWrist.value
+        ]
+        self.arm_connections = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5), (4, 5)]
+        self.all_keypoints = range(18)
 
-    def classify(self, data, labels_true):
-        le = LabelEncoder()
-        labels_true = le.fit_transform(labels_true)
+    def fit(self, X, y, **fit_params):
+        if self.cross_validate:
+            logging.debug("Cross-validating to find best model.")
+            model = self._cross_validate_pipeline()
+            self.model = model.fit(X, y)
+            print(self.model.best_params_)
+        else:
+            logging.debug("Using pre-validated pipeline.")
+            model = self._pre_validated_pipeline()
+            self.model = model.fit(X, y)
 
-        logging.debug("Splitting data into test/train")
-        train_data, test_data, \
-            train_labels, test_labels, \
-            _, test_frames, \
-            _, test_videos, \
-            _, test_chunks, \
-            _, test_translated_chunks = train_test_split(
-                data, labels_true, self.frames, self.videos, self.chunks, self.translated_chunks)
+        # logging.info("Train accuracy = {}".format(self.model.score(X, y)))
 
-        self.test_translated_chunks = test_translated_chunks
-        self.test_videos = test_videos
-        self.test_chunks = test_chunks
-        self.test_frames = test_frames
+        return self
 
-        logging.debug("Cross-validating to find best model.")
-        model = self._pipeline()
-        model = model.fit(train_data, train_labels)
-        print(model.best_params_)
-        # logging.info("Train accuracy = {}".format(model.score(train_data, train_labels)))
-        labels = model.predict(test_data)
-        test_accuracy = metrics.accuracy_score(test_labels, labels)
-        logging.info("Test accuracy: {}".format(test_accuracy))
-        self._plot_confusion_matrix(labels, test_labels, le)
+    def predict(self, X):
+        return self.model.predict(X)
 
-        return labels, test_labels, le
-
-    def _plot_confusion_matrix(self, labels, test_labels, le):
+    def plot_confusion_matrix(self, labels, test_labels, le):
         confusion_matrix = metrics.confusion_matrix(test_labels, labels).astype(np.float32)
         confusion_matrix = confusion_matrix / confusion_matrix.sum(axis=1)[:, np.newaxis]
         class_names = list(le.classes_)
@@ -73,23 +65,25 @@ class TDAClassifier:
         sn.heatmap(df_cm, annot=True)
         plt.show(block=False)
 
-    def _pipeline(self):
-        arm_keypoints = [
-            COCOKeypoints.RShoulder.value,
-            COCOKeypoints.LShoulder.value,
-            COCOKeypoints.RElbow.value,
-            COCOKeypoints.LElbow.value,
-            COCOKeypoints.RWrist.value,
-            COCOKeypoints.LWrist.value
-        ]
-        arm_connections = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5), (4, 5)]
-        all_keypoints = range(18)
+    def _pre_validated_pipeline(self):
+        pipe = Pipeline([
+            ("Translate", TranslateChunks()),
+            ("Smoothing", SmoothChunks()),
+            ("Flattening", FlattenTo3D(self.arm_keypoints, self.arm_connections, True)),
+            ("Persistence", Persistence()),
+            ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
+            ("TDA",       tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
+            ("Estimator", SVC(kernel='precomputed'))
+        ])
 
+        return pipe
+
+    def _cross_validate_pipeline(self):
         # Definition of pipeline
         pipe = Pipeline([
             ("Translate", TranslateChunks()),
             ("Smoothing", SmoothChunks()),
-            ("Flattening", FlattenTo3D(arm_keypoints, arm_connections, True)),
+            ("Flattening", FlattenTo3D(self.arm_keypoints, self.arm_connections, True)),
             ("Persistence", Persistence()),
             ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
             ("TDA",       tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
@@ -100,39 +94,36 @@ class TDAClassifier:
             {
                 "Smoothing": [None, SmoothChunks()],
                 "Flattening__interpolate_points": [True, False],
-                "Flattening__selected_keypoints": [arm_keypoints],
-                "Flattening__connect_keypoints": [arm_connections]
+                "Flattening__selected_keypoints": [self.arm_keypoints],
+                "Flattening__connect_keypoints": [self.arm_connections]
             },
             {
                 "Smoothing": [None, SmoothChunks()],
                 "Flattening__interpolate_points": [False],
-                "Flattening__selected_keypoints": [arm_keypoints, all_keypoints]
+                "Flattening__selected_keypoints": [self.arm_keypoints, self.all_keypoints]
             },
             {
                 "Smoothing": [None, SmoothChunks()],
                 "Flattening__interpolate_points": [True],
-                "Flattening__selected_keypoints": [all_keypoints],
+                "Flattening__selected_keypoints": [self.all_keypoints],
                 "Flattening__connect_keypoints": [coco_connections],
             }
         ]
 
-        return GridSearchCV(pipe, params, n_jobs=2)
+        return GridSearchCV(pipe, params, n_jobs=3)
 
-    def visualise(self, pred_labels, test_labels, le):
-        visualiser = ChunkVisualiser(self.test_chunks,
-                                     self.test_frames,
-                                     self.test_translated_chunks)
+    def visualise_incorrect_classifications(self, pred_labels, test_labels, le, chunks, frames, translated_chunks, videos):
+        visualiser = ChunkVisualiser(chunks, frames, translated_chunks)
         unique_labels = set(pred_labels)
-        for k1 in unique_labels:
-            for k2 in unique_labels:
-                if k1 == -1 or k2 == -1:
+        for pred_label in unique_labels:
+            for true_label in unique_labels:
+                if pred_label == -1 or true_label == -1 or pred_label == true_label:
                     continue
 
-                pred_class_member_mask = (pred_labels == k1)
-                true_class_member_mask = (test_labels == k2)
+                pred_class_member_mask = (pred_labels == pred_label)
+                true_class_member_mask = (test_labels == true_label)
                 node = np.where(pred_class_member_mask & true_class_member_mask)[0]
-                name = "Pred {}\n True {}".format(le.classes_[k1], le.classes_[k2])
+                name = "P {}, T {}".format(le.classes_[pred_label], le.classes_[true_label])
 
                 if len(node) != 0:
-                    visualiser.draw_node(self.test_videos, name, node)
-
+                    visualiser.draw_node(videos, name, node)

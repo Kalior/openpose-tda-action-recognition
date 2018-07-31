@@ -2,9 +2,10 @@ import argparse
 import logging
 import os
 import numpy as np
-import json
-import cv2
 from collections import Counter
+
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
 
 from tracker import Person, Track, TrackVisualiser
 from analysis import Mapper, TDAClassifier, ChunkVisualiser
@@ -49,9 +50,21 @@ def visualise_classes(chunks, frames, translated_chunks, labels):
 
 
 def run_tda(chunks, frames, translated_chunks, videos, labels):
-    classifier = TDAClassifier(chunks, frames, translated_chunks, labels, videos)
-    pred_labels, test_labels, le = classifier.classify(chunks, labels)
-    classifier.visualise(pred_labels, test_labels, le)
+    le = LabelEncoder()
+    enc_labels = le.fit_transform(labels)
+    logging.debug("Splitting data into test/train")
+    train_chunks, test_chunks, \
+        train_labels, test_labels, \
+        _, test_frames, \
+        _, test_videos, \
+        _, test_translated_chunks = train_test_split(
+            chunks, enc_labels, frames, videos, translated_chunks)
+
+    classifier = TDAClassifier(cross_validate=True)
+    classifier.fit(train_chunks, train_labels)
+    pred_labels = classifier.predict(test_chunks)
+    classifier.plot_confusion_matrix(pred_labels, test_labels, le)
+    classifier.visualise_incorrect_classifications(pred_labels, test_labels, le)
 
 
 def run_mapper(chunks, frames, translated_chunks, videos, labels):
