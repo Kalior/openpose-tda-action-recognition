@@ -12,11 +12,10 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 
-from tracker import Person, Track, TrackVisualiser
-from analysis import Mapper, TDAClassifier, EnsembleClassifier, \
-    ChunkVisualiser, ClassificationVisualiser
+from analysis import Mapper, ChunkVisualiser
+from classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser
 from transforms import Flatten, FlattenTo3D, SmoothChunks, \
-    TranslateChunks, TranslateChunksByKeypoints, AverageSpeed, AngleChangeSpeed, AmountOfMovement
+    TranslateChunks, AverageSpeed, AngleChangeSpeed, AmountOfMovement
 from util import COCOKeypoints, coco_connections
 
 
@@ -56,13 +55,13 @@ def visualise_features(chunks, labels):
 
 def plot_feature_per_class(feature, labels, title):
     logging.debug('Constructing dataframe')
-    rows = [{'speed': feature[i, j], 'keypoint': j, 'action': labels[i]}
+    rows = [{'value': feature[i, j], 'keypoint': j, 'action': labels[i]}
             for i in range(feature.shape[0]) for j in range(feature.shape[1])]
-    df = pd.DataFrame(rows, columns=['speed', 'keypoint', 'action'])
+    df = pd.DataFrame(rows, columns=['value', 'keypoint', 'action'])
 
     logging.debug('Preparing plot.')
     plt.figure()
-    sns.lineplot(x='keypoint', y='speed', hue='action', style='action', data=df)
+    sns.lineplot(x='keypoint', y='value', hue='action', style='action', data=df)
     plt.title(title)
 
 
@@ -131,7 +130,7 @@ def run_tda(chunks, frames, translated_chunks, videos, labels):
         accuracy, precision, recall))
 
     visualiser = ClassificationVisualiser()
-    visualser.plot_confusion_matrix(pred_labels, test_labels, le)
+    visualiser.plot_confusion_matrix(pred_labels, test_labels, le)
     visualiser.visualise_incorrect_classifications(
         pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
 

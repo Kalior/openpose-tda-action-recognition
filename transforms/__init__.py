@@ -6,3 +6,4 @@ from .translate_chunks_by_keypoints import TranslateChunksByKeypoints
 from .average_speed import AverageSpeed
 from .angle_change_speed import AngleChangeSpeed
 from .amount_of_movement import AmountOfMovement
+from .persistence import Persistence

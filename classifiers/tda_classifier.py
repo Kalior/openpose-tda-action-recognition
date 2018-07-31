@@ -12,7 +12,7 @@ import numpy as np
 import itertools
 import logging
 
-from .persistence import Persistence
+from transforms import Persistence
 
 from util import COCOKeypoints, coco_connections
 from transforms import TranslateChunks, SmoothChunks, FlattenTo3D
