@@ -26,8 +26,7 @@ class Persistence(BaseEstimator, TransformerMixin):
         scaler = RobustScaler()
         scaler.fit(data.reshape(-1, 3))
         for i in range(number_of_points):
-            d = data[i]
-            points = scaler.transform(d)
+            points = scaler.transform(data[i])
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
             ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=5)

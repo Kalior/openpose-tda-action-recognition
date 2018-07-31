@@ -6,6 +6,7 @@ from collections import Counter
 
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+from sklearn import metrics
 
 from tracker import Person, Track, TrackVisualiser
 from analysis import Mapper, TDAClassifier, ChunkVisualiser
@@ -53,18 +54,26 @@ def run_tda(chunks, frames, translated_chunks, videos, labels):
     le = LabelEncoder()
     enc_labels = le.fit_transform(labels)
     logging.debug("Splitting data into test/train")
-    train_chunks, test_chunks, \
-        train_labels, test_labels, \
+    train_chunks, test_chunks, train_labels, test_labels, \
         _, test_frames, \
         _, test_videos, \
         _, test_translated_chunks = train_test_split(
             chunks, enc_labels, frames, videos, translated_chunks)
 
-    classifier = TDAClassifier(cross_validate=True)
+    classifier = TDAClassifier(cross_validate=False)
     classifier.fit(train_chunks, train_labels)
     pred_labels = classifier.predict(test_chunks)
+
+    accuracy = metrics.accuracy_score(test_labels, pred_labels)
+    precision = metrics.precision_score(test_labels, pred_labels, average='weighted')
+    recall = metrics.recall_score(test_labels, pred_labels, average='weighted')
+
+    logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
+        accuracy, precision, recall))
+
     classifier.plot_confusion_matrix(pred_labels, test_labels, le)
-    classifier.visualise_incorrect_classifications(pred_labels, test_labels, le)
+    classifier.visualise_incorrect_classifications(
+        pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
 
 
 def run_mapper(chunks, frames, translated_chunks, videos, labels):

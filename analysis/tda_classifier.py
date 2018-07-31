@@ -67,13 +67,13 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
 
     def _pre_validated_pipeline(self):
         pipe = Pipeline([
-            ("Translate", TranslateChunks()),
-            ("Smoothing", SmoothChunks()),
-            ("Flattening", FlattenTo3D(self.arm_keypoints, self.arm_connections, True)),
+            ("Translate",   TranslateChunks()),
+            ("Smoothing",   SmoothChunks()),
+            ("Flattening",  FlattenTo3D(self.arm_keypoints, self.arm_connections, True)),
             ("Persistence", Persistence()),
-            ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
-            ("TDA",       tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
-            ("Estimator", SVC(kernel='precomputed'))
+            ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
+            ("TDA",         tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
+            ("Estimator",   SVC(kernel='precomputed'))
         ])
 
         return pipe
@@ -81,13 +81,13 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
     def _cross_validate_pipeline(self):
         # Definition of pipeline
         pipe = Pipeline([
-            ("Translate", TranslateChunks()),
-            ("Smoothing", SmoothChunks()),
-            ("Flattening", FlattenTo3D(self.arm_keypoints, self.arm_connections, True)),
+            ("Translate",   TranslateChunks()),
+            ("Smoothing",   SmoothChunks()),
+            ("Flattening",  FlattenTo3D(self.arm_keypoints, self.arm_connections, True)),
             ("Persistence", Persistence()),
-            ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
-            ("TDA",       tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
-            ("Estimator", SVC(kernel='precomputed'))
+            ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
+            ("TDA",         tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
+            ("Estimator",   SVC(kernel='precomputed'))
         ])
 
         params = [
