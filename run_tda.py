@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 from sklearn import metrics
 
 from tracker import Person, Track, TrackVisualiser
-from analysis import Mapper, TDAClassifier, \
+from analysis import Mapper, TDAClassifier, EnsembleClassifier, \
     ChunkVisualiser, ClassificationVisualiser
 from transforms import Flatten, FlattenTo3D, SmoothChunks, \
     TranslateChunks, TranslateChunksByKeypoints, AverageSpeed, AngleChangeSpeed, AmountOfMovement
@@ -36,6 +36,8 @@ def main(args):
         run_tda(chunks, frames, translated_chunks, videos, labels)
     if args.mapper:
         run_mapper(chunks, frames, translated_chunks, videos, labels)
+    if args.ensemble:
+        run_ensemble(chunks, frames, translated_chunks, videos, labels)
     if args.visualise:
         visualise_features(chunks, labels)
         visualise_classes(chunks, frames, translated_chunks, labels)
@@ -78,6 +80,33 @@ def visualise_classes(chunks, frames, translated_chunks, labels):
         nodes[name] = node
 
     visualiser.visualise_averages(nodes, True)
+
+
+def run_ensemble(chunks, frames, translated_chunks, videos, labels):
+    le = LabelEncoder()
+    enc_labels = le.fit_transform(labels)
+    logging.debug("Splitting data into test/train")
+    train_chunks, test_chunks, train_labels, test_labels, \
+        _, test_frames, \
+        _, test_videos, \
+        _, test_translated_chunks = train_test_split(
+            chunks, enc_labels, frames, videos, translated_chunks)
+
+    classifier = EnsembleClassifier()
+    classifier.fit(train_chunks, train_labels)
+    pred_labels = classifier.predict(test_chunks)
+
+    accuracy = metrics.accuracy_score(test_labels, pred_labels)
+    precision = metrics.precision_score(test_labels, pred_labels, average='weighted')
+    recall = metrics.recall_score(test_labels, pred_labels, average='weighted')
+
+    logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
+        accuracy, precision, recall))
+
+    visualiser = ClassificationVisualiser()
+    visualiser.plot_confusion_matrix(pred_labels, test_labels, le)
+    visualiser.visualise_incorrect_classifications(
+        pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
 
 
 def run_tda(chunks, frames, translated_chunks, videos, labels):
@@ -138,6 +167,8 @@ if __name__ == '__main__':
                         help='Run a TDA algorithm on the data.')
     parser.add_argument('--visualise', action='store_true',
                         help='Specify if you wish to only visualise the classes in the dataset.')
+    parser.add_argument('--ensemble', action='store_true',
+                        help='Runs a voting classifier on TDA and feature engineering on the dataset.')
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()
