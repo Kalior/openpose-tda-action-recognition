@@ -37,27 +37,26 @@ def main(args):
         run_mapper(chunks, frames, translated_chunks, videos, labels)
     if args.visualise:
         chunk_speed = AverageSpeed(range(18)).transform(chunks)
+        plot_feature_per_class(chunk_speed, labels, 'Average Speed')
         angle_change_speed = AngleChangeSpeed(coco_connections).transform(chunks)
+        plot_feature_per_class(angle_change_speed, labels, 'Average Angle Change')
         movement = AmountOfMovement(range(18)).transform(chunks)
-        plot_feature_per_class(movement, labels)
+        plot_feature_per_class(movement, labels, 'Total distance')
+        plt.show(block=False)
         visualise_classes(chunks, frames, translated_chunks, labels)
+        plt.show()
 
 
-def plot_feature_per_class(feature, labels):
+def plot_feature_per_class(feature, labels, title):
     logging.debug('Constructing dataframe')
-    df = pd.DataFrame(columns=['speed', 'keypoint', 'action'])
-    for i in range(feature.shape[0]):
-        for j in range(feature.shape[1]):
-            row = {
-                'speed': feature[i, j],
-                'keypoint': j,
-                'action': labels[i]
-            }
-            df = df.append(row, ignore_index=True)
+    rows = [{'speed': feature[i, j], 'keypoint': j, 'action': labels[i]}
+            for i in range(feature.shape[0]) for j in range(feature.shape[1])]
+    df = pd.DataFrame(rows, columns=['speed', 'keypoint', 'action'])
 
     logging.debug('Preparing plot.')
+    plt.figure()
     sns.lineplot(x='keypoint', y='speed', hue='action', style='action', data=df)
-    plt.show()
+    plt.title(title)
 
 
 def visualise_classes(chunks, frames, translated_chunks, labels):
