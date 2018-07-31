@@ -1,8 +1,12 @@
 import scipy.signal
 import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class SmoothChunks:
+class SmoothChunks(BaseEstimator, TransformerMixin):
+
+    def fit(self, X, y=None, **fit_params):
+        return self
 
     def transform(self, chunks):
         smooth = np.copy(chunks)
