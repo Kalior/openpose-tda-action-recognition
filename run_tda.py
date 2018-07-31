@@ -15,8 +15,8 @@ from sklearn import metrics
 from tracker import Person, Track, TrackVisualiser
 from analysis import Mapper, TDAClassifier, ChunkVisualiser
 from transforms import Flatten, FlattenTo3D, SmoothChunks, \
-    TranslateChunks, TranslateChunksByKeypoints, AverageSpeed
-from util import COCOKeypoints
+    TranslateChunks, TranslateChunksByKeypoints, AverageSpeed, AngleChangeSpeed
+from util import COCOKeypoints, coco_connections
 
 
 def main(args):
@@ -37,17 +37,18 @@ def main(args):
         run_mapper(chunks, frames, translated_chunks, videos, labels)
     if args.visualise:
         chunk_speed = AverageSpeed(range(18)).transform(chunks)
-        plot_feature_per_class(chunk_speed, labels)
+        angle_change_speed = AngleChangeSpeed(coco_connections).transform(chunks)
+        plot_feature_per_class(angle_change_speed, labels)
         visualise_classes(chunks, frames, translated_chunks, labels)
 
 
 def plot_feature_per_class(feature, labels):
     logging.debug('Constructing dataframe')
     df = pd.DataFrame(columns=['speed', 'keypoint', 'action'])
-    for i in range(chunk_speed.shape[0]):
-        for j in range(chunk_speed.shape[1]):
+    for i in range(feature.shape[0]):
+        for j in range(feature.shape[1]):
             row = {
-                'speed': chunk_speed[i, j],
+                'speed': feature[i, j],
                 'keypoint': j,
                 'action': labels[i]
             }
