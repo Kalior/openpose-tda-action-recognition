@@ -7,7 +7,7 @@ import cv2
 from collections import Counter
 
 from tracker import Person, Track, TrackVisualiser
-from analysis import Mapper, TDA, ChunkVisualiser
+from analysis import Mapper, TDAClassifier, ChunkVisualiser
 from transforms import Flatten, FlattenTo3D, SmoothChunks, TranslateChunks, TranslateChunksByKeypoints
 from util import COCOKeypoints
 
@@ -23,29 +23,11 @@ def main(args):
 
     logging.info("Translating every chunk by the average position of that chunk.")
     translated_chunks = TranslateChunks().transform(chunks)
-    # logging.info("Translating every body part by the average position of that body part in the chunk.")
-    # translated_chunks = TranslateChunksByKeypoints().transform(chunks)
-    logging.info("Smoothing the path of the keypoints.")
-    translated_chunks = SmoothChunks().transform(translated_chunks)
-
-    selected_keypoints = [
-        COCOKeypoints.RShoulder.value,
-        COCOKeypoints.LShoulder.value,
-        COCOKeypoints.RElbow.value,
-        COCOKeypoints.LElbow.value,
-        COCOKeypoints.RWrist.value,
-        COCOKeypoints.LWrist.value
-    ]
-    connect_keypoints = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5), (4, 5)]
 
     if args.tda:
-        logging.info("Flattening data into 3D, with third dimension as time.")
-        data = FlattenTo3D(selected_keypoints, connect_keypoints).transform(translated_chunks)
-        run_tda(chunks, frames, translated_chunks, videos, labels, data)
+        run_tda(chunks, frames, translated_chunks, videos, labels)
     if args.mapper:
-        logging.info("Flattening data into a datapoint per chunk.")
-        data = Flatten(selected_keypoints).transform(translated_chunks)
-        run_mapper(chunks, frames, translated_chunks, videos, labels, data)
+        run_mapper(chunks, frames, translated_chunks, videos, labels)
     if args.visualise:
         visualise_classes(chunks, frames, translated_chunks, labels)
 
@@ -66,25 +48,26 @@ def visualise_classes(chunks, frames, translated_chunks, labels):
     visualiser.visualise_averages(nodes, True)
 
 
-def run_tda(chunks, frames, translated_chunks, videos, labels, data):
-    logging.info("Applying TDA with gudhi to chunks.")
-    tda = TDA(chunks, frames, translated_chunks, labels)
-    # tda.visualise_point_clouds(data)
-    diags = tda.persistence(data)
-
-    # out_dir = "output/persistence-graphs"
-    # if not os.stat(out_dir):
-    #     os.makedirs(out_dir)
-    # logging.info("Saving persistence diagrams and betti curves to {}".format(out_dir))
-    # tda.save_persistences(out_dir)
-    # tda.save_betti_curves(out_dir)
-
-    logging.info("Clustering.")
-    pred_labels = tda.classify(diags, labels)
-    # tda.visualise(pred_labels, videos)
+def run_tda(chunks, frames, translated_chunks, videos, labels):
+    classifier = TDAClassifier(chunks, frames, translated_chunks, labels, videos)
+    pred_labels, test_labels, le = classifier.classify(chunks, labels)
+    classifier.visualise(pred_labels, test_labels, le)
 
 
-def run_mapper(chunks, frames, translated_chunks, videos, labels, data):
+def run_mapper(chunks, frames, translated_chunks, videos, labels):
+    logging.info("Smoothing chunks.")
+    translated_chunks = SmoothChunks().transform(translated_chunks)
+
+    selected_keypoints = [
+        COCOKeypoints.RShoulder.value,
+        COCOKeypoints.LShoulder.value,
+        COCOKeypoints.RElbow.value,
+        COCOKeypoints.LElbow.value,
+        COCOKeypoints.RWrist.value,
+        COCOKeypoints.LWrist.value
+    ]
+    logging.info("Flattening data into a datapoint per chunk.")
+    data = Flatten(selected_keypoints).transform(translated_chunks)
     logging.info("Applying mapping to tracks.")
     mapper = Mapper(chunks, frames, translated_chunks, labels)
     mapper.create_tooltips(videos)

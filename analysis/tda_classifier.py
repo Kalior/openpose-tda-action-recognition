@@ -2,13 +2,14 @@ import sklearn_tda as tda
 
 import matplotlib.pyplot as plt
 
-from sklearn.cluster import DBSCAN
-from sklearn.preprocessing import RobustScaler, LabelEncoder
-from sklearn import metrics
 import sklearn
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import LabelEncoder
+from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split, GridSearchCV
 
 import seaborn as sn
 
@@ -19,6 +20,9 @@ import logging
 
 from .persistence import Persistence
 from .chunk_visualiser import ChunkVisualiser
+
+from util import COCOKeypoints, coco_connections
+from transforms import TranslateChunks, SmoothChunks, FlattenTo3D
 
 
 class TDAClassifier:
@@ -40,7 +44,7 @@ class TDAClassifier:
             _, test_frames, \
             _, test_videos, \
             _, test_chunks, \
-            _, test_translated_chunks = sklearn.model_selection.train_test_split(
+            _, test_translated_chunks = train_test_split(
                 data, labels_true, self.frames, self.videos, self.chunks, self.translated_chunks)
 
         self.test_translated_chunks = test_translated_chunks
@@ -51,7 +55,7 @@ class TDAClassifier:
         logging.debug("Cross-validating to find best model.")
         model = self._pipeline()
         model = model.fit(train_data, train_labels)
-        # print(model.best_params_)
+        print(model.best_params_)
         # logging.info("Train accuracy = {}".format(model.score(train_data, train_labels)))
         labels = model.predict(test_data)
         test_accuracy = metrics.accuracy_score(test_labels, labels)
@@ -70,15 +74,49 @@ class TDAClassifier:
         plt.show(block=False)
 
     def _pipeline(self):
+        arm_keypoints = [
+            COCOKeypoints.RShoulder.value,
+            COCOKeypoints.LShoulder.value,
+            COCOKeypoints.RElbow.value,
+            COCOKeypoints.LElbow.value,
+            COCOKeypoints.RWrist.value,
+            COCOKeypoints.LWrist.value
+        ]
+        arm_connections = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5), (4, 5)]
+        all_keypoints = range(18)
+
         # Definition of pipeline
         pipe = Pipeline([
+            ("Translate", TranslateChunks()),
+            ("Smoothing", SmoothChunks()),
+            ("Flattening", FlattenTo3D(arm_keypoints, arm_connections, True)),
             ("Persistence", Persistence()),
             ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
             ("TDA",       tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
             ("Estimator", SVC(kernel='precomputed'))
         ])
 
-        return pipe
+        params = [
+            {
+                "Smoothing": [None, SmoothChunks()],
+                "Flattening__interpolate_points": [True, False],
+                "Flattening__selected_keypoints": [arm_keypoints],
+                "Flattening__connect_keypoints": [arm_connections]
+            },
+            {
+                "Smoothing": [None, SmoothChunks()],
+                "Flattening__interpolate_points": [False],
+                "Flattening__selected_keypoints": [arm_keypoints, all_keypoints]
+            },
+            {
+                "Smoothing": [None, SmoothChunks()],
+                "Flattening__interpolate_points": [True],
+                "Flattening__selected_keypoints": [all_keypoints],
+                "Flattening__connect_keypoints": [coco_connections],
+            }
+        ]
+
+        return GridSearchCV(pipe, params, n_jobs=2)
 
     def _plot_clusters(self, data, labels, title, le, ax):
         unique_labels = set(labels)
