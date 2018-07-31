@@ -118,31 +118,6 @@ class TDAClassifier:
 
         return GridSearchCV(pipe, params, n_jobs=2)
 
-    def _plot_clusters(self, data, labels, title, le, ax):
-        unique_labels = set(labels)
-        colors = [plt.cm.Spectral(each)
-                  for each in np.linspace(0, 1, len(unique_labels))]
-
-        for k, col in zip(unique_labels, colors):
-            if k == -1:
-                # Black used for noise.
-                col = [0, 0, 0, 1]
-
-            class_member_mask = (labels == k)
-
-            if title is "True":
-                class_name = le.classes_[k]
-            else:
-                class_name = k
-
-            xy = data[class_member_mask]
-            ax.plot(xy[:, 0], xy[:, 1], xy[:, 2], 'o', markerfacecolor=tuple(col),
-                    markeredgecolor='k', markersize=6, label=class_name)
-
-        ax.legend()
-        n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
-        ax.set_title('{} number of clusters: {}'.format(title, n_clusters_))
-
     def visualise(self, pred_labels, test_labels, le):
         visualiser = ChunkVisualiser(self.test_chunks,
                                      self.test_frames,
@@ -161,17 +136,3 @@ class TDAClassifier:
                 if len(node) != 0:
                     visualiser.draw_node(self.test_videos, name, node)
 
-    def _add_on_click(self, figs, data, axes):
-        for ax in axes:
-            ax.plot(data[:, 0], data[:, 1], data[:, 2], 'o', markerfacecolor='b',
-                    markeredgecolor='b', markersize=0, picker=5)
-
-        def onpick(event):
-            visualiser = ChunkVisualiser(
-                self.chunks, self.frames, self.translated_chunks)
-            ind = event.ind
-            nodes = {'Picked points': ind}
-            visualiser.visualise_averages(nodes)
-
-        for fig in figs:
-            fig.canvas.mpl_connect('pick_event', onpick)
