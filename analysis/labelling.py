@@ -17,8 +17,8 @@ class Labelling:
             track = tracks[i]
             visualiser.draw_video_with_tracks(
                 [track], video, track.frame_assigned[-1].astype(np.int), track.frame_assigned[0].astype(np.int))
-            label = input('Label? (Scan, Cash, sTill, Moving, Other, q(skip))')
-            if label in ['s', 'c', 'o', 'm', 't', 'q']:
+            label = input('Label? (Scan, Cash, sTill, Moving, Lie, Other, q(skip))')
+            if label in ['s', 'c', 'o', 'm', 't', 'l', 'q']:
                 if label == 's':
                     label = 'scan'
                 elif label == 'c':
@@ -27,13 +27,15 @@ class Labelling:
                     label = 'moving'
                 elif label == 't':
                     label = 'still'
+                elif label == 'l':
+                    label = 'lie'
                 elif label == 'q':
                     i += 1
                     continue
                 elif label == 'o':
                     label = 'other'
                 labels[i] = label
-                # If no valid action, show the video again.
                 i += 1
+                # If no valid action, show the video again.
 
         return labels
