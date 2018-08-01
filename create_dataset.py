@@ -4,6 +4,7 @@ import numpy as np
 import os
 import json
 import cv2
+from sklearn.model_selection import train_test_split
 
 from analysis import PostProcessor, Labelling
 from tracker import TrackVisualiser
@@ -36,28 +37,40 @@ def main(args):
         all_labels = np.append(all_labels, np.array(list(labels.values())), axis=0)
         all_videos = np.append(all_videos, np.array(videos), axis=0)
 
-    logging.info("Saving data to {}".format(args.out_file))
-    if args.append and (os.path.isfile(args.out_file) or os.path.isfile(args.out_file + '.npz')):
-        # Add extension if it isn't given
-        if os.path.isfile(args.out_file):
-            out_file = args.out_file
-        elif os.path.isfile(args.out_file + '.npz'):
-            out_file = args.out_file + '.npz'
+    extension_free = os.path.splitext(args.out_file)[0]
+    train_name = extension_free + '-train.npz'
+    test_name = extension_free + '-test.npz'
+    train, test = split_data(all_chunks, all_frames, all_labels, all_videos)
+    append_and_save(*train, train_name)
+    append_and_save(*test, test_name)
 
-        dataset_npz = np.load(out_file)
 
-        all_chunks = load_and_append(dataset_npz, 'chunks', all_chunks)
-        all_frames = load_and_append(dataset_npz, 'frames', all_frames)
-        all_labels = load_and_append(dataset_npz, 'labels', all_labels)
-        all_videos = load_and_append(dataset_npz, 'videos', all_videos)
+def append_and_save(chunks, frames, labels, videos, file_name):
+    if args.append and (os.path.isfile(file_name)):
+        dataset_npz = np.load(file_name)
 
-    np.savez(args.out_file, chunks=all_chunks, frames=all_frames,
-             labels=all_labels, videos=all_videos)
+        chunks = load_and_append(dataset_npz, 'chunks', chunks)
+        frames = load_and_append(dataset_npz, 'frames', frames)
+        labels = load_and_append(dataset_npz, 'labels', labels)
+        videos = load_and_append(dataset_npz, 'videos', videos)
+
+    logging.info("Saving data to {}".format(file_name))
+    np.savez(file_name, chunks=chunks, frames=frames, labels=labels, videos=videos)
 
 
 def load_and_append(npz, name, array):
     prev_array = npz[name]
     return np.append(prev_array, array, axis=0)
+
+
+def split_data(chunks, frames, labels, videos):
+    logging.info("Splitting data into test/train")
+    train_chunks, test_chunks, train_labels, test_labels, \
+        train_frames, test_frames, train_videos, test_videos = train_test_split(
+            chunks, labels, frames, videos)
+
+    return [train_chunks, train_frames, train_labels, train_videos], \
+        [test_chunks, test_frames, test_labels, test_videos]
 
 
 def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percentage, seconds_per_chunk, automatic_moving_filter):

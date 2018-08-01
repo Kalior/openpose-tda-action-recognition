@@ -9,7 +9,6 @@ import pandas as pd
 
 
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
 from sklearn import metrics
 
 from analysis import Mapper, ChunkVisualiser
@@ -20,27 +19,35 @@ from util import COCOKeypoints, coco_connections
 
 
 def main(args):
-    dataset_npz = np.load(args.dataset)
+    extension_free = os.path.splitext(args.dataset)[0]
+    train_name = extension_free + '-train.npz'
+    test_name = extension_free + '-test.npz'
+    train = load_data(train_name)
+    test = load_data(test_name)
+
+    logging.info("Number of train dataset labels: {}".format(Counter(train[2])))
+    logging.info("Number of test dataset labels: {}".format(Counter(test[2])))
+
+    if args.tda:
+        run_tda(train, test)
+    if args.mapper:
+        run_mapper(train, test)
+    if args.ensemble:
+        run_ensemble(train, test)
+    if args.visualise:
+        visualise_features(train[0], train[2])
+        visualise_classes(train, test)
+        plt.show()
+
+
+def load_data(file_name):
+    dataset_npz = np.load(file_name)
     chunks = dataset_npz['chunks']
     frames = dataset_npz['frames'].astype(np.int)
     labels = dataset_npz['labels']
     videos = dataset_npz['videos']
 
-    logging.info("Number of dataset labels: {}".format(Counter(labels)))
-
-    logging.info("Translating every chunk by the average position of that chunk.")
-    translated_chunks = TranslateChunks().transform(chunks)
-
-    if args.tda:
-        run_tda(chunks, frames, translated_chunks, videos, labels)
-    if args.mapper:
-        run_mapper(chunks, frames, translated_chunks, videos, labels)
-    if args.ensemble:
-        run_ensemble(chunks, frames, translated_chunks, videos, labels)
-    if args.visualise:
-        visualise_features(chunks, labels)
-        visualise_classes(chunks, frames, translated_chunks, labels)
-        plt.show()
+    return chunks, frames, labels, videos
 
 
 def visualise_features(chunks, labels):
@@ -65,7 +72,17 @@ def plot_feature_per_class(feature, labels, title):
     plt.title(title)
 
 
-def visualise_classes(chunks, frames, translated_chunks, labels):
+def append_train_and_test(train, test):
+    chunks = np.append(train[0], test[0])
+    frames = np.append(train[1], test[1])
+    labels = np.append(train[2], test[2])
+    videos = np.append(train[3], test[3])
+    return chunks, frames, labels, videos
+
+
+def visualise_classes(train, test):
+    chunks, frames, labels, videos = append_train_and_test(train, test)
+    translated_chunks = TranslateChunks().transform(chunks)
     visualiser = ChunkVisualiser(chunks, frames, translated_chunks)
     unique_labels = set(labels)
     nodes = {}
@@ -81,15 +98,14 @@ def visualise_classes(chunks, frames, translated_chunks, labels):
     visualiser.visualise_averages(nodes, True)
 
 
-def run_ensemble(chunks, frames, translated_chunks, videos, labels):
+def run_ensemble(train, test):
+    train_chunks, _, train_labels, _ = train
+    test_chunks, test_frames, test_labels, test_videos = test
+    test_translated_chunks = TranslateChunks().transform(test_chunks)
+
     le = LabelEncoder()
-    enc_labels = le.fit_transform(labels)
-    logging.debug("Splitting data into test/train")
-    train_chunks, test_chunks, train_labels, test_labels, \
-        _, test_frames, \
-        _, test_videos, \
-        _, test_translated_chunks = train_test_split(
-            chunks, enc_labels, frames, videos, translated_chunks)
+    train_labels = le.fit_transform(train_labels)
+    test_labels = le.transform(test_labels)
 
     classifier = EnsembleClassifier()
     classifier.fit(train_chunks, train_labels)
@@ -108,15 +124,14 @@ def run_ensemble(chunks, frames, translated_chunks, videos, labels):
         pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
 
 
-def run_tda(chunks, frames, translated_chunks, videos, labels):
+def run_tda(train, test):
+    train_chunks, _, train_labels, _ = train
+    test_chunks, test_frames, test_labels, test_videos = test
+    test_translated_chunks = TranslateChunks().transform(test_chunks)
+
     le = LabelEncoder()
-    enc_labels = le.fit_transform(labels)
-    logging.debug("Splitting data into test/train")
-    train_chunks, test_chunks, train_labels, test_labels, \
-        _, test_frames, \
-        _, test_videos, \
-        _, test_translated_chunks = train_test_split(
-            chunks, enc_labels, frames, videos, translated_chunks)
+    train_labels = le.fit_transform(train_labels)
+    test_labels = le.transform(test_labels)
 
     classifier = TDAClassifier(cross_validate=False)
     classifier.fit(train_chunks, train_labels)
@@ -135,7 +150,10 @@ def run_tda(chunks, frames, translated_chunks, videos, labels):
         pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
 
 
-def run_mapper(chunks, frames, translated_chunks, videos, labels):
+def run_mapper(test, train):
+    chunks, frames, labels, videos = append_train_and_test(train, test)
+    translated_chunks = TranslateChunks().transform(chunks)
+
     logging.info("Smoothing chunks.")
     translated_chunks = SmoothChunks().transform(translated_chunks)
 
