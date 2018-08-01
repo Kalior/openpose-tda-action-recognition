@@ -73,10 +73,10 @@ def plot_feature_per_class(feature, labels, title):
 
 
 def append_train_and_test(train, test):
-    chunks = np.append(train[0], test[0])
-    frames = np.append(train[1], test[1])
-    labels = np.append(train[2], test[2])
-    videos = np.append(train[3], test[3])
+    chunks = np.append(train[0], test[0], axis=0)
+    frames = np.append(train[1], test[1], axis=0)
+    labels = np.append(train[2], test[2], axis=0)
+    videos = np.append(train[3], test[3], axis=0)
     return chunks, frames, labels, videos
 
 
