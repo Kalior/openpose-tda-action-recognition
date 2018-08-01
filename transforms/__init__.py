@@ -7,3 +7,5 @@ from .average_speed import AverageSpeed
 from .angle_change_speed import AngleChangeSpeed
 from .amount_of_movement import AmountOfMovement
 from .persistence import Persistence
+from .extract_keypoints import ExtractKeypoints
+from .interpolate_keypoints import InterpolateKeypoints

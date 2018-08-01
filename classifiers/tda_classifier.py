@@ -15,7 +15,8 @@ import logging
 from transforms import Persistence
 
 from util import COCOKeypoints, coco_connections
-from transforms import TranslateChunks, SmoothChunks, FlattenTo3D
+from transforms import TranslateChunks, SmoothChunks, FlattenTo3D, \
+    ExtractKeypoints, InterpolateKeypoints
 
 
 class TDAClassifier(BaseEstimator, ClassifierMixin):
@@ -58,7 +59,9 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
         pipe = Pipeline([
             ("Translate",   TranslateChunks()),
             ("Smoothing",   SmoothChunks()),
-            ("Flattening",  FlattenTo3D(self.arm_keypoints, self.arm_connections, True)),
+            ("Extract",     ExtractKeypoints(self.arm_keypoints)),
+            ("Interpolate", InterpolateKeypoints(self.arm_connections)),
+            ("Flattening",  FlattenTo3D()),
             ("Persistence", Persistence()),
             ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
             ("TDA",         tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
@@ -72,31 +75,34 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
         pipe = Pipeline([
             ("Translate",   TranslateChunks()),
             ("Smoothing",   SmoothChunks()),
-            ("Flattening",  FlattenTo3D(self.arm_keypoints, self.arm_connections, True)),
+            ("Extract",     ExtractKeypoints(self.arm_keypoints)),
+            ("Interpolate", InterpolateKeypoints(self.arm_connections)),
+            ("Flattening",  FlattenTo3D()),
             ("Persistence", Persistence()),
             ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
             ("TDA",         tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
             ("Estimator",   SVC(kernel='precomputed', probability=True))
-        ])
+        ], memory='pipeline_cache')
 
         params = [
             {
-                "Smoothing": [None, SmoothChunks()],
-                "Flattening__interpolate_points": [True, False],
-                "Flattening__selected_keypoints": [self.arm_keypoints],
-                "Flattening__connect_keypoints": [self.arm_connections]
+                "Smoothing": [SmoothChunks()],
+                "Interpolate": [None],
+                "Extract__selected_keypoints": [self.arm_keypoints],
+                "Interpolate__connect_keypoints": [self.arm_connections]
             },
-            {
-                "Smoothing": [None, SmoothChunks()],
-                "Flattening__interpolate_points": [False],
-                "Flattening__selected_keypoints": [self.arm_keypoints, self.all_keypoints]
-            },
-            {
-                "Smoothing": [None, SmoothChunks()],
-                "Flattening__interpolate_points": [True],
-                "Flattening__selected_keypoints": [self.all_keypoints],
-                "Flattening__connect_keypoints": [coco_connections],
-            }
+            # {
+            #     "Smoothing": [SmoothChunks()],
+            #     "Interpolate": [None],
+            #     "Extract__selected_keypoints": [self.arm_keypoints],
+            #     "Interpolate__connect_keypoints": [self.arm_connections],
+            # },
+            # {
+            #     "Smoothing": [SmoothChunks()],
+            #     "Interpolate": [None],
+            #     "Extract__selected_keypoints": [self.all_keypoints],
+            #     "Interpolate__connect_keypoints": [coco_connections],
+            # }
         ]
 
         return GridSearchCV(pipe, params, n_jobs=3)
