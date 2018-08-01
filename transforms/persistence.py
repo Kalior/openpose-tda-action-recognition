@@ -13,8 +13,9 @@ from mpl_toolkits.mplot3d import Axes3D
 
 class Persistence(BaseEstimator, TransformerMixin):
 
-    def __init__(self):
+    def __init__(self, max_edge_length=0.5):
         self.persistences = []
+        self.max_edge_length = max_edge_length
 
     def fit(self, X, y, **fit_params):
         return self
@@ -42,7 +43,7 @@ class Persistence(BaseEstimator, TransformerMixin):
         for i, d in enumerate(data):
             points = scaler.transform(d)
 
-            rips = gd.RipsComplex(max_edge_length=0.5, points=points)
+            rips = gd.RipsComplex(max_edge_length=self.max_edge_length, points=points)
             simplex_tree = rips.create_simplex_tree(max_dimension=3)
 
             # alpha = gd.AlphaComplex(points=points)
