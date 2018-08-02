@@ -60,8 +60,6 @@ RUN make install
 ENV OPENPOSEPYTHON=/usr/local/python/
 ENV PYTHONPATH $OPENPOSEPYTHON:$PYTHONPATH
 
-WORKDIR /openpose-action-recognition
-COPY . .
 
 # Install python3.6
 RUN apt-get install -y software-properties-common
@@ -72,7 +70,10 @@ RUN apt-get install -y \
     python3.6-dev \
     python3-pip
 
+WORKDIR /requirements
+COPY requirements.txt requirements.txt
+
 RUN python3.6 -m pip install pip --upgrade
 RUN python3.6 -m pip install -r requirements.txt
 
-CMD ['python3.6', 'generate_tracks.py']
+WORKDIR /openpose-action-recognition

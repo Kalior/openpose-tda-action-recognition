@@ -59,8 +59,7 @@ RUN make install
 ENV OPENPOSEPYTHON=/usr/local/python/
 ENV PYTHONPATH $OPENPOSEPYTHON:$PYTHONPATH
 
-WORKDIR /openpose-action-recognition
-COPY . .
+
 
 RUN apt-get install -y software-properties-common
 RUN add-apt-repository ppa:jonathonf/python-3.6
@@ -70,5 +69,10 @@ RUN apt-get install -y \
     python3.6-dev \
     python3-pip
 
+WORKDIR /requirements
+COPY requirements.txt requirements.txt
+
 RUN python3.6 -m pip install pip --upgrade
 RUN python3.6 -m pip install -r requirements.txt
+
+WORKDIR /openpose-action-recognition
