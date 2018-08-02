@@ -63,23 +63,34 @@ class Track:
         if number_of_chunks <= 0:
             return np.array([]), np.array([])
 
-        number_of_keypoints = self.track[0].keypoints.shape[0]
-        values_per_keypoint = self.track[0].keypoints.shape[1]
-        chunks = np.zeros((number_of_chunks, frames_per_chunk,
-                           number_of_keypoints, values_per_keypoint))
-        chunk_start_frames = np.zeros((number_of_chunks, frames_per_chunk), dtype=np.int)
+        keypoint_shape = self.track[0].keypoints.shape
+        chunks = np.zeros((number_of_chunks, frames_per_chunk, *keypoint_shape))
+        frames = np.zeros((number_of_chunks, frames_per_chunk), dtype=np.int)
         start_index = 0
         index = 0
         while start_index + frames_per_chunk < len(self.track):
-            end_index = start_index + frames_per_chunk
-            chunk = np.array([p.keypoints for p in self.track[
-                             start_index:end_index]])
+            chunk, chunk_frames = self._chunk_from_index(start_index, frames_per_chunk)
+
             chunks[index] = chunk
-            chunk_start_frames[index] = np.array(self.frame_assigned[start_index:end_index])
+            frames[index] = chunk_frames
             start_index += frames_per_chunk - overlap
             index += 1
 
-        return chunks, chunk_start_frames
+        return chunks, frames
+
+    def chunk_from_frame(self, start_frame, frames_per_chunk):
+        start_index = 0
+        # Iterate to where the chunk should start
+        while self.frame_assigned[start_index] < start_frame:
+            start_index += 1
+
+        return self._chunk_from_index(start_index, frames_per_chunk)
+
+    def _chunk_from_index(self, start_index, frames_per_chunk):
+        end_index = start_index + frames_per_chunk
+        chunk = np.array([p.keypoints for p in self.track[start_index:end_index]])
+        frames = np.array(self.frame_assigned[start_index:end_index])
+        return chunk, frames
 
     def to_np(self):
         np_path = np.array([p.keypoints for p in self.track])

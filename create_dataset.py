@@ -34,7 +34,7 @@ def main(args):
 
         all_chunks = np.append(all_chunks, chunks, axis=0)
         all_frames = np.append(all_frames, frames, axis=0)
-        all_labels = np.append(all_labels, np.array(list(labels.values())), axis=0)
+        all_labels = np.append(all_labels, np.array(labels), axis=0)
         all_videos = np.append(all_videos, np.array(videos), axis=0)
 
     extension_free = os.path.splitext(args.out_file)[0]
@@ -83,6 +83,21 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
     processor.create_tracks(np_tracks, np_frames)
     processor.post_process_tracks()
 
+    extension_free_video = os.path.splitext(video)[0]
+    timestamps_file = extension_free_video + '-timestamps.json'
+    if os.path.isfile(timestamps_file):
+        with open(timestamps_file, 'r') as f:
+            timestamps = json.load(f)
+        chunks, frames, labels = processor.automatic_labelling(timestamps, target_frames_per_chunk)
+        logging.info("{} chunks labelled".format(len(chunks)))
+    else:
+        chunks, frames, labels = manual_labelling(
+            video, processor, target_frames_per_chunk, overlap_percentage, seconds_per_chunk, automatic_moving_filter)
+
+    return chunks, frames, labels
+
+
+def manual_labelling(video, processor, target_frames_per_chunk, overlap_percentage, seconds_per_chunk, automatic_moving_filter):
     capture = cv2.VideoCapture(video)
     fps = capture.get(cv2.CAP_PROP_FPS)
     frames_per_chunk_for_seconds = int(seconds_per_chunk * fps)
@@ -115,7 +130,7 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
     chunks = chunks[np.array(list(labels.keys()), dtype=np.int)]
     frames = frames[np.array(list(labels.keys()), dtype=np.int)]
 
-    return chunks, frames, labels
+    return chunks, frames, list(labels.values())
 
 
 def filter_moving(chunks, frames):
