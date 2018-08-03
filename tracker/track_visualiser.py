@@ -21,7 +21,7 @@ class TrackVisualiser:
 
             smaller_original = cv2.resize(original_image, (0, 0), fx=0.5, fy=0.5)
             cv2.imshow("output", smaller_original)
-            cv2.waitKey(15)
+            cv2.waitKey(10)
 
     def draw_tracks(self, tracks, img, current_frame,
                     keypoint_index=COCOKeypoints.Neck.value):
@@ -43,17 +43,16 @@ class TrackVisualiser:
                 COCOKeypoints.RElbow.value,
                 COCOKeypoints.LElbow.value
             ]
-            for i in selected_keypoints:
-                path = track.get_keypoint_path(i, current_frame)
-                if len(path) > 0:
-                    original_pos = path[-1].astype(np.int)
-                    if offset_person:
-                        offset = np.array([250, 150])
-                        position = tuple(original_pos + offset)
-                    else:
-                        position = tuple(original_pos)
-                    cv2.circle(img, position, 5, track_color, 3)
-                    positions[i] = position
+            keypoints = track.get_keypoints_at(current_frame)
+            for i in range(15):
+                original_pos = keypoints[i].astype(np.int)
+                if offset_person:
+                    offset = np.array([250, 150])
+                    position = tuple(original_pos + offset)
+                else:
+                    position = tuple(original_pos)
+                cv2.circle(img, position, 5, track_color, 3)
+                positions[i] = position
 
             for from_, to in coco_connections:
                 self._add_line(img, positions[from_], positions[to], track_color)

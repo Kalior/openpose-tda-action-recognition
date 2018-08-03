@@ -53,6 +53,9 @@ class Track:
         return [p[idx][:2] for i, p in enumerate(self.track)
                 if np.any(p[idx][:2]) and self.frame_assigned[i] <= current_frame]
 
+    def get_keypoints_at(self, frame):
+        return [p[:, :2] for i, p in enumerate(self.track) if self.frame_assigned[i] <= frame][-1]
+
     def divide_into_chunks(self, frames_per_chunk, overlap=-1):
         if overlap == -1:
             overlap = int(frames_per_chunk / 2)
@@ -81,7 +84,7 @@ class Track:
     def chunk_from_frame(self, start_frame, frames_per_chunk):
         start_index = 0
         # Iterate to where the chunk should start
-        while self.frame_assigned[start_index] < start_frame:
+        while start_index < len(self.frame_assigned) and self.frame_assigned[start_index] < start_frame:
             start_index += 1
 
         return self._chunk_from_index(start_index, frames_per_chunk)

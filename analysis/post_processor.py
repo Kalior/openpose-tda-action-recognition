@@ -74,15 +74,20 @@ class PostProcessor:
         number_of_coordinates = 3
         chunks = np.empty((0, target_frames_per_chunk, number_of_keypoints, number_of_coordinates))
         chunk_frames = np.empty((0, target_frames_per_chunk), dtype=np.int)
+        track_indicies = np.empty((0,), dtype=np.int)
+
         for i, track in enumerate(self.tracks):
             chunked, frames = track.divide_into_chunks(frames_per_chunk, overlap)
             if chunked.shape[0] > 0:
                 chunked, frames = self._decrease_frames_per_chunk(
                     chunked, frames, target_frames_per_chunk)
+
                 chunks = np.append(chunks, chunked, axis=0)
                 chunk_frames = np.append(chunk_frames, frames, axis=0)
+                indicies = np.array([i] * len(chunked))
+                track_indicies = np.append(track_indicies, indicies, axis=0)
 
-        return chunks, chunk_frames
+        return chunks, chunk_frames, track_indicies
 
     def _decrease_frames_per_chunk(self, chunked, chunk_frames, target_frames_per_chunk):
         indicies = np.arange(0, chunked.shape[1],
@@ -108,34 +113,3 @@ class PostProcessor:
                 filtered_frames = np.append(filtered_frames, [chunk_frames[i]], axis=0)
 
         return filtered_chunks, filtered_frames
-
-    def automatic_labelling(self, timestamps, frames_per_chunk):
-        valid_timestamps = [t for t in timestamps
-                            if t['end_frame'] - t['start_frame'] >= frames_per_chunk and
-                            any(self._fits_in_timestamp(track, t) for track in self.tracks)]
-
-        keypoints = self.tracks[0][0].keypoints
-        chunks = np.zeros((len(valid_timestamps), frames_per_chunk, *keypoints.shape))
-        frames = np.zeros((len(valid_timestamps), frames_per_chunk), dtype=np.int)
-        labels = np.zeros(len(valid_timestamps), dtype=object)
-
-        for i, timestamp in enumerate(valid_timestamps):
-            # Only include the first track that fits the timestamp
-            track = next(track for track in self.tracks
-                         if self._fits_in_timestamp(track, timestamp))
-
-            timestamp_length = timestamp['end_frame'] - timestamp['start_frame']
-            middle_of_timestamp = timestamp['start_frame'] + timestamp_length / 2
-            start_of_chunk = int(middle_of_timestamp - frames_per_chunk / 2)
-            chunk, chunk_frames = track.chunk_from_frame(start_of_chunk, frames_per_chunk)
-
-            chunks[i] = chunk
-            frames[i] = chunk_frames
-            labels[i] = timestamp['label']
-
-        return chunks, frames, labels
-
-    def _fits_in_timestamp(self, track, timestamp):
-        track_start = track.frame_assigned[0]
-        track_end = track.frame_assigned[-1]
-        return track_start <= timestamp['start_frame'] and track_end >= timestamp['end_frame']
