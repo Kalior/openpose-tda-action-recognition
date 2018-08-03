@@ -5,4 +5,4 @@ kmapper
 sklearn
 pandas
 matplotlib
-seaborn
+seaborn==0.9.0

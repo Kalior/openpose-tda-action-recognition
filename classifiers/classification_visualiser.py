@@ -18,6 +18,7 @@ class ClassificationVisualiser:
         sns.heatmap(df_cm, annot=True)
         plt.ylabel('True label')
         plt.xlabel('Predicted label')
+        plt.tight_layout()
         plt.show(block=False)
 
     def visualise_incorrect_classifications(self, pred_labels, test_labels, le, chunks, frames, translated_chunks, videos):

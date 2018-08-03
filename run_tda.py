@@ -87,9 +87,6 @@ def visualise_classes(train, test):
     unique_labels = set(labels)
     nodes = {}
     for k in unique_labels:
-        if k == -1:
-            continue
-
         class_member_mask = (labels == k)
         node = np.where(class_member_mask)[0]
         name = str(k)

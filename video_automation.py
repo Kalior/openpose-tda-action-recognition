@@ -38,10 +38,10 @@ def label_recording(video_start_time, frame_rate):
         keypress = input('Label? (Scan, Cash, sTill, Moving, Lie, Other, quit)')
         if keypress in ['s', 'c', 'o', 'm', 't', 'l']:
             start_time = time() - video_start_time
-            label = parse_keypress_to_label(keypress)
 
             input('Press any key to stop')
             end_time = time() - video_start_time
+            label = parse_keypress_to_label(keypress)
             timestamp = {
                 'start_time': start_time,
                 'end_time': end_time,

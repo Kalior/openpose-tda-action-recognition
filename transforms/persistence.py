@@ -31,7 +31,7 @@ class Persistence(BaseEstimator, TransformerMixin):
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
             ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=5)
-            plt.show()
+            plt.show(block=False)
 
     def persistence(self, data):
         dim = 3
