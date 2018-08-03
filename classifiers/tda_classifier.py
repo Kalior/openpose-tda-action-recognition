@@ -15,8 +15,8 @@ import logging
 from transforms import Persistence
 
 from util import COCOKeypoints, coco_connections
-from transforms import TranslateChunks, SmoothChunks, FlattenTo3D, \
-    ExtractKeypoints, InterpolateKeypoints
+from transforms import TranslateChunks, SmoothChunks, FlattenTo3D, Speed, \
+    ExtractKeypoints, InterpolateKeypoints, RotatePointCloud
 
 
 class TDAClassifier(BaseEstimator, ClassifierMixin):
@@ -40,6 +40,7 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             model = self._cross_validate_pipeline()
             self.model = model.fit(X, y)
             print(self.model.best_params_)
+            self.model.set_params({"Rotate": None})
         else:
             logging.debug("Using pre-validated pipeline.")
             model = self._pre_validated_pipeline()
@@ -78,6 +79,7 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             ("Extract",     ExtractKeypoints(self.arm_keypoints)),
             ("Interpolate", InterpolateKeypoints(self.arm_connections)),
             ("Flattening",  FlattenTo3D()),
+            ("Rotate",      RotatePointCloud()),
             ("Persistence", Persistence()),
             ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
             ("TDA",         tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
@@ -86,17 +88,18 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
 
         params = [
             {
-                "Smoothing": [SmoothChunks()],
-                "Interpolate": [None],
-                "Extract__selected_keypoints": [self.arm_keypoints],
-                "Interpolate__connect_keypoints": [self.arm_connections]
+                "Rotate": [None, RotatePointCloud()]
             },
-            # {
-            #     "Smoothing": [SmoothChunks()],
-            #     "Interpolate": [None],
-            #     "Extract__selected_keypoints": [self.arm_keypoints],
-            #     "Interpolate__connect_keypoints": [self.arm_connections],
-            # },
+            {
+                "Extract__selected_keypoints": [self.arm_keypoints],
+                "Interpolate__connect_keypoints": [self.arm_connections],
+                "Persistence__max_edge_length": [0.5]
+            },
+            {
+                "Extract__selected_keypoints": [self.all_keypoints],
+                "Interpolate": [None],
+                "Persistence__max_edge_length": [0.2]
+            }
             # {
             #     "Smoothing": [SmoothChunks()],
             #     "Interpolate": [None],

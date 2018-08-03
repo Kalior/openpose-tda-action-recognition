@@ -7,14 +7,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-
 from sklearn.preprocessing import LabelEncoder
 from sklearn import metrics
+from sklearn.pipeline import Pipeline
 
 from analysis import Mapper, ChunkVisualiser
 from classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser
-from transforms import Flatten, FlattenTo3D, SmoothChunks, \
-    TranslateChunks, AverageSpeed, AngleChangeSpeed, AmountOfMovement
+from transforms import Flatten, FlattenTo3D, SmoothChunks, ExtractKeypoints, InterpolateKeypoints, \
+    TranslateChunks, AverageSpeed, AngleChangeSpeed, AmountOfMovement, Speed, Persistence, \
+    KeypointDistance, RotatePointCloud
 from util import COCOKeypoints, coco_connections
 
 
@@ -37,6 +38,7 @@ def main(args):
     if args.visualise:
         visualise_features(train[0], train[2])
         visualise_classes(train, test)
+        visualise_point_cloud(train, test)
         plt.show()
 
 
@@ -50,6 +52,29 @@ def load_data(file_name):
     return chunks, frames, labels, videos
 
 
+def visualise_point_cloud(train):
+    arm_keypoints = [
+        COCOKeypoints.RShoulder.value,
+        COCOKeypoints.LShoulder.value,
+        COCOKeypoints.RElbow.value,
+        COCOKeypoints.LElbow.value,
+        COCOKeypoints.RWrist.value,
+        COCOKeypoints.LWrist.value
+    ]
+    arm_connections = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5), (4, 5)]
+    chunks = train[0]
+    pipe = Pipeline([
+        ("1", TranslateChunks()),
+        ("2", SmoothChunks()),
+        ("3", ExtractKeypoints(arm_keypoints)),
+        ("4", InterpolateKeypoints(arm_connections)),
+        ("5", FlattenTo3D()),
+        ("6", RotatePointCloud(2))
+    ])
+    chunks = pipe.fit_transform(chunks)
+    Persistence().visualise_point_clouds(chunks, 10)
+
+
 def visualise_features(chunks, labels):
     chunk_speed = AverageSpeed(range(18)).transform(chunks)
     plot_feature_per_class(chunk_speed, labels, 'Average Speed')
@@ -57,6 +82,16 @@ def visualise_features(chunks, labels):
     plot_feature_per_class(angle_change_speed, labels, 'Average Angle Change')
     movement = AmountOfMovement(range(18)).transform(chunks)
     plot_feature_per_class(movement, labels, 'Total distance')
+    connections = [
+        (COCOKeypoints.RWrist.value, COCOKeypoints.LWrist.value),
+        (COCOKeypoints.RElbow.value, COCOKeypoints.LElbow.value),
+        (COCOKeypoints.Neck.value, COCOKeypoints.LAnkle.value),
+        (COCOKeypoints.Neck.value, COCOKeypoints.RAnkle.value),
+        (COCOKeypoints.LWrist.value, COCOKeypoints.LAnkle.value),
+        (COCOKeypoints.RWrist.value, COCOKeypoints.RAnkle.value)
+    ]
+    distances = KeypointDistance(connections).transform(chunks)
+    plot_feature_per_class(distances, labels, 'Keypoint distances')
     plt.show(block=False)
 
 
