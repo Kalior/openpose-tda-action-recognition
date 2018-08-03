@@ -1,0 +1,69 @@
+FROM ubuntu:16.04
+
+RUN apt-get update -y && apt-get upgrade -y
+RUN apt-get install -y \
+    curl \
+    make \
+    cmake \
+    g++ \
+    graphviz \
+    doxygen \
+    perl \
+    libboost-all-dev \
+    libeigen3-dev \
+    libgmp3-dev \
+    libmpfr-dev \
+    libtbb-dev \
+    locales \
+    libfreetype6-dev \
+    pkg-config \
+    software-properties-common
+
+# Install python3.6
+RUN add-apt-repository ppa:jonathonf/python-3.6
+RUN apt-get update
+RUN apt-get install -y \
+    python3.6 \
+    python3.6-dev \
+    python3-pip \
+    python3-pytest \
+    python3-tk
+
+
+RUN python3.6 -m pip install pip --upgrade
+RUN python3.6 -m pip install \
+    numpy \
+    scikit-learn \
+    cython \
+    sphinx \
+    sphinxcontrib-bibtex \
+    matplotlib
+
+# Install sklearn_tda
+RUN apt-get install -y \
+    git-core
+
+RUN git clone https://github.com/MathieuCarriere/sklearn_tda
+WORKDIR sklearn_tda
+RUN python3.6 -m pip install .
+
+# Working directory
+
+WORKDIR /gcal
+# Install GCAL
+RUN curl -LO "https://github.com/CGAL/cgal/releases/download/releases%2FCGAL-4.12/CGAL-4.12.tar.xz" \
+    && tar xf CGAL-4.12.tar.xz && cd CGAL-4.12 \
+    && cmake -DCGAL_HEADER_ONLY=ON -DCMAKE_BUILD_TYPE=Release . && make all install
+
+WORKDIR /gudhi
+
+RUN curl -LO "https://gforge.inria.fr/frs/download.php/file/37579/2018-06-14-13-32-49_GUDHI_2.2.0.tar.gz" \
+    && tar xf 2018-06-14-13-32-49_GUDHI_2.2.0.tar.gz && cd 2018-06-14-13-32-49_GUDHI_2.2.0 \
+    && mkdir build && cd build && cmake -DPython_ADDITIONAL_VERSIONS=3 -DPYTHON_EXECUTABLE=/usr/bin/python3.6 .. \
+    && export PYTHONPATH="/GUDHI/2018-06-14-13-32-49_GUDHI_2.2.0/build/cython:$PYTHONPATH" \
+    && make all sphinx doxygen test install
+
+WORKDIR /tda-action-recognition
+
+COPY requirements.txt requirements.txt
+RUN python3.6 -m pip install -r requirements.txt
