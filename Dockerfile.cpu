@@ -26,7 +26,7 @@ RUN apt-get install -y \
 RUN apt-get install --no-install-recommends -y libboost-all-dev
 
 # Get Caffe
-ENV CAFFE_ROOT=/caffe
+ENV CAFFE_ROOT /caffe
 COPY --from=bvlc/caffe:cpu /opt/caffe $CAFFE_ROOT
 RUN ln -s $CAFFE_ROOT/build/include/caffe/proto $CAFFE_ROOT/include/caffe/proto
 
@@ -35,7 +35,6 @@ ENV PYTHONPATH $PYCAFFE_ROOT:$PYTHONPATH
 ENV PATH $CAFFE_ROOT/build/tools:$PYCAFFE_ROOT:$PATH
 RUN echo "$CAFFE_ROOT/build/lib" >> /etc/ld.so.conf.d/caffe.conf && ldconfig
 
-# Build openpose
 RUN wget https://github.com/CMU-Perceptual-Computing-Lab/openpose/archive/master.zip; \
     unzip master.zip; rm master.zip; mv openpose-master openpose
 
@@ -57,7 +56,7 @@ RUN cmake \
 RUN make -j`nproc`
 RUN make install
 
-ENV OPENPOSEPYTHON=/usr/local/python/
+ENV OPENPOSEPYTHON /usr/local/python/
 ENV PYTHONPATH $OPENPOSEPYTHON:$PYTHONPATH
 
 
