@@ -1,4 +1,4 @@
-FROM nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04 as openpose
+FROM nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04 as openpose
 
 # Get dependencies
 RUN apt-get update -y && apt-get upgrade -y

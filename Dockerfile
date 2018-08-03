@@ -1,5 +1,5 @@
 # Install openpose
-FROM nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04 as openpose
+FROM nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04 as openpose
 
 RUN apt-get update -y && apt-get upgrade -y
 RUN apt-get install -y \
@@ -58,8 +58,6 @@ RUN make install
 
 ENV OPENPOSEPYTHON=/usr/local/python/
 ENV PYTHONPATH $OPENPOSEPYTHON:$PYTHONPATH
-
-
 
 RUN apt-get install -y software-properties-common
 RUN add-apt-repository ppa:jonathonf/python-3.6
