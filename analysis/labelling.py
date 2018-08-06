@@ -14,7 +14,7 @@ class Labelling:
         return keypress in self.valid_actions()
 
     def valid_actions(self):
-        return ['s', 'c', 'o', 'm', 't', 'l', 'q', 'h', 'p']
+        return ['s', 'c', 'o', 'm', 't', 'l', 'p', 'h']
 
     def valid_actions_string(self):
         return "(Scan, Cash, sTill, Moving, Lie, sHoplift, shoP, Other, quit)"
@@ -48,15 +48,14 @@ class Labelling:
             track = tracks[i]
             self.visualiser.draw_video_with_tracks(
                 [track], video, track.frame_assigned[-1].astype(np.int), track.frame_assigned[0].astype(np.int))
-            label = input('Label? ' + self.valid_actions_string())
-            if self.keypress_valid(label):
-                if label == 'q':
-                    i += 1
-                    continue
-                else:
-                    label = self.parse_keypress_to_label(label)
+            keypress = input('Label? ' + self.valid_actions_string())
+            if self.keypress_valid(keypress):
+                label = self.parse_keypress_to_label(label)
                 labels[i] = label
                 i += 1
+            elif keypress == 'q':
+                i += 1
+                continue
                 # If no valid action, show the video again.
 
         return labels
