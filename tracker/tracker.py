@@ -12,7 +12,7 @@ from .track import Track
 
 class Tracker:
 
-    def __init__(self, detector, model_path='/models/', only_track_arms=False, out_dir='output'):
+    def __init__(self, detector, only_track_arms=False, out_dir='output'):
         self.only_track_arms = only_track_arms
         Person.only_track_arms = only_track_arms
 
