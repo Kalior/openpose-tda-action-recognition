@@ -10,7 +10,35 @@ class Labelling:
     def __init__(self):
         self.visualiser = TrackVisualiser()
 
-    def label_chunks(chunks, chunk_frames, video, processor):
+    def keypress_valid(self, keypress):
+        return keypress in self.valid_actions()
+
+    def valid_actions(self):
+        return ['s', 'c', 'o', 'm', 't', 'l', 'q', 'h', 'p']
+
+    def valid_actions_string(self):
+        return "(Scan, Cash, sTill, Moving, Lie, sHoplift, shoP, Other, quit)"
+
+    def parse_keypress_to_label(self, keypress):
+        if keypress == 's':
+            label = 'scan'
+        elif keypress == 'c':
+            label = 'cash'
+        elif keypress == 'm':
+            label = 'moving'
+        elif keypress == 't':
+            label = 'still'
+        elif keypress == 'l':
+            label = 'lie'
+        elif keypress == 'h':
+            label = 'shoplift'
+        elif keypress == 'p':
+            label = 'shop'
+        else:
+            label = 'other'
+        return label
+
+    def label_chunks(self, chunks, chunk_frames, video, processor):
         tracks = processor.chunks_to_tracks(chunks, chunk_frames)
 
         labels = {}
@@ -20,23 +48,13 @@ class Labelling:
             track = tracks[i]
             self.visualiser.draw_video_with_tracks(
                 [track], video, track.frame_assigned[-1].astype(np.int), track.frame_assigned[0].astype(np.int))
-            label = input('Label? (Scan, Cash, sTill, Moving, Lie, Other, q(skip))')
-            if label in ['s', 'c', 'o', 'm', 't', 'l', 'q']:
-                if label == 's':
-                    label = 'scan'
-                elif label == 'c':
-                    label = 'cash'
-                elif label == 'm':
-                    label = 'moving'
-                elif label == 't':
-                    label = 'still'
-                elif label == 'l':
-                    label = 'lie'
-                elif label == 'q':
+            label = input('Label? ' + self.valid_actions_string())
+            if self.keypress_valid(label):
+                if label == 'q':
                     i += 1
                     continue
-                elif label == 'o':
-                    label = 'other'
+                else:
+                    label = self.parse_keypress_to_label(label)
                 labels[i] = label
                 i += 1
                 # If no valid action, show the video again.

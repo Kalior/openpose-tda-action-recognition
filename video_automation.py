@@ -6,6 +6,8 @@ import json
 import os
 import subprocess
 
+from analysis import Labelling
+
 
 def main(args):
     record = True
@@ -35,13 +37,13 @@ def label_recording(video_start_time):
     timestamps = []
     labelling = True
     while labelling:
-        keypress = input('Label? (Scan, Cash, sTill, Moving, Lie, Other, quit)')
-        if keypress in ['s', 'c', 'o', 'm', 't', 'l']:
+        keypress = input('Label? ' + Labelling().valid_actions_string())
+        if Labelling().keypress_valid(keypress):
             start_time = time() - video_start_time
 
             input('Press any key to stop')
             end_time = time() - video_start_time
-            label = parse_keypress_to_label(keypress)
+            label = Labelling().parse_keypress_to_label(keypress)
             timestamp = {
                 'start_time': start_time,
                 'end_time': end_time,
@@ -51,22 +53,6 @@ def label_recording(video_start_time):
         elif keypress == 'q':
             labelling = False
     return timestamps
-
-
-def parse_keypress_to_label(keypress):
-    if keypress == 's':
-        label = 'scan'
-    elif keypress == 'c':
-        label = 'cash'
-    elif keypress == 'm':
-        label = 'moving'
-    elif keypress == 't':
-        label = 'still'
-    elif keypress == 'l':
-        label = 'lie'
-    else:
-        label = 'other'
-    return label
 
 
 def start_recording(out_file, video_path, video_size):
