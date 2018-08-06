@@ -14,8 +14,8 @@ from sklearn.pipeline import Pipeline
 from analysis import Mapper, ChunkVisualiser
 from classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser
 from transforms import Flatten, FlattenTo3D, SmoothChunks, ExtractKeypoints, InterpolateKeypoints, \
-    TranslateChunks, AverageSpeed, AngleChangeSpeed, AmountOfMovement, Speed, Persistence, \
-    KeypointDistance, RotatePointCloud
+    TranslateChunks, Speed, Persistence, RotatePointCloud
+from features import AverageSpeed, AngleChangeSpeed, AmountOfMovement, KeypointDistance
 from util import COCOKeypoints, coco_connections
 
 

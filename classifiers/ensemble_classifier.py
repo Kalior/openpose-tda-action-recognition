@@ -7,9 +7,9 @@ import sklearn_tda as tda
 import numpy as np
 
 from .tda_classifier import TDAClassifier
-from transforms import AverageSpeed, AngleChangeSpeed, AmountOfMovement,\
-    TranslateChunks, SmoothChunks, FlattenTo3D, Persistence, ExtractKeypoints, \
-    InterpolateKeypoints, KeypointDistance
+from transforms import  TranslateChunks, SmoothChunks, FlattenTo3D, Persistence, \
+    ExtractKeypoints, InterpolateKeypoints
+from features import AverageSpeed, AngleChangeSpeed, AmountOfMovement, KeypointDistance
 from util import COCOKeypoints, coco_connections
 
 
