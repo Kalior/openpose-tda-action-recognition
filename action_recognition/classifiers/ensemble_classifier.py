@@ -7,10 +7,10 @@ import sklearn_tda as tda
 import numpy as np
 
 from .tda_classifier import TDAClassifier
-from transforms import  TranslateChunks, SmoothChunks, FlattenTo3D, Persistence, \
+from ..transforms import TranslateChunks, SmoothChunks, FlattenTo3D, Persistence, \
     ExtractKeypoints, InterpolateKeypoints
-from features import AverageSpeed, AngleChangeSpeed, AmountOfMovement, KeypointDistance
-from util import COCOKeypoints, coco_connections
+from ..features import AverageSpeed, AngleChangeSpeed, AmountOfMovement, KeypointDistance
+from ..util import COCOKeypoints, coco_connections
 
 
 class EnsembleClassifier(BaseEstimator, ClassifierMixin):
@@ -83,8 +83,8 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
             ("AverageSpeed", AverageSpeed(range(18))),
             ("AngleChangeSpeed", AngleChangeSpeed(coco_connections)),
             ("Movement",    AmountOfMovement(range(18))),
-            ("KeypointDistance", KeypointDistance(connections)),
-            ("TDA", other_tda)
+            ("KeypointDistance", KeypointDistance(connections))
+            # ("TDA", other_tda)
         ])
         feature_union_pipeline = Pipeline([
             ("Union", feature_union),
@@ -119,8 +119,8 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
         # Can't use multiple jobs because lambda in persistence image isn't pickable
         classifier = VotingClassifier(estimators=[
             ("Union", feature_union_pipeline),
-            ("SWKernel", sliced_wasserstein_classifier),
-            ("PWGKernel", persistence_weighted_gaussian)
+            ("SWKernel", sliced_wasserstein_classifier)
+            # ("PWGKernel", persistence_weighted_gaussian)
             # ("PSSKernel", persistence_scale_space)
         ], voting='soft', n_jobs=1)
 

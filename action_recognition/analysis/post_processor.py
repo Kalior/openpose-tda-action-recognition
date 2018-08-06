@@ -1,6 +1,6 @@
 import numpy as np
 
-from tracker import Person, Track
+from ..tracker import Person, Track
 
 
 class PostProcessor:

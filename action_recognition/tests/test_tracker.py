@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from tracker import Tracker, Person, TrackVisualiser, Track
+from ..tracker import Tracker, Person, TrackVisualiser, Track
 
 
 class TestTracker(unittest.TestCase):

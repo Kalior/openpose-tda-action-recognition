@@ -6,7 +6,7 @@ import json
 import os
 import subprocess
 
-from analysis import Labelling
+from action_recognition.analysis import Labelling
 
 
 def main(args):

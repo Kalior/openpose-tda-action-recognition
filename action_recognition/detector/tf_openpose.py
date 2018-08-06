@@ -7,7 +7,7 @@ try:
 except ImportError:
     print("Tensorflow openpose not available.")
 
-from util import COCOKeypoints
+from ..util import COCOKeypoints
 # ^ Should be the same as tf_pose.common.CocoPart
 # from tf_pose import common
 

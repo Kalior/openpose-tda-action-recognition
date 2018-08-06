@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from analysis import ChunkVisualiser
+from ..analysis import ChunkVisualiser
 
 
 class ClassificationVisualiser:

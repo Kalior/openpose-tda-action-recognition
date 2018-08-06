@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from time import sleep
 
-from tracker import TrackVisualiser, Track, Person
+from ..tracker import TrackVisualiser, Track, Person
 
 
 class ChunkVisualiser:

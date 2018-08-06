@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
-from tracker import Track, Person
-from util import COCOKeypoints
+from ..tracker import Track, Person
+from ..util import COCOKeypoints
 
 
 class TestTrack(unittest.TestCase):

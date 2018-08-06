@@ -6,8 +6,8 @@ import json
 import cv2
 from sklearn.model_selection import train_test_split
 
-from analysis import PostProcessor, Labelling
-from tracker import TrackVisualiser
+from action_recognition.analysis import PostProcessor, Labelling
+from action_recognition.tracker import TrackVisualiser
 
 
 def main(args):
@@ -163,7 +163,7 @@ if __name__ == '__main__':
                         help='The video from which the paths were generated.')
     parser.add_argument('--tracks-files', type=str, nargs='+',
                         help='The file with the saved tracks.')
-    parser.add_argument('--out-file', type=str, default='../dataset/dataset.npz',
+    parser.add_argument('--out-file', type=str, default='dataset/dataset.npz',
                         help='The path to the file where the data will be saved')
     parser.add_argument('--append', action='store_true',
                         help='Specify if the data should be added to the out-file (if it exists) or overwritten.')

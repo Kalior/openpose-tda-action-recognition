@@ -12,10 +12,8 @@ import numpy as np
 import itertools
 import logging
 
-from transforms import Persistence
-
-from util import COCOKeypoints, coco_connections
-from transforms import TranslateChunks, SmoothChunks, FlattenTo3D, Speed, \
+from ..util import COCOKeypoints, coco_connections
+from ..transforms import Persistence, TranslateChunks, SmoothChunks, FlattenTo3D, Speed, \
     ExtractKeypoints, InterpolateKeypoints, RotatePointCloud
 
 
@@ -108,4 +106,4 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             # }
         ]
 
-        return GridSearchCV(pipe, params, n_jobs=3)
+        return GridSearchCV(pipe, params, n_jobs=1)

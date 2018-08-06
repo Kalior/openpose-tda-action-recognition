@@ -2,7 +2,7 @@ import numpy as np
 import json
 import cv2
 
-from tracker import TrackVisualiser
+from ..tracker import TrackVisualiser
 
 
 class Labelling:

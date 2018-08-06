@@ -11,12 +11,11 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
 
-from analysis import Mapper, ChunkVisualiser
-from classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser
-from transforms import Flatten, FlattenTo3D, SmoothChunks, ExtractKeypoints, InterpolateKeypoints, \
-    TranslateChunks, Speed, Persistence, RotatePointCloud
-from features import AverageSpeed, AngleChangeSpeed, AmountOfMovement, KeypointDistance
-from util import COCOKeypoints, coco_connections
+from action_recognition.analysis import Mapper, ChunkVisualiser
+from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser
+from action_recognition import transforms
+from action_recognition import features
+from action_recognition.util import COCOKeypoints, coco_connections
 
 
 def main(args):
@@ -64,23 +63,23 @@ def visualise_point_cloud(train):
     arm_connections = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5), (4, 5)]
     chunks = train[0]
     pipe = Pipeline([
-        ("1", TranslateChunks()),
-        ("2", SmoothChunks()),
-        ("3", ExtractKeypoints(arm_keypoints)),
-        ("4", InterpolateKeypoints(arm_connections)),
-        ("5", FlattenTo3D()),
-        ("6", RotatePointCloud(2))
+        ("1", transforms.TranslateChunks()),
+        ("2", transforms.SmoothChunks()),
+        ("3", transforms.ExtractKeypoints(arm_keypoints)),
+        ("4", transforms.InterpolateKeypoints(arm_connections)),
+        ("5", transforms.FlattenTo3D()),
+        ("6", transforms.RotatePointCloud(2))
     ])
     chunks = pipe.fit_transform(chunks)
-    Persistence().visualise_point_clouds(chunks, 10)
+    transforms.Persistence().visualise_point_clouds(chunks, 10)
 
 
 def visualise_features(chunks, labels):
-    chunk_speed = AverageSpeed(range(18)).transform(chunks)
+    chunk_speed = features.AverageSpeed(range(18)).transform(chunks)
     plot_feature_per_class(chunk_speed, labels, 'Average Speed')
-    angle_change_speed = AngleChangeSpeed(coco_connections).transform(chunks)
+    angle_change_speed = features.AngleChangeSpeed(coco_connections).transform(chunks)
     plot_feature_per_class(angle_change_speed, labels, 'Average Angle Change')
-    movement = AmountOfMovement(range(18)).transform(chunks)
+    movement = features.AmountOfMovement(range(18)).transform(chunks)
     plot_feature_per_class(movement, labels, 'Total distance')
     connections = [
         (COCOKeypoints.RWrist.value, COCOKeypoints.LWrist.value),
@@ -90,7 +89,7 @@ def visualise_features(chunks, labels):
         (COCOKeypoints.LWrist.value, COCOKeypoints.LAnkle.value),
         (COCOKeypoints.RWrist.value, COCOKeypoints.RAnkle.value)
     ]
-    distances = KeypointDistance(connections).transform(chunks)
+    distances = features.KeypointDistance(connections).transform(chunks)
     plot_feature_per_class(distances, labels, 'Keypoint distances')
     plt.show(block=False)
 
@@ -117,7 +116,7 @@ def append_train_and_test(train, test):
 
 def visualise_classes(train, test):
     chunks, frames, labels, videos = append_train_and_test(train, test)
-    translated_chunks = TranslateChunks().transform(chunks)
+    translated_chunks = transforms.TranslateChunks().transform(chunks)
     visualiser = ChunkVisualiser(chunks, frames, translated_chunks)
     unique_labels = set(labels)
     nodes = {}
@@ -133,14 +132,16 @@ def visualise_classes(train, test):
 def run_ensemble(train, test, title):
     train_chunks, _, train_labels, _ = train
     test_chunks, test_frames, test_labels, test_videos = test
-    test_translated_chunks = TranslateChunks().transform(test_chunks)
+    test_translated_chunks = transforms.TranslateChunks().transform(test_chunks)
 
     le = LabelEncoder()
     train_labels = le.fit_transform(train_labels)
     test_labels = le.transform(test_labels)
 
     classifier = EnsembleClassifier()
+    logging.info("Fitting classifier.")
     classifier.fit(train_chunks, train_labels)
+    logging.info("Predicting classes of test data.")
     pred_labels = classifier.predict(test_chunks)
 
     accuracy = metrics.accuracy_score(test_labels, pred_labels)
@@ -159,14 +160,16 @@ def run_ensemble(train, test, title):
 def run_tda(train, test, title):
     train_chunks, _, train_labels, _ = train
     test_chunks, test_frames, test_labels, test_videos = test
-    test_translated_chunks = TranslateChunks().transform(test_chunks)
+    test_translated_chunks = transforms.TranslateChunks().transform(test_chunks)
 
     le = LabelEncoder()
     train_labels = le.fit_transform(train_labels)
     test_labels = le.transform(test_labels)
 
     classifier = TDAClassifier(cross_validate=False)
+    logging.info("Fitting classifier.")
     classifier.fit(train_chunks, train_labels)
+    logging.info("Predicting classes of test data.")
     pred_labels = classifier.predict(test_chunks)
 
     accuracy = metrics.accuracy_score(test_labels, pred_labels)
@@ -184,10 +187,10 @@ def run_tda(train, test, title):
 
 def run_mapper(test, train):
     chunks, frames, labels, videos = append_train_and_test(train, test)
-    translated_chunks = TranslateChunks().transform(chunks)
+    translated_chunks = transforms.TranslateChunks().transform(chunks)
 
     logging.info("Smoothing chunks.")
-    translated_chunks = SmoothChunks().transform(translated_chunks)
+    translated_chunks = transforms.SmoothChunks().transform(translated_chunks)
 
     selected_keypoints = [
         COCOKeypoints.RShoulder.value,
@@ -198,7 +201,7 @@ def run_mapper(test, train):
         COCOKeypoints.LWrist.value
     ]
     logging.info("Flattening data into a datapoint per chunk.")
-    data = Flatten(selected_keypoints).transform(translated_chunks)
+    data = transforms.Flatten(selected_keypoints).transform(translated_chunks)
     logging.info("Applying mapping to tracks.")
     mapper = Mapper(chunks, frames, translated_chunks, labels)
     mapper.create_tooltips(videos)

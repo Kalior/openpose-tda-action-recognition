@@ -1,6 +1,6 @@
 import numpy as np
 
-from util import COCOKeypoints
+from ..util import COCOKeypoints
 
 
 class Person:

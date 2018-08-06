@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from util import COCOKeypoints, coco_connections
+from ..util import COCOKeypoints, coco_connections
 
 
 class TrackVisualiser:
