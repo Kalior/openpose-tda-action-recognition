@@ -30,11 +30,11 @@ def main(args):
     logging.info("Number of test dataset labels: {}".format(Counter(test[2])))
 
     if args.tda:
-        run_tda(train, test)
+        run_tda(train, test, args.title)
     if args.mapper:
         run_mapper(train, test)
     if args.ensemble:
-        run_ensemble(train, test)
+        run_ensemble(train, test, args.title)
     if args.visualise:
         visualise_features(train[0], train[2])
         visualise_classes(train, test)
@@ -130,7 +130,7 @@ def visualise_classes(train, test):
     visualiser.visualise_averages(nodes, True)
 
 
-def run_ensemble(train, test):
+def run_ensemble(train, test, title):
     train_chunks, _, train_labels, _ = train
     test_chunks, test_frames, test_labels, test_videos = test
     test_translated_chunks = TranslateChunks().transform(test_chunks)
@@ -151,12 +151,12 @@ def run_ensemble(train, test):
         accuracy, precision, recall))
 
     visualiser = ClassificationVisualiser()
-    visualiser.plot_confusion_matrix(pred_labels, test_labels, le)
+    visualiser.plot_confusion_matrix(pred_labels, test_labels, le, title)
     visualiser.visualise_incorrect_classifications(
         pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
 
 
-def run_tda(train, test):
+def run_tda(train, test, title):
     train_chunks, _, train_labels, _ = train
     test_chunks, test_frames, test_labels, test_videos = test
     test_translated_chunks = TranslateChunks().transform(test_chunks)
@@ -177,7 +177,7 @@ def run_tda(train, test):
         accuracy, precision, recall))
 
     visualiser = ClassificationVisualiser()
-    visualiser.plot_confusion_matrix(pred_labels, test_labels, le)
+    visualiser.plot_confusion_matrix(pred_labels, test_labels, le, title)
     visualiser.visualise_incorrect_classifications(
         pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
 
@@ -218,6 +218,8 @@ if __name__ == '__main__':
                         help='Specify if you wish to only visualise the classes in the dataset.')
     parser.add_argument('--ensemble', action='store_true',
                         help='Runs a voting classifier on TDA and feature engineering on the dataset.')
+    parser.add_argument('--title', type=str, default='Confusion matrix',
+                        help='Title and file name for confusion matrix plot.')
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()

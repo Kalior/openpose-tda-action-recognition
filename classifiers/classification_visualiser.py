@@ -9,7 +9,7 @@ from analysis import ChunkVisualiser
 
 class ClassificationVisualiser:
 
-    def plot_confusion_matrix(self, labels, test_labels, le):
+    def plot_confusion_matrix(self, labels, test_labels, le, title):
         confusion_matrix = metrics.confusion_matrix(test_labels, labels).astype(np.float32)
         confusion_matrix = confusion_matrix / confusion_matrix.sum(axis=1)[:, np.newaxis]
         class_names = le.classes_
@@ -19,6 +19,8 @@ class ClassificationVisualiser:
         plt.ylabel('True label')
         plt.xlabel('Predicted label')
         plt.tight_layout()
+        plt.title(title)
+        plt.savefig(title + '.png', bbox_inches='tight')
         plt.show(block=False)
 
     def visualise_incorrect_classifications(self, pred_labels, test_labels, le, chunks, frames, translated_chunks, videos):
