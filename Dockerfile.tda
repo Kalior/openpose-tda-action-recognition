@@ -47,6 +47,12 @@ RUN git clone https://github.com/MathieuCarriere/sklearn_tda
 WORKDIR sklearn_tda
 RUN python3.6 -m pip install .
 
+RUN sed -i "s|from vectors import|from .vectors import|g" sklearn_tda/code.py
+RUN sed -i "s|from kernels import|from .kernels import|g" sklearn_tda/code.py
+RUN sed -i "s|from hera_wasserstein import|from .hera_wasserstein import|g" sklearn_tda/code.py
+RUN sed -i "s|from hera_bottleneck import|from .hera_bottleneck import|g" sklearn_tda/code.py
+
+
 # Working directory
 
 WORKDIR /gcal
