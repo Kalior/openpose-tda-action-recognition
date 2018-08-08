@@ -6,20 +6,63 @@ from ..tracker import TrackVisualiser
 
 
 class Labelling:
+    """Help class for labelling datasets.
+
+    Contains a dict with the valid actions as well as some
+    helper functions which display chunks to the user and prompts
+    either for a label or for verification of a label.
+
+    """
 
     def __init__(self):
         self.visualiser = TrackVisualiser()
 
     def keypress_valid(self, keypress):
+        """Check for if a given keypress is valid.
+
+        Parameters
+        ----------
+        keypress : char
+
+        Returns
+        -------
+        valid : boolean, True if keypress is contained in valid_actions()
+
+        """
         return keypress in self.valid_actions()
 
     def valid_actions(self):
+        """Returns a list of the possible valid characters.
+
+        Returns
+        -------
+        valid_actions : list
+            contains characters corresponding to the valid actions.
+
+        """
         return ['s', 'c', 'o', 'm', 't', 'l', 'p', 'h']
 
     def valid_actions_string(self):
+        """Returns the string corresponding to the prompt of valid actions.
+
+        Returns
+        -------
+        valid_actions_string : string
+            Corresponds to the prompt of valid actions.
+        """
         return "(Scan, Cash, sTill, Moving, Lie, sHoplift, shoP, Other, quit)"
 
     def parse_keypress_to_label(self, keypress):
+        """Parses a character to a label
+
+        Parameters
+        ----------
+        keypress : char
+
+        Returns
+        -------
+        label : string of the corresponding label to the keypress
+        """
         if keypress == 's':
             label = 'scan'
         elif keypress == 'c':
@@ -39,6 +82,23 @@ class Labelling:
         return label
 
     def label_chunks(self, chunks, chunk_frames, video, processor):
+        """Function for manual labelling of chunks.
+
+        Will prompt every passed chunk for a label.
+
+        Parameters
+        ----------
+        chunks : numpy array shape = [number_of_frames, number_of_keypoints, 3]
+        chunk_frames : numpy array shape = [number_of_frames]
+        video : str, path to a video file from where the chunks were taken
+        processor : analysis.PostProcessor object
+
+        Returns
+        -------
+        labels : dict with label[index] = label per labelled chunk.
+
+        """
+
         tracks = processor.chunks_to_tracks(chunks, chunk_frames)
 
         labels = {}
@@ -61,14 +121,36 @@ class Labelling:
         return labels
 
     def pseudo_automatic_labelling(self, timestamps, frames_per_chunk, video, tracks):
-        valid_timestamps = [t for t in timestamps
-                            if t['end_frame'] - t['start_frame'] >= frames_per_chunk]
+        """Makes use of timestamps from recording-time to ease labelling.
 
+        Only prompts for if the displayed video should be discarded or accepted
+        with the already given label.  Also provides option to skip forward by
+        a fourth of the length of each chunk in order to better align actions.
+
+        Parameters
+        ----------
+        timestamps : list of dicts
+            each dict must contain a 'start_time', 'end_time', and 'label' for
+            each timestamp.
+        frames_per_chunk : int, corresponding to how long each chunk is.
+        video : str, path to the video corresponding to the timestamps.
+        tracks : list of tracker.Track
+            the tracks from video, will be divided up into chunks of length
+            frames_per_chunk.
+
+        Returns
+        -------
+        chunks : numpy.array of the labelled chunks
+        frames : numpy.array of the frames for the labelled chunks
+        labels : numpy.array of the labels for each chunk
+        indicies : numpy.array of the index of the track for every chunk.
+            needed for reproducability.
+        """
         keypoints = tracks[0][0].keypoints
         chunk_shape = (frames_per_chunk, *keypoints.shape)
         chunks, frames, labels, track_indicies = self._init_arrays(chunk_shape, frames_per_chunk)
 
-        for timestamp in valid_timestamps:
+        for timestamp in timestamps:
             # Only include the first track that fits the timestamp
             for i, track in enumerate(tracks):
                 track_arrays = self._pseudo_automatic_labelling(
@@ -131,6 +213,25 @@ class Labelling:
         return track_start <= start_frame and track_end >= end_frame
 
     def parse_labels(self, json_labels, frames_per_chunk, tracks):
+        """Function for parsing saved labels from json to labelled chuns.
+
+        Parameters
+        ----------
+        json_labels : list of dicts
+            each dict must contain a 'track_index', 'start_frame', 'end_frame',
+            and 'label' value corresponding to each labelled chunk.
+        frames_per_chunk : int, length of each chunk.
+        tracks : list of tracker.Track
+            Must be the same list of tracks from which the original json_labels
+            where created.
+
+        Returns
+        -------
+        chunks : numpy.array of the labelled chunks
+        frames : numpy.array of the frames for the labelled chunks
+        labels : numpy.array of the labels for each chunk
+
+        """
         keypoints = tracks[0][0].keypoints
         chunks = np.zeros((len(json_labels), frames_per_chunk, *keypoints.shape))
         frames = np.zeros((len(json_labels), frames_per_chunk), dtype=np.int)
@@ -156,6 +257,16 @@ class Labelling:
         return chunks, frames, labels
 
     def write_labels(self, chunks, chunk_frames, chunk_labels, track_indicies, labels_file):
+        """Writes a set of labels to a json file, for later reproducability.
+
+        Parameters
+        ----------
+        chunks : numpy.array of labelled chunks.
+        chunk_frames : numpy.array of the frames for the labelled chunks.
+        chunk_labels : numpy.array of the labels for each chunk.
+        track_indicies : numpy.array of the index of the track for every chunk.
+        labels_file : str, path to where the labels are to be written.
+        """
         labels = []
 
         for i in range(len(chunks)):

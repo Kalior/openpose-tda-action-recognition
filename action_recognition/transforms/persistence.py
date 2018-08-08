@@ -12,18 +12,60 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 class Persistence(BaseEstimator, TransformerMixin):
+    """Calculates persistence for the input point cloud using GUDHI.
+
+    Parameters
+    ----------
+    max_edge_length : float, optional
+        The max_edge_length passed to RipsComplex
+
+    """
 
     def __init__(self, max_edge_length=0.5):
         self.persistences = []
         self.max_edge_length = max_edge_length
 
     def fit(self, X, y, **fit_params):
+        """Returns self unchanged, as there are no parameters to fit.
+
+        Parameters
+        ----------
+        X : ignored
+        y : ignored
+        fit_params : ignored
+
+        Returns
+        -------
+        self : unchanged
+
+        """
         return self
 
     def transform(self, data):
+        """Returns self unchanged, as there are no parameters to fit.
+
+        Parameters
+        ----------
+        data : array-like
+            shape = [n_points, n_keypoints, 3]
+
+        Returns
+        -------
+        diags : array-like
+            shape = [n_points, n_diags, 2]
+
+        """
         return self.persistence(data)
 
     def visualise_point_clouds(self, data, number_of_points):
+        """Uses pyplot to plot the point cloud used to calculate the persistence.
+
+        Parameters
+        ----------
+        data : array-like, array of point-clouds.
+        number_of_points : int, number of point-clouds to plot.
+
+        """
         scaler = RobustScaler()
         scaler.fit(data.reshape(-1, 3))
         for i in range(number_of_points):
@@ -34,8 +76,19 @@ class Persistence(BaseEstimator, TransformerMixin):
             plt.show(block=False)
 
     def persistence(self, data):
-        dim = 3
-        betti_numbers = np.zeros((data.shape[0], dim))
+        """Calcualtes persistence of the input data, point clouds.
+
+        Parameters
+        ----------
+        data : array-like
+            shape = [n_points, n_keypoints, 3]
+
+        Returns
+        -------
+        diags : array-like
+            shape = [n_points, n_diags, 2]
+
+        """
         scaler = RobustScaler()
         scaler.fit(data.reshape(-1, 3))
 
@@ -65,6 +118,15 @@ class Persistence(BaseEstimator, TransformerMixin):
         return np.array(diags)
 
     def save_persistences(self, out_dir):
+        """Saves the persistence diagrams to file.
+
+        Requires persistence to be called first.
+
+        Parameters
+        ----------
+        out_dir : str, path to directory where the diagrams are saved.
+
+        """
         for i, diag in enumerate(self.persistences):
             fig = gd.plot_persistence_diagram(diag)
 
@@ -76,6 +138,15 @@ class Persistence(BaseEstimator, TransformerMixin):
             plt.close()
 
     def save_betti_curves(self, out_dir):
+        """Saves the betti curves of the calculate persistences to file.
+
+        Requires persistence to be called first.
+
+        Parameters
+        ----------
+        out_dir : str, path to directory where the curves are saved.
+
+        """
         for i, diag in enumerate(self.persistences):
             tda_diag_df = self._construct_dataframe(diag)
 

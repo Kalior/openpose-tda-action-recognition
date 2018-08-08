@@ -5,12 +5,28 @@ from ..util import COCOKeypoints, coco_connections
 
 
 class TrackVisualiser:
+    """Helper class which uses opencv to draw videos with various overlays.
+
+    """
 
     def __init__(self):
         self.colors = [(255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255),
                        (255, 255, 0), (255, 0, 255), (0, 255, 255)]
 
     def draw_video_with_tracks(self, tracks, video, last_frame, start_frame=0):
+        """Draws the video from start_frame to last_frame with the tracks overlayed.
+
+        Parameters
+        ----------
+        tracks : list of Track
+            The tracks which should be overlayed on the video.
+        video : str
+            Path to the video from which the tracks were produced.
+        last_frame : int
+            The last frame that should be drawn.
+        start_frame : int
+            The start frame of the visualisation.
+        """
         capture = cv2.VideoCapture(video)
         capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
@@ -25,6 +41,19 @@ class TrackVisualiser:
 
     def draw_tracks(self, tracks, img, current_frame,
                     keypoint_index=COCOKeypoints.Neck.value):
+        """Overlays the tracks on the img.
+
+        Parameters
+        ----------
+        tracks : list of Track
+        img : array-like
+            The image to overlay the tracks on.
+        current_frame : int
+            The current frame to get the keypoints from tracks for.
+        keypoint_index : int, optional, default 1
+            Specifies which keypoint should be drawn to the image.
+
+        """
         for i, track in enumerate(tracks):
             track_color = self.colors[i % len(self.colors)]
             self._add_lines_from_track(img, track, track_color,
@@ -32,6 +61,19 @@ class TrackVisualiser:
             self._add_index_of_track(img, i, track, track_color, current_frame, keypoint_index)
 
     def draw_people(self, tracks, img, current_frame, offset_person=True):
+        """Overlays the skeleton of people from tracks to image.
+
+        Parameters
+        ----------
+        tracks : list of Track
+        img : array-like
+            The image to overlay the tracks on.
+        current_frame : int
+            The current frame to get the keypoints from tracks for.
+        offset_person : boolean, optional, default True
+            Specifies if the person should be offsettted from origin.
+
+        """
         for i, track in enumerate(tracks):
             track_color = self.colors[i % len(self.colors)]
             positions = [(0, 0)] * 15
@@ -62,10 +104,36 @@ class TrackVisualiser:
             cv2.line(img, from_, to, color, 3)
 
     def draw_frame_number(self, img, current_frame, color=(255, 255, 255)):
+        """Overlays the frame number on the img.
+
+        Parameters
+        ----------
+        img : array-like
+            The image to overlay the current frame index on.
+        current_frame : int
+            The int to overlay on the frame.
+        color : triple (3-tuple) of int
+            The color of the number.
+
+        """
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(img, str(current_frame), (50, 50), font, 2, color, 2)
 
     def draw_text(self, img, text, position=(50, 50), color=(255, 255, 255)):
+        """Overlays the text on the img at the position.
+
+        Parameters
+        ----------
+        img : array-like
+            The image to overlay the current frame index on.
+        text : str
+            The text to overlay on the frame.
+        position : tuple of int
+            The position where the text should be drawn.
+        color : triple (3-tuple) of int
+            The color of the number.
+
+        """
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(img, text, position, font, 2, color, 2)
 

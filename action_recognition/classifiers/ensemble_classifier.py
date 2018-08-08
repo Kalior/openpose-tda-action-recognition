@@ -22,6 +22,22 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
     """
 
     def fit(self, X, y, **fit_params):
+        """Fit the model.
+
+        Parameters
+        ----------
+        X : iterable
+            Training data, must be passable to transforms.TranslateChunks()
+        y : iterable
+            Training labels.
+        fit_params : dict
+            ignored for now.
+
+        Returns
+        -------
+        self
+
+        """
         sliced_wasserstein_classifier = TDAClassifier(cross_validate=False)
 
         persistence_image = Pipeline([
@@ -134,4 +150,17 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
         return self
 
     def predict(self, X):
+        """Predicts using the pipeline.
+
+        Parameters
+        ----------
+        X : iterable
+            Data to predict labels for.
+            Must be passable to transforms.TranslateChunks()
+
+        Returns
+        -------
+        y_pred : array-like
+
+        """
         return self.classifier.predict(X)
