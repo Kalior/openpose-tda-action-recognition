@@ -3,15 +3,59 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 
 class InterpolateKeypoints(BaseEstimator, TransformerMixin):
+    """Interpolates between the specified keypoints.
+
+    I.e., creates intermediate points between connect_keypoints which
+    can help enrichen the point clouds inputted into the Persistence
+    calculator.
+
+    Parameters
+    ----------
+    connect_keypoints : array of tuples
+        Each tuple should have the form (from, to) which specifies which
+        points in the data to add points between.
+    number_of_points : int, optional, default=2
+        Specifies how many points to add between every pair of points.
+
+    """
 
     def __init__(self, connect_keypoints, number_of_points=2):
         self.connect_keypoints = connect_keypoints
         self.number_of_points = number_of_points
 
     def fit(self, X, y=None, **fit_params):
+        """Returns self unchanged, as there are no parameters to fit.
+
+        Parameters
+        ----------
+        X : ignored
+        y : ignored
+        fit_params : ignored
+
+        Returns
+        -------
+        self : unchanged
+
+        """
         return self
 
     def transform(self, chunks):
+        """Adds interpolated points between the specified keypoints to the input.
+
+        Parameters
+        ----------
+        chunks : array-like
+            shape = [n_chunks, frames_per_chunk, n_keypoints, 2]
+            Adds values to each subarray in the array.
+
+        Returns
+        -------
+        chunks : array-like
+            shape = [n_chunks, frames_per_chunk,
+                n_keypoints + len(connect_keypoints) * number_of_points
+                , 2]
+
+        """
         return np.array([self._connect_keypoints(chunk) for chunk in chunks])
 
     def _connect_keypoints(self, chunk):
