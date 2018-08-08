@@ -14,6 +14,12 @@ from ..util import COCOKeypoints, coco_connections
 
 
 class EnsembleClassifier(BaseEstimator, ClassifierMixin):
+    """Classifier for actions.
+
+    Makes use of the tda_classifier and combines this with
+    features extracted from the data using other vectorisations
+    from sklearn_tda, and from the features module.
+    """
 
     def fit(self, X, y, **fit_params):
         sliced_wasserstein_classifier = TDAClassifier(cross_validate=False)

@@ -18,6 +18,22 @@ from ..transforms import Persistence, TranslateChunks, SmoothChunks, FlattenTo3D
 
 
 class TDAClassifier(BaseEstimator, ClassifierMixin):
+    """Classifier for actions.
+
+    Uses Gudhi and sklearn_tda under the hood.
+    Uses a pipeline where the input chunks are transformed into
+    3D-point clouds (with time as the 3rd dimension) upon which
+    persistence diagrams are calculated.  The persistence diagrams
+    are then passed into the kernel sklearn_tda.SlicedWasserstein,
+    and finally a sklearn.SVC is fitted to the data.
+
+    Parameters
+    ----------
+    cross_validate : boolean, optional
+        Specifies if the model should be cross validated in order to find the
+        best parameters for the input data, or if a previously determined
+        best model should be used.
+    """
 
     def __init__(self, cross_validate=False):
         self.cross_validate = cross_validate
@@ -33,6 +49,22 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
         self.all_keypoints = range(18)
 
     def fit(self, X, y, **fit_params):
+        """Fit the model.
+
+        Fits the model by using the pipeline of transforms going from
+        chunks into a 3D-point cloud, and then calculating the persistence
+        and the Sliced Wasserstein kernel, finally training a SVC.
+
+        Parameters
+        ----------
+        X : iterable
+            Training data, must be passable to transforms.TranslateChunks()
+        y : iterable
+            Training labels.
+        fit_params : dict
+            ignored for now.
+
+        """
         if self.cross_validate:
             logging.debug("Cross-validating to find best model.")
             model = self._cross_validate_pipeline()
@@ -49,9 +81,35 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
         return self
 
     def predict(self, X):
+        """Predicts using the pipeline.
+
+        Parameters
+        ----------
+        X : iterable
+            Data to predict labels for.
+            Must be passable to transforms.TranslateChunks()
+
+        Returns
+        -------
+        y_pred : array-like
+
+        """
         return self.model.predict(X)
 
     def predict_proba(self, X):
+        """Predicts using the pipeline.
+
+        Parameters
+        ----------
+        X : iterable
+            Data to predict labels for.
+            Must be passable to transforms.TranslateChunks()
+
+        Returns
+        -------
+        y_proba : array-like, shape = [n_samples, n_classes]
+
+        """
         return self.model.predict_proba(X)
 
     def _pre_validated_pipeline(self):
