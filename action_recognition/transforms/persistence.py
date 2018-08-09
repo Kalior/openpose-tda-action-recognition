@@ -92,30 +92,46 @@ class Persistence(BaseEstimator, TransformerMixin):
         scaler = RobustScaler()
         scaler.fit(data.reshape(-1, 3))
 
-        diags = []
+        # self.visualise_point_clouds(data, 5)
+        # plt.show()
+
+        diags = np.zeros(data.shape[0], dtype=object)
         for i, d in enumerate(data):
             points = scaler.transform(d)
 
-            rips = gd.RipsComplex(max_edge_length=self.max_edge_length, points=points)
-            simplex_tree = rips.create_simplex_tree(max_dimension=3)
+            diag_alpha = self._cubical_complex(points)
 
-            # alpha = gd.AlphaComplex(points=points)
-            # simplex_tree = alpha.create_simplex_tree(max_alpha_square=0.1)
-
-            diag_alpha = simplex_tree.persistence()
             # Removing the points who don't die
             clean_diag_alpha = [p for p in diag_alpha if p[1][1] < np.inf]
             self.persistences.append(clean_diag_alpha)
-            # tda_diag_df = self._construct_dataframe(clean_diag_alpha)
-            # self._betti_curve(tda_diag_df)
 
-            diags.append(np.array([(p[1][1], p[1][0]) for p in clean_diag_alpha]))
-            betti = simplex_tree.betti_numbers()
-            # Make sure we fill the 2 dimensions
-            pad = np.pad(betti, (0, dim - len(betti)), 'constant')
-            betti_numbers[i] = pad
+            diags[i] = np.array([(p[1][1], p[1][0]) for p in clean_diag_alpha])
 
         return np.array(diags)
+
+    def _rips_complex(self, points):
+        rips = gd.RipsComplex(max_edge_length=self.max_edge_length, points=points)
+        simplex_tree = rips.create_simplex_tree(max_dimension=3)
+        diag_alpha = simplex_tree.persistence()
+        return diag_alpha
+
+    def _alpha_complex(self, points):
+        alpha = gd.AlphaComplex(points=points)
+        simplex_tree = alpha.create_simplex_tree(max_alpha_square=0.5)
+        diag_alpha = simplex_tree.persistence()
+        return diag_alpha
+
+    def _cubical_complex(self, points):
+        shape = [points.shape[0]] * 2
+        bitmap = np.zeros(shape)
+        for i, p1 in enumerate(points):
+            for j, p2 in enumerate(points):
+                norm = np.linalg.norm(p1 - p2)
+                bitmap[i, j] = norm
+
+        cc = gd.CubicalComplex(top_dimensional_cells=bitmap.flatten(), dimensions=shape)
+        diag_alpha = cc.persistence()
+        return diag_alpha
 
     def save_persistences(self, out_dir):
         """Saves the persistence diagrams to file.
