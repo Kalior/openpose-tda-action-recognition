@@ -10,6 +10,7 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder, RobustScaler
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
+from sklearn.externals import joblib
 
 from action_recognition.analysis import Mapper, ChunkVisualiser
 from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser, TDAClusterer
@@ -156,6 +157,9 @@ def run_ensemble(train, test, title):
     logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
         accuracy, precision, recall))
 
+    logging.info("Saving model to ensemble.pkl.")
+    joblib.dump(classifier, "ensemble.pkl")
+
     visualiser = ClassificationVisualiser()
     visualiser.plot_confusion_matrix(pred_labels, test_labels, le, title)
     visualiser.visualise_incorrect_classifications(
@@ -171,7 +175,7 @@ def run_tda(train, test, title):
     train_labels = le.fit_transform(train_labels)
     test_labels = le.transform(test_labels)
 
-    classifier = TDAClassifier(cross_validate=False)
+    classifier = TDAClassifier(cross_validate=True)
     logging.info("Fitting classifier.")
     classifier.fit(train_chunks, train_labels)
     logging.info("Predicting classes of test data.")
@@ -183,6 +187,9 @@ def run_tda(train, test, title):
 
     logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
         accuracy, precision, recall))
+
+    logging.info("Saving model to tda.pkl.")
+    joblib.dump(classifier, "tda.pkl")
 
     visualiser = ClassificationVisualiser()
     visualiser.plot_confusion_matrix(pred_labels, test_labels, le, title)

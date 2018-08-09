@@ -21,9 +21,10 @@ class Persistence(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, max_edge_length=0.5):
+    def __init__(self, max_edge_length=0.5, use_rips=False):
         self.persistences = []
         self.max_edge_length = max_edge_length
+        self.use_rips = use_rips
 
     def fit(self, X, y, **fit_params):
         """Returns self unchanged, as there are no parameters to fit.
@@ -99,7 +100,10 @@ class Persistence(BaseEstimator, TransformerMixin):
         for i, d in enumerate(data):
             points = scaler.transform(d)
 
-            diag = self._tangential_complex(points)
+            if self.use_rips:
+                diag = self._rips_complex(points)
+            else:
+                diag = self._alpha_complex(points)
 
             # Removing the points who don't die
             clean_diag = [p for p in diag if p[1][1] < np.inf]
@@ -117,7 +121,7 @@ class Persistence(BaseEstimator, TransformerMixin):
 
     def _alpha_complex(self, points):
         alpha = gd.AlphaComplex(points=points)
-        simplex_tree = alpha.create_simplex_tree(max_alpha_square=0.5)
+        simplex_tree = alpha.create_simplex_tree(max_alpha_square=self.max_edge_length)
         diag = simplex_tree.persistence()
         return diag
 
