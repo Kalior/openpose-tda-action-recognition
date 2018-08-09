@@ -99,27 +99,27 @@ class Persistence(BaseEstimator, TransformerMixin):
         for i, d in enumerate(data):
             points = scaler.transform(d)
 
-            diag_alpha = self._cubical_complex(points)
+            diag = self._tangential_complex(points)
 
             # Removing the points who don't die
-            clean_diag_alpha = [p for p in diag_alpha if p[1][1] < np.inf]
-            self.persistences.append(clean_diag_alpha)
+            clean_diag = [p for p in diag if p[1][1] < np.inf]
+            self.persistences.append(clean_diag)
 
-            diags[i] = np.array([(p[1][1], p[1][0]) for p in clean_diag_alpha])
+            diags[i] = np.array([(p[1][1], p[1][0]) for p in clean_diag])
 
         return np.array(diags)
 
     def _rips_complex(self, points):
         rips = gd.RipsComplex(max_edge_length=self.max_edge_length, points=points)
         simplex_tree = rips.create_simplex_tree(max_dimension=3)
-        diag_alpha = simplex_tree.persistence()
-        return diag_alpha
+        diag = simplex_tree.persistence()
+        return diag
 
     def _alpha_complex(self, points):
         alpha = gd.AlphaComplex(points=points)
         simplex_tree = alpha.create_simplex_tree(max_alpha_square=0.5)
-        diag_alpha = simplex_tree.persistence()
-        return diag_alpha
+        diag = simplex_tree.persistence()
+        return diag
 
     def _cubical_complex(self, points):
         shape = [points.shape[0]] * 2
@@ -129,9 +129,15 @@ class Persistence(BaseEstimator, TransformerMixin):
                 norm = np.linalg.norm(p1 - p2)
                 bitmap[i, j] = norm
 
-        cc = gd.CubicalComplex(top_dimensional_cells=bitmap.flatten(), dimensions=shape)
-        diag_alpha = cc.persistence()
-        return diag_alpha
+        cube = gd.CubicalComplex(top_dimensional_cells=bitmap.flatten(), dimensions=shape)
+        diag = cube.persistence()
+        return diag
+
+    def _tangential_complex(self, points):
+        tangential = gd.TangentialComplex(intrisic_dim=points.shape[1], points=points)
+        simplex_tree = tangential.create_simplex_tree()
+        diag = simplex_tree.persistence()
+        return diag
 
     def save_persistences(self, out_dir):
         """Saves the persistence diagrams to file.
