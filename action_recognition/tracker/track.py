@@ -354,6 +354,7 @@ class Track:
         Specifically, it identifies gaps in the frame numbers where there are
         no assignments, and interpolates values for the keypoints from the
         next identified frame and the previous identified frame.
+
         """
         new_track = []
         new_frame_assigned = []

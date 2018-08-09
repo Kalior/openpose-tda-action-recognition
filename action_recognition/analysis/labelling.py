@@ -266,6 +266,7 @@ class Labelling:
         chunk_labels : numpy.array of the labels for each chunk.
         track_indicies : numpy.array of the index of the track for every chunk.
         labels_file : str, path to where the labels are to be written.
+
         """
         labels = []
 

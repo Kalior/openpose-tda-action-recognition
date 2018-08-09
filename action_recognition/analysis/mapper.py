@@ -10,6 +10,23 @@ from .post_processor import PostProcessor
 
 
 class Mapper:
+    """Runs the mapper algorithm on the dataset.
+
+    Essentially a visualisation procedure for high-dimensional data.
+    https://github.com/MLWave/kepler-mapper/
+
+    Parameters
+    ----------
+    chunks : array-like, shape = [n_chunks, n_frames, n_keypoints, 2]
+        The chunks of the input data, used only for visualisation.
+    chunk_frames : array-like, shape = [n_chunks, n_frames, 1]
+        The corresponding frames to the chunks, used only for visualisation.
+    translated_chunks : array-like, shape = [n_chunks, n_frames, n_keypoints, 2]
+        The chunks translated to origin, used for visualisation.
+    labels : array-like, shape = [n_chunks, 1]
+        Labels of the chunks, used for visualisation.
+
+    """
 
     def __init__(self, chunks, chunk_frames, translated_chunks, labels):
         self.chunks = chunks
@@ -19,10 +36,32 @@ class Mapper:
         self.labels = labels
         self.tooltips = labels
 
-    def visualise(self, video, graph):
-        self.chunk_visualiser.visualise(video, graph)
+    def visualise(self, videos, graph):
+        """Visualises the data by displaying the videos corresponding to the clustering of chunks.
+
+        Parameters
+        ----------
+        videos : array-like, shape = [n_chunks, 1]
+            the videos of the chunks.
+        graph : dict
+            The graph output from km.KeplerMapper(...).map(...)
+
+        """
+        self.chunk_visualiser.visualise(videos, graph)
 
     def mapper(self, data):
+        """Run the mapper algorithm on the data.
+
+        Parameters
+        ----------
+        data : array-like
+            The data to run the algorihthm on, can have almost any shape.
+
+        Returns
+        -------
+        graph : The graph output from km.KeplerMapper(...).map(...)
+
+        """
         # Initialize
         logging.info("Applying the mapping algorithm.")
         mapper = km.KeplerMapper(verbose=2)
@@ -74,6 +113,14 @@ class Mapper:
             return max_value
 
     def create_tooltips(self, videos):
+        """Creates tooltip videos for the chunks, writes them to output/tooltips.
+
+        Parameters
+        ----------
+        videos : array-like, shape = [n_chunks, 1]
+            The path to the videos corresponding to the chunks.
+
+        """
         logging.info("Creating tooltip videos")
         self.tooltips = np.array([self._to_tooltip(videos[i], chunk, i, self.chunk_frames[i])
                                   for i, chunk in enumerate(self.chunks)])

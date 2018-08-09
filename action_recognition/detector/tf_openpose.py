@@ -13,12 +13,33 @@ from ..util import COCOKeypoints
 
 
 class TFOpenpose(object):
+    """A tensorflow implemtentation of OpenPose.
+
+    Requires https://github.com/ildoonet/tf-pose-estimation to be installed
+    on the system.  Currently not part of the Dockerfiles.
+
+    """
 
     def __init__(self):
         self.tf_openpose = TfPoseEstimator(get_graph_path("mobilenet_thin"),
                                            target_size=(432, 368))
 
     def detect(self, original_image):
+        """Detects the pose of every person in the given image.
+
+        Parameters
+        ----------
+        original_image : image, to predict people of.
+
+        Returns
+        -------
+        keypoints : array-like
+            Contains the keypoints of every identified person in the image,
+            shape = [n_people, n_keypoints, 3]
+        image_with_keypoins : image, the original image overlayed with the
+            identified keypoints.
+
+        """
         image_height, image_width = original_image.shape[:2]
 
         humans = self.tf_openpose.inference(original_image, resize_to_default=True)

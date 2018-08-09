@@ -3,6 +3,19 @@ from openpose import openpose as op
 
 
 class CaffeOpenpose(object):
+    """CMU's original OpenPose installation.
+
+    Requires OpenPose to be installed on the system, there is a Dockerfile
+    that achieves this, and there are installatino instructions on CMU's
+    OpenPose GitHub page.
+
+    Parameters
+    ----------
+    model_path : str
+        Path to where the downloaded model to use is located,
+        part of the installation procedure of OpenPose.
+
+    """
 
     def __init__(self, model_path):
         # Initialise openpose
@@ -29,5 +42,20 @@ class CaffeOpenpose(object):
         return params
 
     def detect(self, original_image):
+        """Detects the pose of every person in the given image.
+
+        Parameters
+        ----------
+        original_image : image, to predict people of.
+
+        Returns
+        -------
+        keypoints : array-like
+            Contains the keypoints of every identified person in the image,
+            shape = [n_people, n_keypoints, 3]
+        image_with_keypoins : image, the original image overlayed with the
+            identified keypoints.
+
+        """
         keypoints, image_with_keypoints = self.openpose.forward(original_image, True)
         return keypoints, image_with_keypoints

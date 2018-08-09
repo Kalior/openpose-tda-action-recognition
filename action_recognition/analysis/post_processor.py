@@ -4,11 +4,34 @@ from ..tracker import Person, Track
 
 
 class PostProcessor:
+    """Encapsulates post processing functionality for tracks.
+
+    Some examples are dividing tracks into chunks, removing short tracks, and
+    merging/removing overlapping tracks.
+
+    """
 
     def __init__(self):
         self.tracks = []
 
     def chunks_to_tracks(self, chunks, chunk_frames):
+        """Transforms chunks into Track object.
+
+        This conversion is convenient since the tracks have visualisation
+        procedures.
+
+        Parameters
+        ----------
+        chunks : array-like, shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
+            The chunks to convert into Tracks. Each chunk becomes a Track.
+        chunk_frames : array-like, shape = [n_chunks, frames_per_chunk, 1]
+            The frame numbers corresponding to the chunks.
+
+        Returns
+        -------
+        tracks : array-like of Track objects.
+
+        """
         tracks = []
         for i, chunk in enumerate(chunks):
             t = self._create_track(
@@ -20,6 +43,16 @@ class PostProcessor:
         return tracks
 
     def create_tracks(self, tracks_np, frames_np):
+        """Creates tracks from numpy format of tracks, as outputted from tracker.video().
+
+        Parameters
+        ----------
+        tracks_np : array-like,
+            numpy format of Track objects.
+        frames_np : array-like
+            numpy format of frame numbers for the Track objects.
+
+        """
         self.tracks = [self._create_track(p, f, i)
                        for i, (p, f) in enumerate(zip(tracks_np, frames_np))]
 
@@ -33,6 +66,11 @@ class PostProcessor:
         return track
 
     def post_process_tracks(self):
+        """Combines, removes short tracks, and fills in missing parts of trakcs.
+
+        Operates on the tracks contained in the class.
+
+        """
         self._combine_tracks(self.tracks)
         self.tracks = self._clean_tracks(self.tracks)
         self._fill_tracks(self.tracks)
@@ -70,6 +108,29 @@ class PostProcessor:
                  abs(end_track.frame_assigned[-1] - start_track.frame_assigned[0]) < 15))
 
     def chunk_tracks(self, frames_per_chunk, overlap, target_frames_per_chunk):
+        """Divides the tracks into chunks the specified parameters.
+
+        Parameters
+        ----------
+        frames_per_chunk : int
+            The number of frames per chunk to divide into to maintain the
+            same length of action across different videos.
+        overlap : int
+            The overlap allowed between chunks.
+        target_frames_per_chunk : int
+            The number of frames per chunk in the output, used to maintain the
+            same dimensionality across videos.
+
+        Returns
+        -------
+        chunks : array-like, shape = [n_chunks, target_frames_per_chunk, n_keypoints, 3]
+            The chunks that the tracks are divided into.
+        chunk_frames : array-like, shape = [n_chunks, target_frames_per_chunk, 1]
+            The frame numbers corresponding to the chunks, used for visualisation.
+        track_indicies : array-like, shape = [n_chunks, 1]
+            The track index for each chunks, necessary for reproducibility.
+
+        """
         number_of_keypoints = 18
         number_of_coordinates = 3
         chunks = np.empty((0, target_frames_per_chunk, number_of_keypoints, number_of_coordinates))
@@ -100,6 +161,22 @@ class PostProcessor:
         return target_chunked, target_frames
 
     def filter_moving_chunks(self, chunks, chunk_frames):
+        """Filters out chunks that are close to a specific position.
+
+        *Do not use*, was used for the original cachier video, and needs to
+        be adapted to work for a general case.
+
+        Parameters
+        ----------
+        chunks : array-like, shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
+        chunks_frames : array-like, shape = [n_chunks, frames_per_chunk, 1]
+
+        Returns
+        -------
+        chunks : array-like, shape = [n_still_chunks, frames_per_chunk, n_keypoints, 3]
+        chunks_frames : array-like, shape = [n_still_chunks, frames_per_chunk, 1]
+
+        """
         number_of_keypoints = 18
         number_of_coordinates = 3
         filtered_chunks = np.empty((0, *chunks.shape[1:]))
