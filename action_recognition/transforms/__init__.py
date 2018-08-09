@@ -1,3 +1,11 @@
+"""
+Transforms
+==========
+
+Contains multiple transforms neccesary for the TDA pipeline.
+
+"""
+
 from .flatten_chunks import Flatten
 from .flatten_to_3D import FlattenTo3D
 from .smooth_chunks import SmoothChunks

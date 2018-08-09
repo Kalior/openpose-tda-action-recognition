@@ -14,8 +14,30 @@ from ..util import COCOKeypoints, coco_connections
 
 
 class EnsembleClassifier(BaseEstimator, ClassifierMixin):
+    """Classifier for actions.
+
+    Makes use of the tda_classifier and combines this with
+    features extracted from the data using other vectorisations
+    from sklearn_tda, and from the features module.
+    """
 
     def fit(self, X, y, **fit_params):
+        """Fit the model.
+
+        Parameters
+        ----------
+        X : iterable
+            Training data, must be passable to transforms.TranslateChunks()
+        y : iterable
+            Training labels.
+        fit_params : dict
+            ignored for now.
+
+        Returns
+        -------
+        self
+
+        """
         sliced_wasserstein_classifier = TDAClassifier(cross_validate=False)
 
         persistence_image = Pipeline([
@@ -128,4 +150,17 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
         return self
 
     def predict(self, X):
+        """Predicts using the pipeline.
+
+        Parameters
+        ----------
+        X : iterable
+            Data to predict labels for.
+            Must be passable to transforms.TranslateChunks()
+
+        Returns
+        -------
+        y_pred : array-like
+
+        """
         return self.classifier.predict(X)

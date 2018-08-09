@@ -201,7 +201,8 @@ def run_mapper(test, train):
         COCOKeypoints.LWrist.value
     ]
     logging.info("Flattening data into a datapoint per chunk.")
-    data = transforms.Flatten(selected_keypoints).transform(translated_chunks)
+    extracted = transforms.ExtractKeypoints(selected_keypoints).transform(translated_chunks)
+    data = transforms.Flatten().transform(extracted)
     logging.info("Applying mapping to tracks.")
     mapper = Mapper(chunks, frames, translated_chunks, labels)
     mapper.create_tooltips(videos)

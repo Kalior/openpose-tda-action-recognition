@@ -6,6 +6,19 @@ from ..tracker import TrackVisualiser, Track, Person
 
 
 class ChunkVisualiser:
+    """Visualisation helper class for chunks.
+
+    Parameters
+    ----------
+    chunks : array-like, shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
+        The chunks to draw.
+    chunk_frames : array-like, shape = [n_chunks, frames_per_chunk, 1]
+        Frame numbers for the chunks.
+    translated_chunks : array-like,
+        shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
+        The chunks translated to origin, useful for visualisation.
+
+    """
 
     def __init__(self, chunks, chunk_frames, translated_chunks):
         self.chunks = chunks
@@ -13,12 +26,37 @@ class ChunkVisualiser:
         self.translated_chunks = translated_chunks
 
     def visualise(self, videos, graph):
+        """Visualises the chunks in accordance to the grouping in graph.
+
+        Used from the Mapper class.
+
+        Parameters
+        ----------
+        videos : list of str
+            The videos corresponding to the chunks.
+        grpah : dict, returned by Mapper.map()
+
+        """
         nodes = graph['nodes']
         for name, node in nodes.items():
             self.draw_node(videos, name, node)
             sleep(1)
 
     def visualise_averages(self, nodes, forever=False):
+        """Draws the average shape of chunks grouped by nodes.
+
+        Draws the translated chunks in white on a black background, with
+        the opacity of every chunk set to 1 / n_chunks + 0.05.
+
+        Parameters
+        ----------
+        nodes : dict
+            Key is name of group of chunks, Value is a list with indicies
+            of the chunks corresponding to the group.
+        forever : boolean, optional, default=False
+            Specifies if the averages should be drawn for a long time or not.
+
+        """
         visualiser = TrackVisualiser()
         all_average_frames = []
         for name, node in nodes.items():
@@ -37,6 +75,20 @@ class ChunkVisualiser:
                     cv2.waitKey(15)
 
     def draw_node(self, videos, name, node):
+        """Draws the videos with the chunks overlayed corresponding to the node.
+
+        Each video/chunk is drawn sequentially in the order they occur in node.
+
+        Parameters
+        ----------
+        videos : list of str
+            Path to the videos corresponding to chunks.
+        name : str
+            Name of the group to be displayed.
+        node : list of int
+            Indicies of which chunks/videos to draw.
+
+        """
         visualiser = TrackVisualiser()
 
         average_frames = self._draw_average_shape(name, node, visualiser)
@@ -111,6 +163,15 @@ class ChunkVisualiser:
         return track
 
     def chunk_to_video_pose(self, chunk, out_file, frames):
+        """Saves the chunk to .avi file.
+
+        Parameters
+        ----------
+        chunk : array-like, shape = [frames_per_chunk, n_keypoints, 3]
+        out_file : str, the name of the file to write the video to.
+        frames : array-like, shape = [frames_per_chunk, 1]
+
+        """
         translated_track = self._chunk_to_track(chunk, frames)
 
         writer, frame_width, frame_height = self._create_writer(out_file)
@@ -141,6 +202,21 @@ class ChunkVisualiser:
         return blank_image
 
     def chunk_to_video_scene(self, video, chunk, out_file, frames, label):
+        """Saves the chunk overlayed on the original video to .avi file.
+
+        Parameters
+        ----------
+        video : str
+            Path to the original video.
+        chunk : array-like, shape = [frames_per_chunk, n_keypoints, 3]
+        out_file : str
+            The name of the file to write the video to.
+        frames : array-like, shape = [frames_per_chunk, 1]
+            The frame numbers of the chunk.
+        label : str
+            The label of the chunk.
+
+        """
         capture = cv2.VideoCapture(video)
 
         mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)

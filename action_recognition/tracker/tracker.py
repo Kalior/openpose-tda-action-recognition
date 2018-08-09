@@ -11,6 +11,19 @@ from .track import Track
 
 
 class Tracker:
+    """Tracks people throgh a video using a detector.
+
+    Parameters
+    ----------
+    detector : any object implementing detect in the same way as the openpose
+        implementations in the detector module.
+    only_track_arms : boolean, optional, default False
+        Makes the program throw away people with no identified arms.
+    out_dir : str, optional, default 'output'
+        path to directory where the resulting tracks and videos are saved.
+        Creates this directory if it does not exist.
+
+    """
 
     def __init__(self, detector, only_track_arms=False, out_dir='output'):
         self.only_track_arms = only_track_arms
@@ -31,6 +44,22 @@ class Tracker:
             os.makedirs(out_dir)
 
     def video(self, file, draw_frames):
+        """Tracks people in the video given in file.
+
+        Produces a video with the identified people overlayed on the
+        original video.  Also creates a .npz file with the identified
+        tracks of people and the corresponding frame numbers.
+
+        Parameters
+        ----------
+        file : str
+            path to the video for which the tracks should be produced
+        draw_frames : boolean
+            Specifies if the intermediate frames from the original video
+            overlayed with the identified keypoints should be produced
+            during computation time or not.
+
+        """
         capture = cv2.VideoCapture(file)
         self.speed_change_threshold = 10  # int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)) / 10
 

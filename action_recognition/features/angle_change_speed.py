@@ -3,14 +3,49 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 
 class AngleChangeSpeed(BaseEstimator, TransformerMixin):
+    """Measures the speed with which angles between given keypoints change.
+
+    Parameters
+    ----------
+    connect_keypoints : array of tuples
+        Each tuple must contain a from and to index for which the angle change
+        is measured.
+
+    """
 
     def __init__(self, connect_keypoints):
         self.connect_keypoints = connect_keypoints
 
     def fit(self, X=None, y=None, **fit_params):
+        """Returns self, as there are no parameters to fit.
+
+        Parameters
+        ----------
+        X : ignored
+        y : ignored
+        fit_params : ignored
+
+        Returns
+        -------
+        self : unchanged
+
+        """
         return self
 
     def transform(self, chunks):
+        """Extracts the speed with which angles changes.
+
+        Parameters
+        ----------
+        chunks : array-like
+            shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
+
+        Returns
+        -------
+        data : array-like
+            shape = [n_chunks, len(connect_keypoints)]
+
+        """
         data = np.array([self._angle_change_speed(chunk)
                          for chunk in chunks])
         return data

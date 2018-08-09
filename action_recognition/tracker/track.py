@@ -4,6 +4,13 @@ import logging
 
 
 class Track:
+    """The track of a person through a video.
+
+    Essentially a list of Person, with the corresponding frame number that the
+    person was identified at. Also contains a lot of functions that operate on
+    the Track for post processing.
+
+    """
 
     def __init__(self):
         self.track = []
@@ -17,16 +24,41 @@ class Track:
         return self.track[item]
 
     def add_person(self, person, current_frame):
+        """Adds a Person to the track
+        Parameters
+        ----------
+        person : Person object
+            The person to add to the track.
+        current_frame : int
+            The frame number the person was identified at.
+
+        """
         self.last_frame_update = current_frame
         self.frame_assigned.append(current_frame)
         self.track.append(person)
 
     def get_last_person(self):
+        """Retrieves the last person in the track
+        Returns
+        -------
+        person : Person object
+
+        """
         return self.track[-1]
 
     def get_average_speed_in_window(self, window_size=-1):
-        """
-            Gives distance moved (in pixels I think) per frame
+        """Gives average distance moved over a window of size window_size.
+
+        Parameters
+        ----------
+        window_size : int, optional
+            The number of frames to calculate the average. If unspecified,
+            will calculate over the entire track.
+
+        Returns
+        -------
+        speed : float
+            The average speed calculated.
         """
         if window_size == -1:
             window_size = len(self.track)
@@ -43,10 +75,34 @@ class Track:
         return speed
 
     def is_relevant(self, current_frame):
-        # Paths are relevant if they are used recently
+        """Paths are relevant if they are updated with the last 10 frames.
+
+        Parameters
+        ----------
+        current_frame : int
+            The current frame to compare the latest update of the track to.
+
+        Returns
+        -------
+        relevant : boolean
+        """
         return self.last_frame_update > current_frame - 10
 
     def get_keypoint_path(self, idx, current_frame=-1):
+        """Returns the path of only the specified keypoint by idx.
+
+        Parameters
+        ----------
+        idx : int, the keypoint index to get the path for.
+        current_frame : int
+            The current frame to get the path up until.
+
+        Returns
+        -------
+        path : array-like
+            shape = [n_frames_until_current, 2]
+
+        """
         if current_frame == -1:
             current_frame = self.last_frame_update
 
@@ -54,9 +110,42 @@ class Track:
                 if np.any(p[idx][:2]) and self.frame_assigned[i] <= current_frame]
 
     def get_keypoints_at(self, frame):
+        """Returns all keypoints at time frame.
+
+        Parameters
+        ----------
+        frame : int
+            The current frame to get the keypoints of.
+
+        Returns
+        -------
+        keypoints : array-like
+            shape = [n_keypoints, 2]
+
+        """
+
         return [p[:, :2] for i, p in enumerate(self.track) if self.frame_assigned[i] <= frame][-1]
 
     def divide_into_chunks(self, frames_per_chunk, overlap=-1):
+        """Divides the track into chunks with overlaps, used for action recognition.
+
+        Parameters
+        ----------
+        frames_per_chunks : int
+            The number of frames each chunk should contain.
+        overlap : int, optional
+            The number of frames the chunks should overlap with.
+            If not specified, half of frames_per_chunk is used.
+
+        Returns
+        -------
+        chunks : array-like
+            shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
+        frames : array-like
+            shape = [n_chunks, frames_per_chunk, 1]
+            The Frame number of each part of each chunk
+
+        """
         if overlap == -1:
             overlap = int(frames_per_chunk / 2)
 
@@ -82,6 +171,21 @@ class Track:
         return chunks, frames
 
     def chunk_from_frame(self, start_frame, frames_per_chunk):
+        """Gets a chunk from the start_frame with length of frames_per_chunk.
+
+        Parameters
+        ----------
+        start_frame : int
+            The start frame of the chunk
+        frames_per_chunk : int
+            The number of frames to include in the chunk
+
+        Returns
+        -------
+        chunk : array-like
+            Chunk of track. Shape = [frames_per_chunk, n_keypoints, 3]
+
+        """
         start_index = 0
         # Iterate to where the chunk should start
         while start_index < len(self.frame_assigned) and self.frame_assigned[start_index] < start_frame:
@@ -96,12 +200,32 @@ class Track:
         return chunk, frames
 
     def to_np(self):
+        """Converts the track into pure numpy arrays.
+
+        Returns
+        -------
+        np_path : array-like
+            Shape = [len(track), n_keypoints, 3]
+        np_frames : array-like
+            Shape = [len(track), 1]
+        """
         np_path = np.array([p.keypoints for p in self.track])
         np_frames = np.array(self.frame_assigned)
 
         return np_path, np_frames
 
     def combine(self, other):
+        """Joins this track with other.
+
+        Deals with cases where the two tracks have people at the same frame,
+        and when one track follows the other.
+
+        Parameters
+        ----------
+        other : Track
+            The other track object to combine with this one.
+
+        """
         new_track = []
         new_frame_assigned = []
         self_index = 0
@@ -134,6 +258,22 @@ class Track:
         self.remove_frame_duplicates()
 
     def overlaps(self, other):
+        """Checks if other overlaps with this track.
+
+        More specifically, it check if the two tracks are nearby each other
+        for all of their frames.
+
+        Parameters
+        ----------
+        other : Track
+            The other track object to compare to this one.
+
+        Returns
+        -------
+        overlaps : boolean
+            True if the two tracks are nearby each other.
+
+        """
         if self.frame_assigned[-1] < other.frame_assigned[0] or \
                 self.frame_assigned[0] > other.frame_assigned[-1]:
             return False
@@ -186,8 +326,10 @@ class Track:
 
         return max(0, index)
 
-    # Fill missing keypoints with data from previous parts of the track
     def fill_missing_keypoints(self):
+        """Fill missing keypoints with data from previous parts of the track
+
+        """
         if len(self.track) < 2:
             return
 
@@ -195,6 +337,9 @@ class Track:
             self.track[i].fill_missing_keypoints(self.track[i - 1])
 
     def remove_frame_duplicates(self):
+        """Removes parts of the track where two parts were assigned to the same frame number.
+
+        """
         i = 0
         while i < len(self.frame_assigned) - 1:
             if self.frame_assigned[i] == self.frame_assigned[i + 1]:
@@ -204,6 +349,13 @@ class Track:
                 i += 1
 
     def fill_missing_frames(self):
+        """Fills frames that aren't assigned a value with interpolated points.
+
+        Specifically, it identifies gaps in the frame numbers where there are
+        no assignments, and interpolates values for the keypoints from the
+        next identified frame and the previous identified frame.
+
+        """
         new_track = []
         new_frame_assigned = []
 
