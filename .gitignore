@@ -4,3 +4,4 @@ pipeline_cache
 media
 datasets
 output
+doc/_build
