@@ -25,12 +25,26 @@ def main(args):
         test_labels = np.append(test_labels, new_test_labels, axis=0)
         test_videos = np.append(test_videos, new_test_videos, axis=0)
 
+    train_chunks, train_frames, train_labels, train_videos = shuffle(
+        train_chunks, train_frames, train_labels, train_videos)
+    test_chunks, test_frames, test_labels, test_videos = shuffle(
+        test_chunks, test_frames, test_labels, test_videos)
+
     train_name = args.out_file + '-train.npz'
     test_name = args.out_file + '-test.npz'
     np.savez(train_name, chunks=train_chunks, frames=train_frames,
              labels=train_labels, videos=train_videos)
     np.savez(test_name, chunks=test_chunks, frames=test_frames,
              labels=test_labels, videos=test_videos)
+
+
+def shuffle(chunks, frames, labels, videos):
+    permutation = np.random.permutation(chunks.shape[0])
+    chunks = chunks[permutation]
+    frames = frames[permutation]
+    labels = labels[permutation]
+    videos = videos[permutation]
+    return chunks, frames, labels, videos
 
 
 def load_data(file_name):
