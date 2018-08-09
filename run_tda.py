@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, RobustScaler
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
 
 from action_recognition.analysis import Mapper, ChunkVisualiser
-from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser
+from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser, TDAClusterer
 from action_recognition import transforms
 from action_recognition import features
 from action_recognition.util import COCOKeypoints, coco_connections
@@ -75,26 +75,31 @@ def visualise_point_cloud(train):
 
 
 def visualise_features(chunks, labels):
-    chunk_speed = features.AverageSpeed(range(18)).transform(chunks)
-    plot_feature_per_class(chunk_speed, labels, 'Average Speed')
-    angle_change_speed = features.AngleChangeSpeed(coco_connections).transform(chunks)
-    plot_feature_per_class(angle_change_speed, labels, 'Average Angle Change')
-    movement = features.AmountOfMovement(range(18)).transform(chunks)
-    plot_feature_per_class(movement, labels, 'Total distance')
-    connections = [
-        (COCOKeypoints.RWrist.value, COCOKeypoints.LWrist.value),
-        (COCOKeypoints.RElbow.value, COCOKeypoints.LElbow.value),
-        (COCOKeypoints.Neck.value, COCOKeypoints.LAnkle.value),
-        (COCOKeypoints.Neck.value, COCOKeypoints.RAnkle.value),
-        (COCOKeypoints.LWrist.value, COCOKeypoints.LAnkle.value),
-        (COCOKeypoints.RWrist.value, COCOKeypoints.RAnkle.value)
-    ]
-    distances = features.KeypointDistance(connections).transform(chunks)
-    plot_feature_per_class(distances, labels, 'Keypoint distances')
+    ensemble = EnsembleClassifier()
+    angle_change_connections = ensemble.angle_change_connections
+    speed_keypoints = ensemble.speed_keypoints
+    keypoint_distance_connections = ensemble.keypoint_distance_connections
+
+    chunk_speed = features.AverageSpeed(speed_keypoints)
+    plot_feature_per_class(chunks, chunk_speed, labels, 'Average Speed')
+
+    angle_change_speed = features.AngleChangeSpeed(angle_change_connections)
+    plot_feature_per_class(chunks, angle_change_speed, labels, 'Average Angle Change')
+
+    movement = features.AmountOfMovement(range(18))
+    plot_feature_per_class(chunks, movement, labels, 'Total distance')
+
+    keypoint_distance = features.KeypointDistance(keypoint_distance_connections)
+    plot_feature_per_class(chunks, keypoint_distance, labels, 'Keypoint distances')
     plt.show(block=False)
 
 
-def plot_feature_per_class(feature, labels, title):
+def plot_feature_per_class(chunks, transform, labels, title):
+    feature = Pipeline([
+        ("Feature", transform),
+        ("Scaler", RobustScaler())
+    ]).fit_transform(chunks)
+
     logging.debug('Constructing dataframe')
     rows = [{'value': feature[i, j], 'keypoint': j, 'action': labels[i]}
             for i in range(feature.shape[0]) for j in range(feature.shape[1])]
