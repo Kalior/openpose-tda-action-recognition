@@ -2,6 +2,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.svm import SVC
 from sklearn.ensemble import VotingClassifier
+from sklearn.preprocessing import RobustScaler
 
 import sklearn_tda as tda
 import numpy as np
@@ -20,6 +21,28 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
     features extracted from the data using other vectorisations
     from sklearn_tda, and from the features module.
     """
+
+    def __init__(self):
+        self.keypoint_distance_connections = [
+            (COCOKeypoints.RWrist.value, COCOKeypoints.LWrist.value),
+            (COCOKeypoints.RElbow.value, COCOKeypoints.LElbow.value),
+            (COCOKeypoints.Neck.value, COCOKeypoints.LAnkle.value),
+            (COCOKeypoints.Neck.value, COCOKeypoints.RAnkle.value),
+            (COCOKeypoints.LWrist.value, COCOKeypoints.LAnkle.value),
+            (COCOKeypoints.RWrist.value, COCOKeypoints.RAnkle.value)
+        ]
+
+        self.angle_change_connections = np.array(coco_connections)
+        self.speed_keypoints = range(18)
+        self.arm_keypoints = [
+            COCOKeypoints.RShoulder.value,
+            COCOKeypoints.LShoulder.value,
+            COCOKeypoints.RElbow.value,
+            COCOKeypoints.LElbow.value,
+            COCOKeypoints.RWrist.value,
+            COCOKeypoints.LWrist.value
+        ]
+        self.arm_connections = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5), (4, 5)]
 
     def fit(self, X, y, **fit_params):
         """Fit the model.
@@ -65,21 +88,11 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
             ("BettiCurve", tda.BettiCurve())
         ])
 
-        arm_keypoints = [
-            COCOKeypoints.RShoulder.value,
-            COCOKeypoints.LShoulder.value,
-            COCOKeypoints.RElbow.value,
-            COCOKeypoints.LElbow.value,
-            COCOKeypoints.RWrist.value,
-            COCOKeypoints.LWrist.value
-        ]
-        arm_connections = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5), (4, 5)]
-
         other_tda = Pipeline([
             ("Translate",   TranslateChunks()),
+            ("Extract",     ExtractKeypoints(self.arm_keypoints)),
             ("Smoothing",   SmoothChunks()),
-            ("Extract",     ExtractKeypoints(arm_keypoints)),
-            ("Interpolate", InterpolateKeypoints(arm_connections)),
+            ("Interpolate", InterpolateKeypoints(self.arm_connections)),
             ("Flattening",  FlattenTo3D()),
             ("Persistence", Persistence()),
             ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
@@ -92,20 +105,23 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
             ]))
         ])
 
-        connections = [
-            (COCOKeypoints.RWrist.value, COCOKeypoints.LWrist.value),
-            (COCOKeypoints.RElbow.value, COCOKeypoints.LElbow.value),
-            (COCOKeypoints.Neck.value, COCOKeypoints.LAnkle.value),
-            (COCOKeypoints.Neck.value, COCOKeypoints.RAnkle.value),
-            (COCOKeypoints.LWrist.value, COCOKeypoints.LAnkle.value),
-            (COCOKeypoints.RWrist.value, COCOKeypoints.RAnkle.value)
-        ]
-
         feature_union = FeatureUnion([
-            ("AverageSpeed", AverageSpeed(range(18))),
-            ("AngleChangeSpeed", AngleChangeSpeed(coco_connections)),
-            ("Movement",    AmountOfMovement(range(18))),
-            ("KeypointDistance", KeypointDistance(connections))
+            ("AverageSpeed", Pipeline([
+                ("Feature", AverageSpeed(self.speed_keypoints)),
+                ("Scaler", RobustScaler())
+            ])),
+            ("AngleChangeSpeed", Pipeline([
+                ("Feature", AngleChangeSpeed(self.angle_change_connections)),
+                ("Scaler", RobustScaler())
+            ])),
+            ("Movement",    Pipeline([
+                ("Feature", AmountOfMovement(range(18))),
+                ("Scaler", RobustScaler())
+            ])),
+            ("KeypointDistance", Pipeline([
+                ("Feature", KeypointDistance(self.keypoint_distance_connections)),
+                ("Scaler", RobustScaler())
+            ]))
             # ("TDA", other_tda)
         ])
         feature_union_pipeline = Pipeline([
@@ -116,8 +132,8 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
         persistence_scale_space = Pipeline([
             ("Translate",   TranslateChunks()),
             ("Smoothing",   SmoothChunks()),
-            ("Extract",     ExtractKeypoints(arm_keypoints)),
-            ("Interpolate", InterpolateKeypoints(arm_connections)),
+            ("Extract",     ExtractKeypoints(self.arm_keypoints)),
+            ("Interpolate", InterpolateKeypoints(self.arm_connections)),
             ("Flattening",  FlattenTo3D()),
             ("Persistence", Persistence()),
             ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
@@ -128,8 +144,8 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
         persistence_weighted_gaussian = Pipeline([
             ("Translate",   TranslateChunks()),
             ("Smoothing",   SmoothChunks()),
-            ("Extract",     ExtractKeypoints(arm_keypoints)),
-            ("Interpolate", InterpolateKeypoints(arm_connections)),
+            ("Extract",     ExtractKeypoints(self.arm_keypoints)),
+            ("Interpolate", InterpolateKeypoints(self.arm_connections)),
             ("Flattening",  FlattenTo3D()),
             ("Persistence", Persistence()),
             ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
