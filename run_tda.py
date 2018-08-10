@@ -13,7 +13,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.externals import joblib
 
 from action_recognition.analysis import Mapper, ChunkVisualiser
-from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser, TDAClusterer
+from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser
 from action_recognition import transforms
 from action_recognition import features
 from action_recognition.util import COCOKeypoints, coco_connections
