@@ -143,7 +143,7 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             },
             {
                 "Persistence__max_edge_length": [0.5, 0.9],
-                "Persistence__complex_": ['rips']
+                "Persistence__complex_": ['rips'],
                 "Extract__selected_keypoints": [self.all_keypoints],
                 "Interpolate__connect_keypoints": [arm_connections, coco_connections],
                 "Interpolate__number_of_points": [2, 3, 4],
@@ -158,12 +158,11 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
                 "Interpolate": [None, InterpolateKeypoints()]
             },
             {
-                "Persistence__max_edge_length": [0.5, 0.9],
-                "Persistence__complex_": ['rips']
-                "Extract__selected_keypoints": [self.all_keypoints],
-                "Interpolate__connect_keypoints": [arm_connections, coco_connections],
+                "Persistence__max_alpha_square": [0.9],
+                "Persistence__complex_": ['alpha'],
+                "Extract__selected_keypoints": [self.arm_keypoints],
                 "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate": [None, InterpolateKeypoints()]
+                "Interpolate__connect_keypoints": [arm_connections],
             },
             # {
             #     "Smoothing": [SmoothChunks()],
