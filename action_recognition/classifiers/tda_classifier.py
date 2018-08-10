@@ -133,36 +133,47 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
         # Definition of pipeline
         pipe = self._pre_validated_pipeline()
 
+        limb_connections = [
+            (2, 3),
+            (3, 4),
+            (5, 6),
+            (6, 7),
+            (8, 9),
+            (9, 10),
+            (11, 12),
+            (12, 13)
+        ]
+
         params = [
             {
                 "Persistence__max_edge_length": [0.5, 0.9],
                 "Persistence__complex_": ['rips']
                 "Extract__selected_keypoints": [self.arm_keypoints],
                 "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate__connect_keypoints": [arm_connections],
+                "Interpolate__connect_keypoints": [self.arm_connections],
             },
             {
                 "Persistence__max_edge_length": [0.5, 0.9],
                 "Persistence__complex_": ['rips'],
                 "Extract__selected_keypoints": [self.all_keypoints],
-                "Interpolate__connect_keypoints": [arm_connections, coco_connections],
+                "Interpolate__connect_keypoints": [limb_connections, coco_connections],
                 "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate": [None, InterpolateKeypoints()]
+                "Interpolate": [None, InterpolateKeypoints(self.arm_connections)]
             },
             {
                 "Persistence__max_alpha_square": [0.9],
                 "Persistence__complex_": ['alpha'],
                 "Extract__selected_keypoints": [self.all_keypoints],
-                "Interpolate__connect_keypoints": [arm_connections, coco_connections],
+                "Interpolate__connect_keypoints": [limb_connections, coco_connections],
                 "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate": [None, InterpolateKeypoints()]
+                "Interpolate": [None, InterpolateKeypoints(self.arm_connections)]
             },
             {
                 "Persistence__max_alpha_square": [0.9],
                 "Persistence__complex_": ['alpha'],
                 "Extract__selected_keypoints": [self.arm_keypoints],
                 "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate__connect_keypoints": [arm_connections],
+                "Interpolate__connect_keypoints": [self.arm_connections],
             },
             # {
             #     "Smoothing": [SmoothChunks()],
