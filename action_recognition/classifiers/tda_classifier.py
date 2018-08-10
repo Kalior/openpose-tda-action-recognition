@@ -38,14 +38,12 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, cross_validate=False):
         self.cross_validate = cross_validate
         self.arm_keypoints = [
-            COCOKeypoints.RShoulder.value,
-            COCOKeypoints.LShoulder.value,
             COCOKeypoints.RElbow.value,
-            COCOKeypoints.LElbow.value,
             COCOKeypoints.RWrist.value,
+            COCOKeypoints.LElbow.value,
             COCOKeypoints.LWrist.value
         ]
-        self.arm_connections = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5), (4, 5)]
+        self.arm_connections = [(0, 1), (2, 3)]
         self.all_keypoints = range(18)
 
     def fit(self, X, y, **fit_params):
@@ -115,13 +113,13 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
     def _pre_validated_pipeline(self):
         pipe = Pipeline([
             ("Translate",   TranslateChunks()),
-            ("Smoothing",   SmoothChunks()),
             ("Extract",     ExtractKeypoints(self.arm_keypoints)),
-            ("Interpolate", InterpolateKeypoints(self.arm_connections)),
+            ("Smoothing",   SmoothChunks()),
+            ("Interpolate", InterpolateKeypoints(self.arm_connections, 2)),
             ("Flattening",  FlattenTo3D()),
-            ("Persistence", Persistence()),
+            ("Persistence", Persistence(max_alpha_square=0.9, complex_='alpha')),
             ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
-            ("TDA",         tda.SlicedWasserstein(bandwidth=1.0, num_directions=10)),
+            ("TDA",         tda.SlicedWasserstein(bandwidth=0.6, num_directions=20)),
             ("Estimator",   SVC(kernel='precomputed', probability=True))
         ])
 
@@ -135,7 +133,7 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             ("Smoothing",   SmoothChunks()),
             ("Interpolate", InterpolateKeypoints(self.arm_connections)),
             ("Flattening",  FlattenTo3D()),
-            ("Persistence", Persistence(max_edge_length=0.5)),
+            ("Persistence", Persistence(max_alpha_square=0.5, complex_='alpha')),
             ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
             ("TDA",         tda.SlicedWasserstein(bandwidth=0.6, num_directions=20)),
             ("Estimator",   SVC(kernel='precomputed', probability=True))
@@ -143,8 +141,16 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
 
         params = [
             {
-                "Persistence__max_edge_length": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
-                "Persistence__use_rips": [True, False]
+                "Persistence__max_edge_length": [0.5],
+                "Persistence__complex_": ['rips']
+            },
+            {
+                "Persistence__max_alpha_square": [0.9],
+                "Persistence__complex_": ['alpha']
+            },
+            {
+                "Persistence__intrisic_dim": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                "Persistence__complex_": ['tangential']
             },
             # {
             #     "Smoothing": [SmoothChunks()],
@@ -154,4 +160,4 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             # }
         ]
 
-        return GridSearchCV(pipe, params, n_jobs=1)
+        return GridSearchCV(pipe, params, n_jobs=-1)
