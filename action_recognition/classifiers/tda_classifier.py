@@ -147,7 +147,7 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
         params = [
             {
                 "Persistence__max_edge_length": [0.5, 0.9],
-                "Persistence__complex_": ['rips']
+                "Persistence__complex_": ['rips'],
                 "Extract__selected_keypoints": [self.arm_keypoints],
                 "Interpolate__number_of_points": [2, 3, 4],
                 "Interpolate__connect_keypoints": [self.arm_connections],
@@ -173,7 +173,7 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
                 "Persistence__complex_": ['alpha'],
                 "Extract__selected_keypoints": [self.arm_keypoints],
                 "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate__connect_keypoints": [self.arm_connections],
+                "Interpolate__connect_keypoints": [self.arm_connections]
             },
             # {
             #     "Smoothing": [SmoothChunks()],
