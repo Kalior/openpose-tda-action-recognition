@@ -13,7 +13,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.externals import joblib
 
 from action_recognition.analysis import Mapper, ChunkVisualiser
-from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser
+from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser, TDAClusterer
 from action_recognition import transforms
 from action_recognition import features
 from action_recognition.util import COCOKeypoints, coco_connections
@@ -35,6 +35,8 @@ def main(args):
         run_mapper(train, test)
     if args.ensemble:
         run_ensemble(train, test, args.title)
+    if args.cluster:
+        run_clusterer(test, train)
     if args.visualise:
         visualise_features(train[0], train[2])
         visualise_classes(train, test)
@@ -198,6 +200,20 @@ def run_tda(train, test, title, cross_validate):
     visualiser.plot_confusion_matrix(pred_labels, test_labels, le, title)
     visualiser.visualise_incorrect_classifications(
         pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
+
+
+def run_clusterer(test, train):
+    chunks, frames, labels, videos = append_train_and_test(train, test)
+
+    le = LabelEncoder()
+    enc_labels = le.fit_transform(labels)
+
+    clusterer = TDAClusterer()
+    pred_labels, x_transformed = clusterer.fit_predict(chunks)
+
+    clusterer.plot_clusters(x_transformed, pred_labels, 'Estimated')
+    clusterer.plot_clusters(x_transformed, labels, 'True')
+    plt.show()
 
 
 def run_mapper(test, train):
