@@ -72,7 +72,7 @@ class Persistence(BaseEstimator, TransformerMixin):
         """
         return self.persistence(data)
 
-    def visualise_point_clouds(self, data, number_of_points):
+    def visualise_point_clouds(self, data, number_of_points, title=''):
         """Uses pyplot to plot the point cloud used to calculate the persistence.
 
         Parameters
@@ -84,10 +84,13 @@ class Persistence(BaseEstimator, TransformerMixin):
         scaler = RobustScaler()
         scaler.fit(data.reshape(-1, 3))
         for i in range(number_of_points):
+            plt.style.use('seaborn')
             points = scaler.transform(data[i])
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
+            plt.tight_layout()
             ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=5)
+            plt.title("{} {}".format(title, i))
             plt.show(block=False)
 
     def persistence(self, data):
