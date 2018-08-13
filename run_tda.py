@@ -54,22 +54,23 @@ def load_data(file_name):
 
 def visualise_point_cloud(train):
     arm_keypoints = [
-        COCOKeypoints.RShoulder.value,
-        COCOKeypoints.LShoulder.value,
         COCOKeypoints.RElbow.value,
-        COCOKeypoints.LElbow.value,
         COCOKeypoints.RWrist.value,
-        COCOKeypoints.LWrist.value
+        COCOKeypoints.LElbow.value,
+        COCOKeypoints.LWrist.value,
+        COCOKeypoints.LKnee.value,
+        COCOKeypoints.LAnkle.value,
+        COCOKeypoints.RKnee.value,
+        COCOKeypoints.RAnkle.value
     ]
-    arm_connections = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5), (4, 5)]
+    arm_connections = [(0, 1), (2, 3), (4, 5), (6, 7)]
     chunks = train[0]
     pipe = Pipeline([
         ("1", transforms.TranslateChunks()),
-        ("2", transforms.SmoothChunks()),
-        ("3", transforms.ExtractKeypoints(arm_keypoints)),
+        ("2", transforms.ExtractKeypoints(arm_keypoints)),
+        ("3", transforms.SmoothChunks()),
         ("4", transforms.InterpolateKeypoints(arm_connections)),
         ("5", transforms.FlattenTo3D()),
-        ("6", transforms.RotatePointCloud(2))
     ])
     chunks = pipe.fit_transform(chunks)
     transforms.Persistence().visualise_point_clouds(chunks, 10)
@@ -108,7 +109,7 @@ def plot_feature_per_class(chunks, transform, labels, title):
 
     logging.debug('Preparing plot.')
     plt.figure()
-    sns.lineplot(x='keypoint', y='value', hue='action', style='action', data=df)
+    sns.lineplot(x='keypoint', y='value', hue='action', style=None, data=df)
     plt.title(title)
 
 
@@ -157,8 +158,9 @@ def run_ensemble(train, test, title):
     logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
         accuracy, precision, recall))
 
-    logging.info("Saving model to ensemble.pkl.")
-    joblib.dump(classifier, "ensemble.pkl")
+    file_name = "{}-ensemble.pkl".format(title)
+    logging.info("Saving model to {}.".format(file_name))
+    joblib.dump(classifier, file_name)
 
     visualiser = ClassificationVisualiser()
     visualiser.plot_confusion_matrix(pred_labels, test_labels, le, title)
@@ -188,8 +190,9 @@ def run_tda(train, test, title, cross_validate):
     logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
         accuracy, precision, recall))
 
-    logging.info("Saving model to tda.pkl.")
-    joblib.dump(classifier, "tda.pkl")
+    file_name = "{}-tda.pkl".format(title)
+    logging.info("Saving model to {}.".format(file_name))
+    joblib.dump(classifier, file_name)
 
     visualiser = ClassificationVisualiser()
     visualiser.plot_confusion_matrix(pred_labels, test_labels, le, title)
@@ -234,7 +237,7 @@ if __name__ == '__main__':
                         help='Specify if you wish to only visualise the classes in the dataset.')
     parser.add_argument('--ensemble', action='store_true',
                         help='Runs a voting classifier on TDA and feature engineering on the dataset.')
-    parser.add_argument('--title', type=str, default='Confusion matrix',
+    parser.add_argument('--title', type=str, default='classifier',
                         help='Title and file name for confusion matrix plot.')
     parser.add_argument('--cross-validate', '-cv', action='store_true',
                         help='Specify for cross-validation of tda pipeline.')
