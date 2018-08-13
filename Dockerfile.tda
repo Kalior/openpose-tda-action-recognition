@@ -45,22 +45,23 @@ RUN apt-get install -y \
 
 RUN git clone https://github.com/MathieuCarriere/sklearn_tda
 WORKDIR sklearn_tda
-RUN python3.6 -m pip install .
 
+# These changes maybe should be submitted to sklearn_tda
 RUN sed -i "s|from vectors import|from .vectors import|g" sklearn_tda/code.py
 RUN sed -i "s|from kernels import|from .kernels import|g" sklearn_tda/code.py
 RUN sed -i "s|from hera_wasserstein import|from .hera_wasserstein import|g" sklearn_tda/code.py
 RUN sed -i "s|from hera_bottleneck import|from .hera_bottleneck import|g" sklearn_tda/code.py
 
+RUN python3.6 -m pip install .
 
-# Working directory
 
-WORKDIR /gcal
 # Install GCAL
+WORKDIR /gcal
 RUN curl -LO "https://github.com/CGAL/cgal/releases/download/releases%2FCGAL-4.12/CGAL-4.12.tar.xz" \
     && tar xf CGAL-4.12.tar.xz && cd CGAL-4.12 \
     && cmake -DCGAL_HEADER_ONLY=ON -DCMAKE_BUILD_TYPE=Release . && make all install
 
+# Install Gudhi
 WORKDIR /gudhi
 
 RUN curl -LO "https://gforge.inria.fr/frs/download.php/file/37579/2018-06-14-13-32-49_GUDHI_2.2.0.tar.gz" \
