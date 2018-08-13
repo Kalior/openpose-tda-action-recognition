@@ -5,3 +5,5 @@ media
 datasets
 output
 doc/_build
+*.png
+*.pkl
