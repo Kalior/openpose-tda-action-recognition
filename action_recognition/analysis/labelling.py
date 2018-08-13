@@ -1,6 +1,7 @@
 import numpy as np
 import json
 import cv2
+import logging
 
 from ..tracker import TrackVisualiser
 
@@ -249,6 +250,9 @@ class Labelling:
                     label, frames_per_chunk))
 
             chunk, chunk_frames = track.chunk_from_frame(start_frame, frames_per_chunk)
+            if chunk.shape[0] < frames_per_chunk:
+                logging.warn("Label {} does not allow for a chunk with size {}".format(
+                    label, frames_per_chunk))
 
             chunks[i] = chunk
             frames[i] = chunk_frames
