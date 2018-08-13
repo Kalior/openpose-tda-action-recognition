@@ -11,7 +11,10 @@ from action_recognition.tracker import TrackVisualiser
 
 
 def main(args):
-    if len(args.tracks_files) != len(args.videos):
+    tracks_files = parse_paths(args.tracks_files, 'tracks.npz')
+    video_files = parse_paths(args.videos, '.mp4')
+
+    if len(tracks_files) != len(video_files):
         logging.warn("Number of track files does not correspond to number of videos.")
         return
 
@@ -24,10 +27,10 @@ def main(args):
     all_frames = np.empty((0, frames_per_chunk))
     all_labels = np.empty((0,), dtype=str)
     all_videos = np.empty((0,), dtype=str)
-    for i in range(len(args.tracks_files)):
-        tracks_file = args.tracks_files[i]
-        video = args.videos[i]
-        logging.info("Processing video: {}".format(video))
+    for i in range(len(tracks_files)):
+        tracks_file = tracks_files[i]
+        video = video_files[i]
+        logging.info("Processing video: {} with tracks {}".format(video, tracks_file))
         chunks, frames, labels = process_tracks(
             tracks_file, video, frames_per_chunk, overlap_percentage,
             seconds_per_chunk, args.filter_moving)
@@ -44,6 +47,23 @@ def main(args):
     train, test = split_data(all_chunks, all_frames, all_labels, all_videos)
     append_and_save(*train, train_name)
     append_and_save(*test, test_name)
+
+
+def parse_paths(paths, ok_ending):
+    """
+        Parses directories and regular files from the paths.
+    """
+    parsed_paths = []
+    for path in paths:
+        if os.path.isfile(path) and path.endswith(ok_ending):
+            parsed_paths.append(path)
+        elif os.path.isdir(path):
+            for dirpath, dirnames, filenames in os.walk(path):
+                for file in sorted(filenames):
+                    if file.endswith(ok_ending):
+                        file_path = os.path.join(dirpath, file)
+                        parsed_paths.append(file_path)
+    return parsed_paths
 
 
 def append_and_save(chunks, frames, labels, videos, file_name):
