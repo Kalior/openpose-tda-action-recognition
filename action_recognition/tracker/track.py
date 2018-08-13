@@ -326,15 +326,20 @@ class Track:
 
         return max(0, index)
 
-    def fill_missing_keypoints(self):
+    def fill_missing_keypoints(self, fill_type='copy'):
         """Fill missing keypoints with data from previous parts of the track
+
+        Parameters
+        ----------
+        fill_type : str, optional, default = 'copy'
+            Either 'copy' or 'diff', as explained in Person.fill_missing_keypoints()
 
         """
         if len(self.track) < 2:
             return
 
         for i in range(1, len(self.track)):
-            self.track[i].fill_missing_keypoints(self.track[i - 1])
+            self.track[i].fill_missing_keypoints(self.track[i - 1], fill_type)
 
     def remove_frame_duplicates(self):
         """Removes parts of the track where two parts were assigned to the same frame number.
@@ -378,3 +383,9 @@ class Track:
 
         self.track = new_track
         self.frame_assigned = new_frame_assigned
+
+    def reset_keypoints(self):
+        """Resets the Keypoints in every Person in track to the original.
+        """
+        for person in self.track:
+            person.reset_keypoints()

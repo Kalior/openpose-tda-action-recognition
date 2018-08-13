@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..util import COCOKeypoints
+from ..util import COCOKeypoints, coco_connections
 
 
 class Person:
@@ -22,6 +22,7 @@ class Person:
     def __init__(self, keypoints, track_index=-1):
         self.keypoints = keypoints
         self.track_index = track_index
+        self.og_keypoints = np.copy(keypoints)
 
     def get_nonzero_keypoint(self):
         """Gets the first keypoint from the person that isn't zero.
@@ -137,18 +138,63 @@ class Person:
         else:
             return True
 
-    def fill_missing_keypoints(self, other):
-        """Fills missing keypoints with values from other.
+    def fill_missing_keypoints(self, other, fill_type='copy'):
+        """Fills missing keypoints.
+
+        Either fills so that the difference between keypoints is consistent with other,
+        or copies the keypoint position in other.
 
         Parameters
         ----------
         other : Person, used to fill in keypoints which are unidentified
             for this person.
+        fill_type : str, optional, default = 'copy'
+            Either 'copy' or 'diff', as explained above.
 
         """
+        # If type is diff, we have to try to fill in both directions.
+        if fill_type is 'diff':
+            for i, k in enumerate(self.keypoints):
+                if not np.any(k):
+                    new_keypoint = self._diff_fill_keypoint(i, other)
+                    if new_keypoint is not None:
+                        self.keypoints[i] = new_keypoint
+
+            for i, k in reversed(list(enumerate(self.keypoints))):
+                if not np.any(k):
+                    new_keypoint = self._diff_fill_keypoint(i, other)
+                    if new_keypoint is not None:
+                        self.keypoints[i] = new_keypoint
+
+        # Always fill with copy in case we did not find any possible
+        # connections.
         for i, k in enumerate(self.keypoints):
             if not np.any(k):
-                self.keypoints[i] = other.keypoints[i]
+                self.keypoints[i] = np.copy(other.keypoints[i])
+
+    def _diff_fill_keypoint(self, keypoint_index, other):
+        # Try finding a keypoint in the downwards direction (e.g. shoulder - elbow)
+        connect_downwards = next((from_ for from_, to in coco_connections
+                                  if to == keypoint_index and
+                                  np.any(other.keypoints[from_]) and
+                                  np.any(self.keypoints[from_])
+                                  ), -1)
+        # If none found, try the other direction. (e.g. elbow - shoulder)
+        # This may require a reversed iteration through the keypoints as well,
+        # to fill every keypoint.
+        connect_upwards = next((to for from_, to in coco_connections
+                                if from_ == keypoint_index and
+                                np.any(other.keypoints[to]) and
+                                np.any(self.keypoints[to])
+                                ), -1)
+        if connect_downwards == -1 and connect_upwards == -1:
+            return None
+
+        # Take the first index which isn't -1.
+        connect_i = [i for i in [connect_downwards, connect_upwards] if i != -1][0]
+
+        diff = other.keypoints[connect_i] - other.keypoints[keypoint_index]
+        return self.keypoints[connect_i] - diff
 
     def interpolate(self, other, steps=1):
         """Returns possible interpolated points between the self and other.
@@ -168,3 +214,8 @@ class Person:
         diff = self.keypoints - other.keypoints
         step_diff = diff / steps
         return [Person(other.keypoints + step_diff * i, self.track_index) for i in range(1, steps)]
+
+    def reset_keypoints(self):
+        """Resets keypoints to the original copy saved at creation.
+        """
+        self.keypoints = np.copy(self.og_keypoints)

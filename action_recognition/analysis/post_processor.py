@@ -80,7 +80,8 @@ class PostProcessor:
 
     def _fill_tracks(self, tracks):
         for track in tracks:
-            track.fill_missing_keypoints()
+            track.reset_keypoints()
+            track.fill_missing_keypoints(fill_type='diff')
             track.fill_missing_frames()
 
     def _combine_tracks(self, tracks):
