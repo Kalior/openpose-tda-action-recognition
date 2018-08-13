@@ -118,9 +118,9 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             ("Translate",   TranslateChunks()),
             ("Extract",     ExtractKeypoints(self.arm_keypoints)),
             ("Smoothing",   SmoothChunks()),
-            ("Interpolate", InterpolateKeypoints(self.arm_connections, 2)),
+            ("Interpolate", InterpolateKeypoints(self.arm_connections, 1)),
             ("Flattening",  FlattenTo3D()),
-            ("Persistence", Persistence(max_edge_length=0.9, complex_='rips')),
+            ("Persistence", Persistence(max_edge_length=0.5, complex_='rips')),
             ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
             ("TDA",         tda.SlicedWasserstein(bandwidth=0.6, num_directions=20)),
             ("Centerer",    KernelCenterer()),
@@ -144,6 +144,26 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             (12, 13)
         ]
 
+        leg_keypoints = [
+            COCOKeypoints.LKnee.value,
+            COCOKeypoints.LAnkle.value,
+            COCOKeypoints.RKnee.value,
+            COCOKeypoints.RAnkle.value
+        ]
+        leg_connections = [(0, 1), (2, 3)]
+
+        leg_and_arm_keypoints = [
+            COCOKeypoints.RElbow.value,
+            COCOKeypoints.RWrist.value,
+            COCOKeypoints.LElbow.value,
+            COCOKeypoints.LWrist.value,
+            COCOKeypoints.LKnee.value,
+            COCOKeypoints.LAnkle.value,
+            COCOKeypoints.RKnee.value,
+            COCOKeypoints.RAnkle.value
+        ]
+        leg_and_arm_connections = [(0, 1), (2, 3), (4, 5), (6, 7)]
+
         params = [
             {
                 "Persistence__max_edge_length": [0.5, 0.9],
@@ -161,6 +181,22 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
                 "Interpolate": [None, InterpolateKeypoints(self.arm_connections)]
             },
             {
+                "Persistence__max_edge_length": [0.5, 0.9],
+                "Persistence__complex_": ['rips'],
+                "Extract__selected_keypoints": [leg_keypoints],
+                "Interpolate__connect_keypoints": [leg_connections],
+                "Interpolate__number_of_points": [2, 3, 4],
+                "Interpolate": [None, InterpolateKeypoints(leg_connections)]
+            },
+            {
+                "Persistence__max_edge_length": [0.5, 0.9],
+                "Persistence__complex_": ['rips'],
+                "Extract__selected_keypoints": [leg_and_arm_keypoints],
+                "Interpolate__connect_keypoints": [leg_and_arm_connections],
+                "Interpolate__number_of_points": [2, 3, 4],
+                "Interpolate": [None, InterpolateKeypoints(leg_and_arm_connections)]
+            },
+            {
                 "Persistence__max_alpha_square": [0.9],
                 "Persistence__complex_": ['alpha'],
                 "Extract__selected_keypoints": [self.all_keypoints],
@@ -174,6 +210,22 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
                 "Extract__selected_keypoints": [self.arm_keypoints],
                 "Interpolate__number_of_points": [2, 3, 4],
                 "Interpolate__connect_keypoints": [self.arm_connections]
+            },
+            {
+                "Persistence__max_alpha_square": [0.9],
+                "Persistence__complex_": ['alpha'],
+                "Extract__selected_keypoints": [leg_keypoints],
+                "Interpolate__connect_keypoints": [leg_connections],
+                "Interpolate__number_of_points": [2, 3, 4],
+                "Interpolate": [None, InterpolateKeypoints(leg_connections)]
+            },
+            {
+                "Persistence__max_alpha_square": [0.9],
+                "Persistence__complex_": ['alpha'],
+                "Extract__selected_keypoints": [leg_and_arm_keypoints],
+                "Interpolate__connect_keypoints": [leg_and_arm_connections],
+                "Interpolate__number_of_points": [2, 3, 4],
+                "Interpolate": [None, InterpolateKeypoints(leg_and_arm_connections)]
             },
             # {
             #     "Smoothing": [SmoothChunks()],
