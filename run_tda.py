@@ -30,7 +30,7 @@ def main(args):
     logging.info("Number of test dataset labels: {}".format(Counter(test[2])))
 
     if args.tda:
-        run_tda(train, test, args.title)
+        run_tda(train, test, args.title, args.cross_validate)
     if args.mapper:
         run_mapper(train, test)
     if args.ensemble:
@@ -166,7 +166,7 @@ def run_ensemble(train, test, title):
         pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
 
 
-def run_tda(train, test, title):
+def run_tda(train, test, title, cross_validate):
     train_chunks, _, train_labels, _ = train
     test_chunks, test_frames, test_labels, test_videos = test
     test_translated_chunks = transforms.TranslateChunks().transform(test_chunks)
@@ -175,7 +175,7 @@ def run_tda(train, test, title):
     train_labels = le.fit_transform(train_labels)
     test_labels = le.transform(test_labels)
 
-    classifier = TDAClassifier(cross_validate=True)
+    classifier = TDAClassifier(cross_validate=cross_validate)
     logging.info("Fitting classifier.")
     classifier.fit(train_chunks, train_labels)
     logging.info("Predicting classes of test data.")
@@ -236,6 +236,8 @@ if __name__ == '__main__':
                         help='Runs a voting classifier on TDA and feature engineering on the dataset.')
     parser.add_argument('--title', type=str, default='Confusion matrix',
                         help='Title and file name for confusion matrix plot.')
+    parser.add_argument('--cross-validate', '-cv', action='store_true',
+                        help='Specify for cross-validation of tda pipeline.')
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()
