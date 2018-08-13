@@ -10,9 +10,10 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder, RobustScaler
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
+from sklearn.externals import joblib
 
 from action_recognition.analysis import Mapper, ChunkVisualiser
-from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser, TDAClusterer
+from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser
 from action_recognition import transforms
 from action_recognition import features
 from action_recognition.util import COCOKeypoints, coco_connections
@@ -29,7 +30,7 @@ def main(args):
     logging.info("Number of test dataset labels: {}".format(Counter(test[2])))
 
     if args.tda:
-        run_tda(train, test, args.title)
+        run_tda(train, test, args.title, args.cross_validate)
     if args.mapper:
         run_mapper(train, test)
     if args.ensemble:
@@ -156,13 +157,16 @@ def run_ensemble(train, test, title):
     logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
         accuracy, precision, recall))
 
+    logging.info("Saving model to ensemble.pkl.")
+    joblib.dump(classifier, "ensemble.pkl")
+
     visualiser = ClassificationVisualiser()
     visualiser.plot_confusion_matrix(pred_labels, test_labels, le, title)
     visualiser.visualise_incorrect_classifications(
         pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
 
 
-def run_tda(train, test, title):
+def run_tda(train, test, title, cross_validate):
     train_chunks, _, train_labels, _ = train
     test_chunks, test_frames, test_labels, test_videos = test
     test_translated_chunks = transforms.TranslateChunks().transform(test_chunks)
@@ -171,7 +175,7 @@ def run_tda(train, test, title):
     train_labels = le.fit_transform(train_labels)
     test_labels = le.transform(test_labels)
 
-    classifier = TDAClassifier(cross_validate=False)
+    classifier = TDAClassifier(cross_validate=cross_validate)
     logging.info("Fitting classifier.")
     classifier.fit(train_chunks, train_labels)
     logging.info("Predicting classes of test data.")
@@ -183,6 +187,9 @@ def run_tda(train, test, title):
 
     logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
         accuracy, precision, recall))
+
+    logging.info("Saving model to tda.pkl.")
+    joblib.dump(classifier, "tda.pkl")
 
     visualiser = ClassificationVisualiser()
     visualiser.plot_confusion_matrix(pred_labels, test_labels, le, title)
@@ -229,6 +236,8 @@ if __name__ == '__main__':
                         help='Runs a voting classifier on TDA and feature engineering on the dataset.')
     parser.add_argument('--title', type=str, default='Confusion matrix',
                         help='Title and file name for confusion matrix plot.')
+    parser.add_argument('--cross-validate', '-cv', action='store_true',
+                        help='Specify for cross-validation of tda pipeline.')
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()

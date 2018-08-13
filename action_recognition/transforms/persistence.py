@@ -16,14 +16,29 @@ class Persistence(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    max_edge_length : float, optional
-        The max_edge_length passed to RipsComplex
+    max_edge_length : float, optional, default = 0.5
+        The max_edge_length passed to RipsComplex, ignored for all else
+    max_alpha_square : float, optional, default = 0.9
+        The max_alpha_square passed to AlphaComplex, otherwise ignored
+    intrisic_dim : int, optional, default = 2
+        The intrisic_dim passed to tangential complex, otherwise ignored
+    complex_ : str, optional, default = 'rips'
+        Specifies which type of complex to use when calculating persistence.
+        Possible values are 'rips', 'alpha', 'tangential', and 'cubical'
 
     """
 
-    def __init__(self, max_edge_length=0.5):
+    def __init__(self,
+                 max_edge_length=0.5,
+                 max_alpha_square=0.9,
+                 intrisic_dim=2,
+                 complex_='rips'):
         self.persistences = []
         self.max_edge_length = max_edge_length
+        self.intrisic_dim = intrisic_dim
+        self.max_alpha_square = max_alpha_square
+        self.complex = complex_
+        self.possible_complex_values = ['rips', 'alpha', 'tangential', 'cubical']
 
     def fit(self, X, y, **fit_params):
         """Returns self unchanged, as there are no parameters to fit.
@@ -99,27 +114,34 @@ class Persistence(BaseEstimator, TransformerMixin):
         for i, d in enumerate(data):
             points = scaler.transform(d)
 
-            diag_alpha = self._cubical_complex(points)
+            if self.complex == 'alpha':
+                diag = self._alpha_complex(points)
+            elif self.complex == 'tangential':
+                diag = self._tangential_complex(points)
+            elif self.complex == 'cubical':
+                diag = self._cubical_complex(points)
+            else:
+                diag = self._rips_complex(points)
 
             # Removing the points who don't die
-            clean_diag_alpha = [p for p in diag_alpha if p[1][1] < np.inf]
-            self.persistences.append(clean_diag_alpha)
+            clean_diag = [p for p in diag if p[1][1] < np.inf]
+            self.persistences.append(clean_diag)
 
-            diags[i] = np.array([(p[1][1], p[1][0]) for p in clean_diag_alpha])
+            diags[i] = np.array([(p[1][1], p[1][0]) for p in clean_diag])
 
         return np.array(diags)
 
     def _rips_complex(self, points):
         rips = gd.RipsComplex(max_edge_length=self.max_edge_length, points=points)
         simplex_tree = rips.create_simplex_tree(max_dimension=3)
-        diag_alpha = simplex_tree.persistence()
-        return diag_alpha
+        diag = simplex_tree.persistence()
+        return diag
 
     def _alpha_complex(self, points):
         alpha = gd.AlphaComplex(points=points)
-        simplex_tree = alpha.create_simplex_tree(max_alpha_square=0.5)
-        diag_alpha = simplex_tree.persistence()
-        return diag_alpha
+        simplex_tree = alpha.create_simplex_tree(max_alpha_square=self.max_alpha_square)
+        diag = simplex_tree.persistence()
+        return diag
 
     def _cubical_complex(self, points):
         shape = [points.shape[0]] * 2
@@ -129,9 +151,15 @@ class Persistence(BaseEstimator, TransformerMixin):
                 norm = np.linalg.norm(p1 - p2)
                 bitmap[i, j] = norm
 
-        cc = gd.CubicalComplex(top_dimensional_cells=bitmap.flatten(), dimensions=shape)
-        diag_alpha = cc.persistence()
-        return diag_alpha
+        cube = gd.CubicalComplex(top_dimensional_cells=bitmap.flatten(), dimensions=shape)
+        diag = cube.persistence()
+        return diag
+
+    def _tangential_complex(self, points):
+        tangential = gd.TangentialComplex(intrisic_dim=self.intrisic_dim, points=points)
+        simplex_tree = tangential.create_simplex_tree()
+        diag = simplex_tree.persistence()
+        return diag
 
     def save_persistences(self, out_dir):
         """Saves the persistence diagrams to file.
