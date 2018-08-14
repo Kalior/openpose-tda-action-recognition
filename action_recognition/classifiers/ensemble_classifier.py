@@ -63,6 +63,37 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
         """
         sliced_wasserstein_classifier = TDAClassifier(cross_validate=False)
 
+        feature_union_pipeline = Pipeline([
+            ("Union", self._feature_engineering_union()),
+            ("Estimator", SVC(probability=True))
+        ])
+
+        # Can't use multiple jobs because lambda in persistence image isn't pickable
+        classifier = VotingClassifier(estimators=[
+            ("Union", feature_union_pipeline),
+            ("SWKernel", sliced_wasserstein_classifier)
+        ], voting='soft', n_jobs=1)
+
+        self.classifier = classifier.fit(X, y)
+        return self
+
+    def predict(self, X):
+        """Predicts using the pipeline.
+
+        Parameters
+        ----------
+        X : iterable
+            Data to predict labels for.
+            Must be passable to transforms.TranslateChunks()
+
+        Returns
+        -------
+        y_pred : array-like
+
+        """
+        return self.classifier.predict(X)
+
+    def _tda_vectorisations_pipeline(self):
         persistence_image = Pipeline([
             ("Rotator", tda.DiagramPreprocessor(scaler=tda.BirthPersistenceTransform())),
             ("PersistenceImage", tda.PersistenceImage())
@@ -88,7 +119,7 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
             ("BettiCurve", tda.BettiCurve())
         ])
 
-        other_tda = Pipeline([
+        return Pipeline([
             ("Translate",   TranslateChunks()),
             ("Extract",     ExtractKeypoints(self.arm_keypoints)),
             ("Smoothing",   SmoothChunks()),
@@ -102,10 +133,12 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
                 ("TopologicalVector", topological_vector),
                 ("Silhouette", silhouette),
                 ("BettiCurve", betti_curve)
-            ]))
+            ])),
+            ("Scaler", RobustScaler())
         ])
 
-        feature_union = FeatureUnion([
+    def _feature_engineering_union(self):
+        return FeatureUnion([
             ("AverageSpeed", Pipeline([
                 ("Feature", AverageSpeed(self.speed_keypoints)),
                 ("Scaler", RobustScaler())
@@ -122,61 +155,4 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
                 ("Feature", KeypointDistance(self.keypoint_distance_connections)),
                 ("Scaler", RobustScaler())
             ]))
-            # ("TDA", other_tda)
         ])
-        feature_union_pipeline = Pipeline([
-            ("Union", feature_union),
-            ("Estimator", SVC(probability=True))
-        ])
-
-        persistence_scale_space = Pipeline([
-            ("Translate",   TranslateChunks()),
-            ("Smoothing",   SmoothChunks()),
-            ("Extract",     ExtractKeypoints(self.arm_keypoints)),
-            ("Interpolate", InterpolateKeypoints(self.arm_connections)),
-            ("Flattening",  FlattenTo3D()),
-            ("Persistence", Persistence()),
-            ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
-            ("TDA",         tda.PersistenceScaleSpace()),
-            ("Estimator",   SVC(kernel='precomputed', probability=True))
-        ])
-
-        persistence_weighted_gaussian = Pipeline([
-            ("Translate",   TranslateChunks()),
-            ("Smoothing",   SmoothChunks()),
-            ("Extract",     ExtractKeypoints(self.arm_keypoints)),
-            ("Interpolate", InterpolateKeypoints(self.arm_connections)),
-            ("Flattening",  FlattenTo3D()),
-            ("Persistence", Persistence()),
-            ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
-            ("TDA",         tda.PersistenceWeightedGaussian()),
-            ("Estimator",   SVC(kernel='precomputed', probability=True))
-        ])
-        # classifier = feature_union_pipeline
-
-        # Can't use multiple jobs because lambda in persistence image isn't pickable
-        classifier = VotingClassifier(estimators=[
-            ("Union", feature_union_pipeline),
-            ("SWKernel", sliced_wasserstein_classifier)
-            # ("PWGKernel", persistence_weighted_gaussian)
-            # ("PSSKernel", persistence_scale_space)
-        ], voting='soft', n_jobs=1)
-
-        self.classifier = classifier.fit(X, y)
-        return self
-
-    def predict(self, X):
-        """Predicts using the pipeline.
-
-        Parameters
-        ----------
-        X : iterable
-            Data to predict labels for.
-            Must be passable to transforms.TranslateChunks()
-
-        Returns
-        -------
-        y_pred : array-like
-
-        """
-        return self.classifier.predict(X)
