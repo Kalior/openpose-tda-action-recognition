@@ -177,6 +177,7 @@ class Person:
         connect_downwards = next((from_ for from_, to in coco_connections
                                   if to == keypoint_index and
                                   np.any(other.keypoints[from_]) and
+                                  np.any(other.keypoints[to]) and
                                   np.any(self.keypoints[from_])
                                   ), -1)
         # If none found, try the other direction. (e.g. elbow - shoulder)
@@ -185,6 +186,7 @@ class Person:
         connect_upwards = next((to for from_, to in coco_connections
                                 if from_ == keypoint_index and
                                 np.any(other.keypoints[to]) and
+                                np.any(other.keypoints[from_]) and
                                 np.any(self.keypoints[to])
                                 ), -1)
         if connect_downwards == -1 and connect_upwards == -1:
