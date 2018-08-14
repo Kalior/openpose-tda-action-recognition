@@ -38,16 +38,18 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
 
     def __init__(self, cross_validate=False):
         self.cross_validate = cross_validate
-        self.arm_keypoints = [
-            COCOKeypoints.RElbow.value,
-            COCOKeypoints.RWrist.value,
-            COCOKeypoints.LElbow.value,
-            COCOKeypoints.LWrist.value,
-            COCOKeypoints.LAnkle.value,
-            COCOKeypoints.RAnkle.value
-        ]
-        self.arm_connections = [(0, 1), (2, 3), (4, 5)]
-        self.all_keypoints = range(18)
+        self.arm_keypoints = [k.value for k in [
+            COCOKeypoints.RElbow,
+            COCOKeypoints.RWrist,
+            COCOKeypoints.LElbow,
+            COCOKeypoints.LWrist,
+            # COCOKeypoints.LKnee,
+            # COCOKeypoints.LAnkle,
+            # COCOKeypoints.RKnee,
+            # COCOKeypoints.RAnkle
+        ]]
+        self.arm_connections = [(0, 1), (2, 3)]  # , (4, 5), (6, 7)]
+        self.all_keypoints = range(14)
 
     def fit(self, X, y, **fit_params):
         """Fit the model.
@@ -144,24 +146,24 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             (12, 13)
         ]
 
-        leg_keypoints = [
-            COCOKeypoints.LKnee.value,
-            COCOKeypoints.LAnkle.value,
-            COCOKeypoints.RKnee.value,
-            COCOKeypoints.RAnkle.value
-        ]
+        leg_keypoints = [k.value for k in [
+            COCOKeypoints.LKnee,
+            COCOKeypoints.LAnkle,
+            COCOKeypoints.RKnee,
+            COCOKeypoints.RAnkle
+        ]]
         leg_connections = [(0, 1), (2, 3)]
 
-        leg_and_arm_keypoints = [
-            COCOKeypoints.RElbow.value,
-            COCOKeypoints.RWrist.value,
-            COCOKeypoints.LElbow.value,
-            COCOKeypoints.LWrist.value,
-            COCOKeypoints.LKnee.value,
-            COCOKeypoints.LAnkle.value,
-            COCOKeypoints.RKnee.value,
-            COCOKeypoints.RAnkle.value
-        ]
+        leg_and_arm_keypoints = [k.value for k in [
+            COCOKeypoints.RElbow,
+            COCOKeypoints.RWrist,
+            COCOKeypoints.LElbow,
+            COCOKeypoints.LWrist,
+            COCOKeypoints.LKnee,
+            COCOKeypoints.LAnkle,
+            COCOKeypoints.RKnee,
+            COCOKeypoints.RAnkle
+        ]]
         leg_and_arm_connections = [(0, 1), (2, 3), (4, 5), (6, 7)]
 
         params = [

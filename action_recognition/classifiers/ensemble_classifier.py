@@ -23,26 +23,28 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
     """
 
     def __init__(self):
-        self.keypoint_distance_connections = [
-            (COCOKeypoints.RWrist.value, COCOKeypoints.LWrist.value),
-            (COCOKeypoints.RElbow.value, COCOKeypoints.LElbow.value),
-            (COCOKeypoints.Neck.value, COCOKeypoints.LAnkle.value),
-            (COCOKeypoints.Neck.value, COCOKeypoints.RAnkle.value),
-            (COCOKeypoints.LWrist.value, COCOKeypoints.LAnkle.value),
-            (COCOKeypoints.RWrist.value, COCOKeypoints.RAnkle.value)
-        ]
+        self.keypoint_distance_connections = [(k1.value, k2.value) for k1, k2 in [
+            (COCOKeypoints.RWrist, COCOKeypoints.LWrist),
+            (COCOKeypoints.RElbow, COCOKeypoints.LElbow),
+            (COCOKeypoints.Neck, COCOKeypoints.LAnkle),
+            (COCOKeypoints.Neck, COCOKeypoints.RAnkle),
+            (COCOKeypoints.LWrist, COCOKeypoints.LAnkle),
+            (COCOKeypoints.RWrist, COCOKeypoints.RAnkle)
+        ]]
 
         self.angle_change_connections = np.array(coco_connections)
         self.speed_keypoints = range(18)
-        self.arm_keypoints = [
-            COCOKeypoints.RShoulder.value,
-            COCOKeypoints.LShoulder.value,
-            COCOKeypoints.RElbow.value,
-            COCOKeypoints.LElbow.value,
-            COCOKeypoints.RWrist.value,
-            COCOKeypoints.LWrist.value
-        ]
-        self.arm_connections = [(0, 1), (0, 2), (2, 4), (1, 3), (3, 5), (4, 5)]
+        self.arm_keypoints = [k.value for k in [
+            COCOKeypoints.RElbow,
+            COCOKeypoints.RWrist,
+            COCOKeypoints.LElbow,
+            COCOKeypoints.LWrist,
+            COCOKeypoints.LKnee,
+            COCOKeypoints.LAnkle,
+            COCOKeypoints.RKnee,
+            COCOKeypoints.RAnkle
+        ]]
+        self.arm_connections = [(0, 1), (2, 3), (4, 5), (6, 7)]
 
     def fit(self, X, y, **fit_params):
         """Fit the model.

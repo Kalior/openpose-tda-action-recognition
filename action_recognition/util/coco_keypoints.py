@@ -22,18 +22,18 @@ class COCOKeypoints(Enum):
     LEar = 17
     Background = 18
 
-coco_connections = [
-    (COCOKeypoints.Nose.value, COCOKeypoints.Neck.value),
-    (COCOKeypoints.Neck.value, COCOKeypoints.RShoulder.value),
-    (COCOKeypoints.Neck.value, COCOKeypoints.LShoulder.value),
-    (COCOKeypoints.Neck.value, COCOKeypoints.RHip.value),
-    (COCOKeypoints.Neck.value, COCOKeypoints.LHip.value),
-    (COCOKeypoints.RShoulder.value, COCOKeypoints.RElbow.value),
-    (COCOKeypoints.RElbow.value, COCOKeypoints.RWrist.value),
-    (COCOKeypoints.LShoulder.value, COCOKeypoints.LElbow.value),
-    (COCOKeypoints.LElbow.value, COCOKeypoints.LWrist.value),
-    (COCOKeypoints.RHip.value, COCOKeypoints.RKnee.value),
-    (COCOKeypoints.RKnee.value, COCOKeypoints.RAnkle.value),
-    (COCOKeypoints.LHip.value, COCOKeypoints.LKnee.value),
-    (COCOKeypoints.LKnee.value, COCOKeypoints.LAnkle.value)
-]
+coco_connections = [(k1.value, k2.value) for k1, k2 in [
+    (COCOKeypoints.Nose,        COCOKeypoints.Neck),
+    (COCOKeypoints.Neck,        COCOKeypoints.RShoulder),
+    (COCOKeypoints.Neck,        COCOKeypoints.LShoulder),
+    (COCOKeypoints.Neck,        COCOKeypoints.RHip),
+    (COCOKeypoints.Neck,        COCOKeypoints.LHip),
+    (COCOKeypoints.RShoulder,   COCOKeypoints.RElbow),
+    (COCOKeypoints.RElbow,      COCOKeypoints.RWrist),
+    (COCOKeypoints.LShoulder,   COCOKeypoints.LElbow),
+    (COCOKeypoints.LElbow,      COCOKeypoints.LWrist),
+    (COCOKeypoints.RHip,        COCOKeypoints.RKnee),
+    (COCOKeypoints.RKnee,       COCOKeypoints.RAnkle),
+    (COCOKeypoints.LHip,        COCOKeypoints.LKnee),
+    (COCOKeypoints.LKnee,       COCOKeypoints.LAnkle)
+]]
