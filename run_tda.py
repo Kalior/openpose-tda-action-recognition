@@ -38,7 +38,7 @@ def main(args):
         vis.visualise_features(train[0], train[2])
         vis.visualise_point_cloud(train[0])
         chunks, frames, labels, videos = append_train_and_test(train, test)
-        vis.visualise_classes(chunks, frames, labels, videos)
+        vis.visualise_classes(chunks, frames, labels)
         plt.show()
 
 

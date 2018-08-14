@@ -15,8 +15,22 @@ from .. import classifiers
 
 
 class FeatureVisualiser:
+    """Visaliser for features.
+
+    """
 
     def visualise_point_cloud(self, chunks):
+        """Plots the point clouds that are given to the persistence calculator.
+
+        Does not plot one of the features in the features package, but instead
+        the feature that is created by combining most of the transforms from
+        the transforms package.
+
+        Parameters
+        ----------
+        chunks : array-like, shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
+            The training data for classification.
+        """
         arm_keypoints = [
             COCOKeypoints.RElbow.value,
             COCOKeypoints.RWrist.value,
@@ -39,6 +53,17 @@ class FeatureVisualiser:
         transforms.Persistence().visualise_point_clouds(chunks, 10)
 
     def visualise_features(self, chunks, labels):
+        """Plots all of the features from this package, divided by label.
+
+        Uses the parameters from ensemble classifier for the features.
+
+        Parameters
+        ----------
+        chunks : array-like, shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
+            The training data for classification.
+        labels : array-like, shape = [n_chunks, 1]
+            The training labels.
+        """
         ensemble = classifiers.EnsembleClassifier()
         angle_change_connections = ensemble.angle_change_connections
         speed_keypoints = ensemble.speed_keypoints
@@ -73,7 +98,22 @@ class FeatureVisualiser:
         sns.lineplot(x='keypoint', y='value', hue='action', style=None, data=df)
         plt.title(title)
 
-    def visualise_classes(self, chunks, frames, labels, videos):
+    def visualise_classes(self, chunks, frames, labels):
+        """Draws the average shape of the input data.
+
+        Not a feature in the feature package, but gives an indication of
+        what can be used for features.
+
+        Parameters
+        ----------
+        chunks : array-like, shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
+            The training data for classification.
+        frames : array-like, shape = [n_chunks, frames_per_chunk, 1]
+            The frame numbers for the chunks.
+        labels : array-like, shape = [n_chunks, 1]
+            The training labels.
+
+        """
         translated_chunks = transforms.TranslateChunks().transform(chunks)
         visualiser = ChunkVisualiser(chunks, frames, translated_chunks)
         unique_labels = set(labels)
