@@ -3,6 +3,7 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import logging
 
 from ..analysis import ChunkVisualiser
 
@@ -34,8 +35,8 @@ class ClassificationVisualiser:
         sns.heatmap(df_cm, annot=True)
         plt.ylabel('True label')
         plt.xlabel('Predicted label')
-        plt.tight_layout()
         plt.title(title)
+        plt.tight_layout()
         plt.savefig(title + '.png', bbox_inches='tight')
         plt.show(block=False)
 
@@ -68,6 +69,12 @@ class ClassificationVisualiser:
                 true_class_member_mask = (test_labels == true_label)
                 node = np.where(pred_class_member_mask & true_class_member_mask)[0]
                 name = "P {}, T {}".format(le.classes_[pred_label], le.classes_[true_label])
+
+                selected_frames = frames[node]
+                selected_videos = videos[node]
+                logging.debug("\n".join("{}-{} {}, {}".format(
+                    f[0], f[-1], le.classes_[true_label], selected_videos[i])
+                    for i, f in enumerate(selected_frames)))
 
                 if len(node) != 0:
                     repeat = 'y'
