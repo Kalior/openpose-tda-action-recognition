@@ -154,23 +154,21 @@ class Person:
         """
         # If type is diff, we have to try to fill in both directions.
         if fill_type is 'diff':
-            for i, k in enumerate(self.keypoints):
-                if not np.any(k):
-                    new_keypoint = self._diff_fill_keypoint(i, other)
-                    if new_keypoint is not None:
-                        self.keypoints[i] = new_keypoint
-
-            for i, k in reversed(list(enumerate(self.keypoints))):
-                if not np.any(k):
-                    new_keypoint = self._diff_fill_keypoint(i, other)
-                    if new_keypoint is not None:
-                        self.keypoints[i] = new_keypoint
+            self._fill_diff_loop(enumerate(self.keypoints), other)
+            self._fill_diff_loop(reversed(list(enumerate(self.keypoints))), other)
 
         # Always fill with copy in case we did not find any possible
         # connections.
         for i, k in enumerate(self.keypoints):
             if not np.any(k):
                 self.keypoints[i] = np.copy(other.keypoints[i])
+
+    def _fill_diff_loop(self, enumerator, other):
+        for i, k in enumerator:
+            if not np.any(k):
+                new_keypoint = self._diff_fill_keypoint(i, other)
+                if new_keypoint is not None:
+                    self.keypoints[i] = new_keypoint
 
     def _diff_fill_keypoint(self, keypoint_index, other):
         # Try finding a keypoint in the downwards direction (e.g. shoulder - elbow)
