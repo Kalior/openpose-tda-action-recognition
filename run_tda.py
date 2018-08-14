@@ -4,8 +4,6 @@ import os
 import numpy as np
 from collections import Counter
 import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 
 from sklearn.preprocessing import LabelEncoder, RobustScaler
 from sklearn import metrics
@@ -15,7 +13,7 @@ from sklearn.externals import joblib
 from action_recognition.analysis import Mapper, ChunkVisualiser
 from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser
 from action_recognition import transforms
-from action_recognition import features
+from action_recognition.features import FeatureVisualiser
 from action_recognition.util import COCOKeypoints, coco_connections
 
 
@@ -36,9 +34,11 @@ def main(args):
     if args.ensemble:
         run_ensemble(train, test, args.title)
     if args.visualise:
-        visualise_features(train[0], train[2])
-        visualise_classes(train, test)
-        visualise_point_cloud(train, test)
+        vis = FeatureVisualiser()
+        vis.visualise_features(train[0], train[2])
+        vis.visualise_point_cloud(train[0])
+        chunks, frames, labels, videos = append_train_and_test(train, test)
+        vis.visualise_classes(chunks, frames, labels, videos)
         plt.show()
 
 
@@ -52,88 +52,12 @@ def load_data(file_name):
     return chunks, frames, labels, videos
 
 
-def visualise_point_cloud(train):
-    arm_keypoints = [
-        COCOKeypoints.RElbow.value,
-        COCOKeypoints.RWrist.value,
-        COCOKeypoints.LElbow.value,
-        COCOKeypoints.LWrist.value,
-        COCOKeypoints.LKnee.value,
-        COCOKeypoints.LAnkle.value,
-        COCOKeypoints.RKnee.value,
-        COCOKeypoints.RAnkle.value
-    ]
-    arm_connections = [(0, 1), (2, 3), (4, 5), (6, 7)]
-    chunks = train[0]
-    pipe = Pipeline([
-        ("1", transforms.TranslateChunks()),
-        ("2", transforms.ExtractKeypoints(arm_keypoints)),
-        ("3", transforms.SmoothChunks()),
-        ("4", transforms.InterpolateKeypoints(arm_connections)),
-        ("5", transforms.FlattenTo3D()),
-    ])
-    chunks = pipe.fit_transform(chunks)
-    transforms.Persistence().visualise_point_clouds(chunks, 10)
-
-
-def visualise_features(chunks, labels):
-    ensemble = EnsembleClassifier()
-    angle_change_connections = ensemble.angle_change_connections
-    speed_keypoints = ensemble.speed_keypoints
-    keypoint_distance_connections = ensemble.keypoint_distance_connections
-
-    chunk_speed = features.AverageSpeed(speed_keypoints)
-    plot_feature_per_class(chunks, chunk_speed, labels, 'Average Speed')
-
-    angle_change_speed = features.AngleChangeSpeed(angle_change_connections)
-    plot_feature_per_class(chunks, angle_change_speed, labels, 'Average Angle Change')
-
-    movement = features.AmountOfMovement(range(18))
-    plot_feature_per_class(chunks, movement, labels, 'Total distance')
-
-    keypoint_distance = features.KeypointDistance(keypoint_distance_connections)
-    plot_feature_per_class(chunks, keypoint_distance, labels, 'Keypoint distances')
-    plt.show(block=False)
-
-
-def plot_feature_per_class(chunks, transform, labels, title):
-    feature = Pipeline([
-        ("Feature", transform),
-        ("Scaler", RobustScaler())
-    ]).fit_transform(chunks)
-
-    logging.debug('Constructing dataframe')
-    rows = [{'value': feature[i, j], 'keypoint': j, 'action': labels[i]}
-            for i in range(feature.shape[0]) for j in range(feature.shape[1])]
-    df = pd.DataFrame(rows, columns=['value', 'keypoint', 'action'])
-
-    logging.debug('Preparing plot.')
-    plt.figure()
-    sns.lineplot(x='keypoint', y='value', hue='action', style=None, data=df)
-    plt.title(title)
-
-
 def append_train_and_test(train, test):
     chunks = np.append(train[0], test[0], axis=0)
     frames = np.append(train[1], test[1], axis=0)
     labels = np.append(train[2], test[2], axis=0)
     videos = np.append(train[3], test[3], axis=0)
     return chunks, frames, labels, videos
-
-
-def visualise_classes(train, test):
-    chunks, frames, labels, videos = append_train_and_test(train, test)
-    translated_chunks = transforms.TranslateChunks().transform(chunks)
-    visualiser = ChunkVisualiser(chunks, frames, translated_chunks)
-    unique_labels = set(labels)
-    nodes = {}
-    for k in unique_labels:
-        class_member_mask = (labels == k)
-        node = np.where(class_member_mask)[0]
-        name = str(k)
-        nodes[name] = node
-
-    visualiser.visualise_averages(nodes, True)
 
 
 def run_ensemble(train, test, title):
