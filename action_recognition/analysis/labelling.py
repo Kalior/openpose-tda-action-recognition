@@ -17,6 +17,16 @@ class Labelling:
 
     def __init__(self):
         self.visualiser = TrackVisualiser()
+        self.actions = {
+            's': ['scan', 'Scan'],
+            'c': ['cash', 'Cash'],
+            't': ['still', 'sTill'],
+            'm': ['moving', 'Moving'],
+            'l': ['lie', 'Lie'],
+            'p': ['shop', 'shoP'],
+            'h': ['shoplift', 'sHoplit'],
+            'o': ['other', 'Other']
+        }
 
     def keypress_valid(self, keypress):
         """Check for if a given keypress is valid.
@@ -41,7 +51,7 @@ class Labelling:
             contains characters corresponding to the valid actions.
 
         """
-        return ['s', 'c', 'o', 'm', 't', 'l', 'p', 'h']
+        return list(self.actions.keys())
 
     def valid_actions_string(self):
         """Returns the string corresponding to the prompt of valid actions.
@@ -51,7 +61,7 @@ class Labelling:
         valid_actions_string : string
             Corresponds to the prompt of valid actions.
         """
-        return "(Scan, Cash, sTill, Moving, Lie, sHoplift, shoP, Other, quit)"
+        return "(" + ", ".join([v[1] for v in self.actions.values()]) + ', quit)'
 
     def parse_keypress_to_label(self, keypress):
         """Parses a character to a label
@@ -64,23 +74,10 @@ class Labelling:
         -------
         label : string of the corresponding label to the keypress
         """
-        if keypress == 's':
-            label = 'scan'
-        elif keypress == 'c':
-            label = 'cash'
-        elif keypress == 'm':
-            label = 'moving'
-        elif keypress == 't':
-            label = 'still'
-        elif keypress == 'l':
-            label = 'lie'
-        elif keypress == 'h':
-            label = 'shoplift'
-        elif keypress == 'p':
-            label = 'shop'
+        if keypress in self.actions:
+            return self.actions[keypress][0]
         else:
-            label = 'other'
-        return label
+            return 'other'
 
     def label_chunks(self, chunks, chunk_frames, video, processor):
         """Function for manual labelling of chunks.
@@ -285,3 +282,47 @@ class Labelling:
 
         with open(labels_file, 'w') as f:
             json.dump(labels, f)
+
+    def manual_labelling(self, video, processor, target_frames_per_chunk, overlap_percentage, seconds_per_chunk):
+        """Divides tracks into chunks with the specified overlap, and prompts the user for a label for each.
+
+        Parameters
+        ----------
+        video : str, path to the video for which the tracks where created.
+        processor : Processor object
+            Requires that create_tracks(...) has been called on the processor
+            before this function call.
+        target_frames_per_chunk : int
+            Determines how long each chunk is in the output.
+        overlap_percentage : float
+            The percentage (from 0 to 1) of overlap between suggested chunks.
+        seconds per chunk : float
+            The number of seconds that each chunk should contain.
+
+        Returns
+        -------
+        chunks : numpy.array of the labelled chunks
+        frames : numpy.array of the frames for the labelled chunks
+        labels : numpy.array of the labels for each chunk
+        indicies : numpy.array of the index of the track for every chunk.
+            needed for reproducability.
+        """
+        capture = cv2.VideoCapture(video)
+        fps = capture.get(cv2.CAP_PROP_FPS)
+        frames_per_chunk_for_seconds = int(seconds_per_chunk * fps)
+        logging.debug("Frames per chunks to get same #seconds: {}".format(
+            frames_per_chunk_for_seconds))
+        overlap = int(frames_per_chunk_for_seconds * overlap_percentage)
+
+        logging.info("Chunking tracks.")
+        chunks, frames, track_indicies = processor.chunk_tracks(
+            frames_per_chunk_for_seconds, overlap, target_frames_per_chunk)
+        logging.info("Identified {} chunks".format(chunks.shape[0]))
+
+        labels = self.label_chunks(chunks, frames, video, processor)
+
+        chunks = chunks[np.array(list(labels.keys()), dtype=np.int)]
+        frames = frames[np.array(list(labels.keys()), dtype=np.int)]
+        track_indicies = track_indicies[np.array(list(labels.keys()), dtype=np.int)]
+
+        return chunks, frames, list(labels.values()), track_indicies

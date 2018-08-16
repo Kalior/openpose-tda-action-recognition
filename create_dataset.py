@@ -123,10 +123,9 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
             chunks, frames, labels, track_indicies = Labelling().pseudo_automatic_labelling(
                 timestamps, target_frames_per_chunk, video, processor.tracks)
         else:
-            chunks, frames, labels, track_indicies = manual_labelling(
-                tracks_file,
+            chunks, frames, labels, track_indicies = Labelling().manual_labelling(
                 video, processor, target_frames_per_chunk, overlap_percentage,
-                seconds_per_chunk, automatic_moving_filter)
+                seconds_per_chunk)
 
         Labelling().write_labels(chunks, frames, labels, track_indicies, labels_file)
 
@@ -134,48 +133,6 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
 
     return chunks, frames, labels
 
-
-def manual_labelling(tracks_file, video, processor, target_frames_per_chunk, overlap_percentage, seconds_per_chunk, automatic_moving_filter):
-    capture = cv2.VideoCapture(video)
-    fps = capture.get(cv2.CAP_PROP_FPS)
-    frames_per_chunk_for_seconds = int(seconds_per_chunk * fps)
-    logging.debug("Frames per chunks to get same #seconds: {}".format(
-        frames_per_chunk_for_seconds))
-    overlap = int(frames_per_chunk_for_seconds * overlap_percentage)
-
-    logging.info("Chunking tracks.")
-    chunks, frames, track_indicies = processor.chunk_tracks(
-        frames_per_chunk_for_seconds, overlap, target_frames_per_chunk)
-    logging.info("Identified {} chunks".format(chunks.shape[0]))
-
-    if automatic_moving_filter:
-        chunks, frames = filter_moving(chunks, frames)
-
-    base_name = os.path.splitext(tracks_file)[0]
-    labels_file = base_name + '.labels'
-    if os.path.isfile(labels_file):
-        with open(labels_file, 'r') as f:
-            labels = json.load(f)
-    else:
-        labels = Labelling().label_chunks(chunks, frames, video, processor)
-        j = json.dumps(labels)
-        with open(labels_file, 'w') as f:
-            f.write(j)
-
-    chunks = chunks[np.array(list(labels.keys()), dtype=np.int)]
-    frames = frames[np.array(list(labels.keys()), dtype=np.int)]
-    track_indicies = track_indicies[np.array(list(labels.keys()), dtype=np.int)]
-
-    return chunks, frames, list(labels.values()), track_indicies
-
-
-def filter_moving(chunks, frames):
-    chunks_before_filtering = chunks.shape[0]
-    logging.info("Filtering out every path but the cachier standing still.")
-    chunks, frames = processor.filter_moving_chunks(chunks, frames)
-    logging.info("Automatically removed {} chunks".format(
-        chunks_before_filtering - chunks.shape[0]))
-    return chunks, frames
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Dataset creation for analysis of tracks.')
