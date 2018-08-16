@@ -15,6 +15,7 @@ from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, Cl
 from action_recognition import transforms
 from action_recognition.features import FeatureVisualiser
 from action_recognition.util import COCOKeypoints, coco_connections
+from action_recognition import augmentors
 
 
 def main(args):
@@ -26,6 +27,9 @@ def main(args):
 
     logging.info("Number of train dataset labels: {}".format(Counter(train[2])))
     logging.info("Number of test dataset labels: {}".format(Counter(test[2])))
+
+    train = augmentors.Rotate(2).augment(*train)
+    logging.info("Number of train dataset labels after augmentor: {}".format(Counter(train[2])))
 
     if args.tda:
         run_tda(train, test, args.title, args.cross_validate)
