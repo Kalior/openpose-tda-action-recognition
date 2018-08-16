@@ -76,7 +76,7 @@ class TrackVisualiser:
         """
         for i, track in enumerate(tracks):
             track_color = self.colors[i % len(self.colors)]
-            positions = [(0, 0)] * 15
+            positions = [(0, 0)] * 14
             selected_keypoints = [
                 COCOKeypoints.RShoulder.value,
                 COCOKeypoints.LShoulder.value,
@@ -86,7 +86,7 @@ class TrackVisualiser:
                 COCOKeypoints.LElbow.value
             ]
             keypoints = track.get_keypoints_at(current_frame)
-            for i in range(15):
+            for i in range(14):
                 original_pos = keypoints[i].astype(np.int)
                 if offset_person:
                     offset = np.array([250, 150])

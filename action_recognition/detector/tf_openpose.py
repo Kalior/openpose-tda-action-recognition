@@ -12,7 +12,7 @@ from ..util import COCOKeypoints
 # from tf_pose import common
 
 
-class TFOpenpose(object):
+class TFOpenpose:
     """A tensorflow implemtentation of OpenPose.
 
     Requires https://github.com/ildoonet/tf-pose-estimation to be installed

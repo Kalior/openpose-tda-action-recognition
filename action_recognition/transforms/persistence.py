@@ -130,6 +130,7 @@ class Persistence(BaseEstimator, TransformerMixin):
             clean_diag = [p for p in diag if p[1][1] < np.inf]
             self.persistences.append(clean_diag)
 
+            # sklearn_tda wants the points in the opposite order...
             diags[i] = np.array([(p[1][1], p[1][0]) for p in clean_diag])
 
         return np.array(diags)

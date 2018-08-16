@@ -2,7 +2,7 @@
 from openpose import openpose as op
 
 
-class CaffeOpenpose(object):
+class CaffeOpenpose:
     """CMU's original OpenPose installation.
 
     Requires OpenPose to be installed on the system, there is a Dockerfile

@@ -20,6 +20,9 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
     Makes use of the tda_classifier and combines this with
     features extracted from the data using other vectorisations
     from sklearn_tda, and from the features module.
+
+    *Note*: Can only use one thread, since some parts of sklearn_tda vectorisations
+    are not pickable.
     """
 
     def __init__(self):
@@ -33,7 +36,7 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
         ]]
 
         self.angle_change_connections = np.array(coco_connections)
-        self.speed_keypoints = range(18)
+        self.speed_keypoints = range(14)
         self.arm_keypoints = [k.value for k in [
             COCOKeypoints.RElbow,
             COCOKeypoints.RWrist,
@@ -101,26 +104,6 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
             ("PersistenceImage", tda.PersistenceImage())
         ])
 
-        landscape = Pipeline([
-            ("Rotator", tda.DiagramPreprocessor(use=False, scaler=tda.BirthPersistenceTransform())),
-            ("Landscape", tda.Landscape(resolution=1000))
-        ])
-
-        topological_vector = Pipeline([
-            ("Rotator", tda.DiagramPreprocessor(use=False, scaler=tda.BirthPersistenceTransform())),
-            ("TopologicalVector", tda.TopologicalVector())
-        ])
-
-        silhouette = Pipeline([
-            ("Rotator", tda.DiagramPreprocessor(use=False, scaler=tda.BirthPersistenceTransform())),
-            ("Silhouette", tda.Silhouette())
-        ])
-
-        betti_curve = Pipeline([
-            ("Rotator", tda.DiagramPreprocessor(use=False, scaler=tda.BirthPersistenceTransform())),
-            ("BettiCurve", tda.BettiCurve())
-        ])
-
         return Pipeline([
             ("Translate",   TranslateChunks()),
             ("Extract",     ExtractKeypoints(self.arm_keypoints)),
@@ -130,11 +113,10 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
             ("Persistence", Persistence()),
             ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
             ("Union", FeatureUnion([
-                ("PersistenceImage", persistence_image),
-                ("Landscape", landscape),
-                ("TopologicalVector", topological_vector),
-                ("Silhouette", silhouette),
-                ("BettiCurve", betti_curve)
+                ("Landscape", tda.Landscape(resolution=1000)),
+                ("TopologicalVector", tda.TopologicalVector()),
+                ("Silhouette", tda.Silhouette()),
+                ("BettiCurve", tda.BettiCurve())
             ])),
             ("Scaler", RobustScaler())
         ])
@@ -150,7 +132,7 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
                 ("Scaler", RobustScaler())
             ])),
             ("Movement",    Pipeline([
-                ("Feature", AmountOfMovement(range(18))),
+                ("Feature", AmountOfMovement(range(14))),
                 ("Scaler", RobustScaler())
             ])),
             ("KeypointDistance", Pipeline([

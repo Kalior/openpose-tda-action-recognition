@@ -65,38 +65,16 @@ def append_train_and_test(train, test):
 
 
 def run_ensemble(train, test, title):
-    train_chunks, _, train_labels, _ = train
-    test_chunks, test_frames, test_labels, test_videos = test
-    test_translated_chunks = transforms.TranslateChunks().transform(test_chunks)
-
-    le = LabelEncoder()
-    train_labels = le.fit_transform(train_labels)
-    test_labels = le.transform(test_labels)
-
     classifier = EnsembleClassifier()
-    logging.info("Fitting classifier.")
-    classifier.fit(train_chunks, train_labels)
-    logging.info("Predicting classes of test data.")
-    pred_labels = classifier.predict(test_chunks)
-
-    accuracy = metrics.accuracy_score(test_labels, pred_labels)
-    precision = metrics.precision_score(test_labels, pred_labels, average='weighted')
-    recall = metrics.recall_score(test_labels, pred_labels, average='weighted')
-
-    logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
-        accuracy, precision, recall))
-
-    file_name = "{}-ensemble.pkl".format(title)
-    logging.info("Saving model to {}.".format(file_name))
-    joblib.dump(classifier, file_name)
-
-    visualiser = ClassificationVisualiser()
-    visualiser.plot_confusion_matrix(pred_labels, test_labels, le, title)
-    visualiser.visualise_incorrect_classifications(
-        pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
+    run_classifier(train, test, title, classifier)
 
 
 def run_tda(train, test, title, cross_validate):
+    classifier = TDAClassifier(cross_validate=cross_validate)
+    run_classifier(train, test, title, classifier)
+
+
+def run_classifier(train, test, title, classifier):
     train_chunks, _, train_labels, _ = train
     test_chunks, test_frames, test_labels, test_videos = test
     test_translated_chunks = transforms.TranslateChunks().transform(test_chunks)
@@ -105,7 +83,6 @@ def run_tda(train, test, title, cross_validate):
     train_labels = le.fit_transform(train_labels)
     test_labels = le.transform(test_labels)
 
-    classifier = TDAClassifier(cross_validate=cross_validate)
     logging.info("Fitting classifier.")
     classifier.fit(train_chunks, train_labels)
     logging.info("Predicting classes of test data.")
@@ -118,7 +95,7 @@ def run_tda(train, test, title, cross_validate):
     logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
         accuracy, precision, recall))
 
-    file_name = "{}-tda.pkl".format(title)
+    file_name = "{}.pkl".format(title)
     logging.info("Saving model to {}.".format(file_name))
     joblib.dump(classifier, file_name)
 
