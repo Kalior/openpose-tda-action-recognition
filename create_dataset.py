@@ -23,28 +23,32 @@ def main(args):
     frames_per_chunk = 20
     number_of_keypoints = 18
     number_of_coordinates = 3
-    all_chunks = np.empty((0, frames_per_chunk, number_of_keypoints, number_of_coordinates))
-    all_frames = np.empty((0, frames_per_chunk))
-    all_labels = np.empty((0,), dtype=str)
-    all_videos = np.empty((0,), dtype=str)
-    for i in range(len(tracks_files)):
-        tracks_file = tracks_files[i]
-        video = video_files[i]
+
+    all_chunks = np.empty(0, dtype=object)
+    all_frames = np.empty(0, dtype=object)
+    all_labels = np.empty(0, dtype=object)
+    all_videos = np.empty(0, dtype=object)
+
+    for tracks_file, video in zip(tracks_files, video_files):
         logging.info("Processing video: {} with tracks {}".format(video, tracks_file))
+
         chunks, frames, labels = process_tracks(
             tracks_file, video, frames_per_chunk, overlap_percentage,
             seconds_per_chunk, args.filter_moving)
-        videos = [video] * len(chunks)
+
+        videos = np.array([video] * len(chunks))
 
         all_chunks = np.append(all_chunks, chunks, axis=0)
         all_frames = np.append(all_frames, frames, axis=0)
         all_labels = np.append(all_labels, np.array(labels), axis=0)
-        all_videos = np.append(all_videos, np.array(videos), axis=0)
+        all_videos = np.append(all_videos, videos, axis=0)
+
+    train, test = split_data(all_chunks, all_frames, all_labels, all_videos)
 
     extension_free = os.path.splitext(args.out_file)[0]
     train_name = extension_free + '-train.npz'
     test_name = extension_free + '-test.npz'
-    train, test = split_data(all_chunks, all_frames, all_labels, all_videos)
+
     append_and_save(*train, train_name)
     append_and_save(*test, test_name)
 
@@ -88,10 +92,10 @@ def split_data(chunks, frames, labels, videos):
     logging.info("Splitting data into test/train")
     train_chunks, test_chunks, train_labels, test_labels, \
         train_frames, test_frames, train_videos, test_videos = train_test_split(
-            chunks, labels, frames, videos)
+            chunks, labels, frames, videos, test_size=0.2)
 
-    return [train_chunks, train_frames, train_labels, train_videos], \
-        [test_chunks, test_frames, test_labels, test_videos]
+    return (train_chunks, train_frames, train_labels, train_videos), \
+        (test_chunks, test_frames, test_labels, test_videos)
 
 
 def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percentage, seconds_per_chunk, automatic_moving_filter):

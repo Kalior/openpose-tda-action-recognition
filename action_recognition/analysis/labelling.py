@@ -231,9 +231,10 @@ class Labelling:
 
         """
         keypoints = tracks[0][0].keypoints
-        chunks = np.zeros((len(json_labels), frames_per_chunk, *keypoints.shape))
-        frames = np.zeros((len(json_labels), frames_per_chunk), dtype=np.int)
-        labels = np.zeros(len(json_labels), dtype=object)
+        number_of_labels = len(json_labels)
+        chunks = np.zeros(number_of_labels, dtype=object)
+        frames = np.zeros(number_of_labels, dtype=object)
+        labels = np.zeros(number_of_labels, dtype=object)
 
         for i, label in enumerate(json_labels):
             track_index = int(label['track_index'])
