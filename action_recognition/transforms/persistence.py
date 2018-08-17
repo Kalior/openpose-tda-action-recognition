@@ -82,7 +82,7 @@ class Persistence(BaseEstimator, TransformerMixin):
 
         """
         scaler = RobustScaler()
-        scaler.fit(data.reshape(-1, 3))
+        scaler.fit(np.vstack(data))
         for i in range(number_of_points):
             plt.style.use('seaborn')
             points = scaler.transform(data[i])
@@ -107,11 +107,11 @@ class Persistence(BaseEstimator, TransformerMixin):
             shape = [n_points, n_diags, 2]
 
         """
+        #   Train the scaler on each individual point in every
+        # dataset since the scalers don't accept 3D data.
+        fit_data = np.vstack(data)
         scaler = RobustScaler()
-        scaler.fit(data.reshape(-1, 3))
-
-        # self.visualise_point_clouds(data, 5)
-        # plt.show()
+        scaler.fit(fit_data)
 
         diags = np.zeros(data.shape[0], dtype=object)
         for i, d in enumerate(data):

@@ -39,12 +39,11 @@ class SmoothChunks(BaseEstimator, TransformerMixin):
         chunks : array-like, shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
 
         """
-        smooth = np.copy(chunks)
-        for chunk in smooth:
-            self._smooth_chunk(chunk)
+        smooth = np.array([self._smooth_chunk(chunk) for chunk in chunks])
         return smooth
 
     def _smooth_chunk(self, chunk):
+        chunk = np.copy(chunk)
         window_length = int(chunk.shape[0] / 4)
         # Window length has to be odd!
         if window_length % 2 == 0:
@@ -53,3 +52,4 @@ class SmoothChunks(BaseEstimator, TransformerMixin):
         for i in range(chunk.shape[1]):
             for j in range(2):
                 chunk[:, i, j] = scipy.signal.savgol_filter(chunk[:, i, j], window_length, 3)
+        return chunk
