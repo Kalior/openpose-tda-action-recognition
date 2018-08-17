@@ -141,15 +141,19 @@ class ChunkVisualiser:
 
         frames = []
         opacity = 1 / len(tracks) + 0.05
-        for i in range(len(tracks[0][1])):
-            blank_image = np.zeros((500, 500, 3), np.uint8)
-            for start_frame, track in tracks:
-                overlay = blank_image.copy()
-                visualiser.draw_people([track], overlay, i + start_frame)
-                cv2.addWeighted(overlay, opacity, blank_image, 1 - opacity, 0, blank_image)
-            visualiser.draw_text(blank_image, name, position=(20, 50))
+        for start_frame, track in tracks:
+            for i in range(len(track)):
+                if i < len(frames):
+                    frame = frames[i]
+                else:
+                    frame = np.zeros((500, 500, 3), np.uint8)
+                    visualiser.draw_text(frame, name, position=(20, 50))
+                    frames.append(frame)
 
-            frames.append(blank_image)
+                overlay = frame.copy()
+                visualiser.draw_people([track], overlay, i + start_frame)
+                cv2.addWeighted(overlay, opacity, frame, 1 - opacity, 0, frame)
+                frames[i] = frame
 
         return frames
 
