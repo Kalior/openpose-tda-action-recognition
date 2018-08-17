@@ -244,7 +244,7 @@ class Labelling:
             end_frame = int(label['end_frame'])
 
             if end_frame - start_frame != frames_per_chunk - 1:
-                info.debug("Label {} did not have {} frames per chunk".format(
+                logging.info("Label {} did not have {} frames per chunk".format(
                     label, frames_per_chunk))
 
             chunk, chunk_frames = track.chunk_from_frame(start_frame, frames_per_chunk)
@@ -276,7 +276,7 @@ class Labelling:
             label = {
                 'track_index': int(track_indicies[i]),
                 'start_frame': int(chunk_frames[i][0]),
-                'end_frame':   int(chunk_frames[i][-1]),
+                'end_frame': int(chunk_frames[i][-1]),
                 'label': chunk_labels[i]
             }
             labels.append(label)

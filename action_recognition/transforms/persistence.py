@@ -150,6 +150,8 @@ class Persistence(BaseEstimator, TransformerMixin):
     def _cubical_complex(self, points):
         shape = [points.shape[0]] * 2
         bitmap = np.zeros(shape)
+        #  You can do other calculations for the bitmap values,
+        # this is just an example I found.
         for i, p1 in enumerate(points):
             for j, p2 in enumerate(points):
                 norm = np.linalg.norm(p1 - p2)
