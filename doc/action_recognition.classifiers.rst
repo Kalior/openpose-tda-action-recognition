@@ -30,12 +30,10 @@ action\_recognition.classifiers.tda\_classifier
     :undoc-members:
     :show-inheritance:
 
-action\_recognition.classifiers.tda\_clusterer
------------------------------------------------------
+action\_recognition.classifiers.feature\_engineering\_classifier
+------------------------------------------------------
 
-.. automodule:: action_recognition.classifiers.tda_clusterer
+.. automodule:: action_recognition.classifiers.feature_engineering_classifier
     :members:
     :undoc-members:
     :show-inheritance:
-
-

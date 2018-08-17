@@ -38,4 +38,10 @@ action\_recognition.features.keypoint\_distance
     :undoc-members:
     :show-inheritance:
 
+action\_recognition.features.feature\_visualiser
+------------------------------------------------------
 
+.. automodule:: action_recognition.features.feature_visualiser
+    :members:
+    :undoc-members:
+    :show-inheritance:
