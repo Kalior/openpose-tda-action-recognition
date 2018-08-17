@@ -43,7 +43,7 @@ class Tracker:
         except:
             os.makedirs(out_dir)
 
-    def video(self, file, draw_frames):
+    def video(self, file, draw_frames, yielding=False):
         """Tracks people in the video given in file.
 
         Produces a video with the identified people overlayed on the
@@ -58,6 +58,9 @@ class Tracker:
             Specifies if the intermediate frames from the original video
             overlayed with the identified keypoints should be produced
             during computation time or not.
+        yielding : boolean, optional, default=False
+            Specifies if intermediate chunks should be yielded, for instance
+            for postprocessing.
 
         """
         capture = cv2.VideoCapture(file)
@@ -96,8 +99,17 @@ class Tracker:
             visualisation_time = time() - visualisation_start_time
 
             if draw_frames:
-                cv2.imshow("output", image_with_keypoints)
+                smaller_img = cv2.resize(image_with_keypoints, (0, 0), fx=0.5, fy=0.5)
+                cv2.imshow("output", smaller_img)
                 cv2.waitKey(1)
+
+            if yielding and current_frame > 10:
+                # Only yield the relevant tracks, and at most the latest
+                # 40 frames to avoid copying to much data here.
+                tracks = [Track(track.track[-40:], track.frame_assigned[-40:])
+                          for track in self.tracks
+                          if track.is_relevant(current_frame)]
+                yield tracks, current_frame
 
             # Write the frame to a video
             writer.write(image_with_keypoints)

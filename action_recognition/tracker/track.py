@@ -1,5 +1,5 @@
 import numpy as np
-
+import copy
 import logging
 
 
@@ -12,16 +12,24 @@ class Track:
 
     """
 
-    def __init__(self):
-        self.track = []
-        self.frame_assigned = []
-        self.last_frame_update = -1
+    def __init__(self, track=[], frame_assigned=[]):
+        self.track = track
+        self.frame_assigned = frame_assigned
+        if frame_assigned:
+            self.last_frame_update = frame_assigned[-1]
+        else:
+            self.last_frame_update = -1
 
     def __len__(self):
         return len(self.track)
 
     def __getitem__(self, item):
         return self.track[item]
+
+    def __copy__(self):
+        copy_track = [copy.copy(person) for person in self.track]
+        copy_frame_assigned = self.frame_assigned.copy()
+        return Track(copy_track, copy_frame_assigned)
 
     def add_person(self, person, current_frame):
         """Adds a Person to the track
