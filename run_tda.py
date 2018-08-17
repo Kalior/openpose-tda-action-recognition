@@ -49,7 +49,7 @@ def main(args):
 def load_data(file_name):
     dataset_npz = np.load(file_name)
     chunks = dataset_npz['chunks']
-    frames = dataset_npz['frames'].astype(np.int)
+    frames = dataset_npz['frames']
     labels = dataset_npz['labels']
     videos = dataset_npz['videos']
 
