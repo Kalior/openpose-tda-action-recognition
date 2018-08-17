@@ -7,7 +7,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
-from sklearn.preprocessing import KernelCenterer
+from sklearn.preprocessing import RobustScaler, StandardScaler
 
 import numpy as np
 import itertools

@@ -7,11 +7,10 @@ import logging
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 
-from ..util import COCOKeypoints
-from .. import transforms
+from ..util import COCOKeypoints, coco_connections
+from .. import classifiers, transforms
 from . import AverageSpeed, AngleChangeSpeed, AmountOfMovement, KeypointDistance
 from ..analysis import ChunkVisualiser
-from .. import classifiers
 
 
 class FeatureVisualiser:
@@ -55,7 +54,7 @@ class FeatureVisualiser:
     def visualise_features(self, chunks, labels):
         """Plots all of the features from this package, divided by label.
 
-        Uses the parameters from ensemble classifier for the features.
+        Uses the parameters from feature classifier for the features.
 
         Parameters
         ----------
@@ -64,10 +63,14 @@ class FeatureVisualiser:
         labels : array-like, shape = [n_chunks, 1]
             The training labels.
         """
-        ensemble = classifiers.EnsembleClassifier()
-        angle_change_connections = ensemble.angle_change_connections
-        speed_keypoints = ensemble.speed_keypoints
-        keypoint_distance_connections = ensemble.keypoint_distance_connections
+        features = classifiers.FeatureEngineeringClassifier(True)
+
+        pipe = features._feature_engineering_union()
+        self._plot_feature_per_class(chunks, pipe, labels, 'Combined features')
+
+        angle_change_connections = features.angle_change_connections
+        speed_keypoints = features.speed_keypoints
+        keypoint_distance_connections = features.keypoint_distance_connections
 
         chunk_speed = AverageSpeed(speed_keypoints)
         self._plot_feature_per_class(chunks, chunk_speed, labels, 'Average Speed')
@@ -86,7 +89,7 @@ class FeatureVisualiser:
         feature = Pipeline([
             ("Feature", transform),
             ("Scaler", RobustScaler())
-        ]).fit_transform(chunks)
+        ]).fit_transform(chunks, labels)
 
         logging.debug('Constructing dataframe')
         rows = [{'value': feature[i, j], 'keypoint': j, 'action': labels[i]}
@@ -123,5 +126,7 @@ class FeatureVisualiser:
             node = np.where(class_member_mask)[0]
             name = str(k)
             nodes[name] = node
+
+            print("{}: {}".format(k, np.mean([c.shape[0] for c in chunks[node]])))
 
         visualiser.visualise_averages(nodes, True)

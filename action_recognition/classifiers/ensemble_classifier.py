@@ -8,6 +8,7 @@ import sklearn_tda as tda
 import numpy as np
 
 from .tda_classifier import TDAClassifier
+from .feature_engineering_classifier import FeatureEngineeringClassifier
 from ..transforms import TranslateChunks, SmoothChunks, FlattenTo3D, Persistence, \
     ExtractKeypoints, InterpolateKeypoints
 from ..features import AverageSpeed, AngleChangeSpeed, AmountOfMovement, KeypointDistance
@@ -24,30 +25,6 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
     *Note*: Can only use one thread, since some parts of sklearn_tda vectorisations
     are not pickable.
     """
-
-    def __init__(self):
-        self.keypoint_distance_connections = [(k1.value, k2.value) for k1, k2 in [
-            (COCOKeypoints.RWrist, COCOKeypoints.LWrist),
-            (COCOKeypoints.RElbow, COCOKeypoints.LElbow),
-            (COCOKeypoints.Neck, COCOKeypoints.LAnkle),
-            (COCOKeypoints.Neck, COCOKeypoints.RAnkle),
-            (COCOKeypoints.LWrist, COCOKeypoints.LAnkle),
-            (COCOKeypoints.RWrist, COCOKeypoints.RAnkle)
-        ]]
-
-        self.angle_change_connections = np.array(coco_connections)
-        self.speed_keypoints = range(14)
-        self.arm_keypoints = [k.value for k in [
-            COCOKeypoints.RElbow,
-            COCOKeypoints.RWrist,
-            COCOKeypoints.LElbow,
-            COCOKeypoints.LWrist,
-            COCOKeypoints.LKnee,
-            COCOKeypoints.LAnkle,
-            COCOKeypoints.RKnee,
-            COCOKeypoints.RAnkle
-        ]]
-        self.arm_connections = [(0, 1), (2, 3), (4, 5), (6, 7)]
 
     def fit(self, X, y, **fit_params):
         """Fit the model.
@@ -68,14 +45,11 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
         """
         sliced_wasserstein_classifier = TDAClassifier(cross_validate=False)
 
-        feature_union_pipeline = Pipeline([
-            ("Union", self._feature_engineering_union()),
-            ("Estimator", SVC(probability=True))
-        ])
+        feature_union_classifier = FeatureEngineeringClassifier()
 
         # Can't use multiple jobs because lambda in persistence image isn't pickable
         classifier = VotingClassifier(estimators=[
-            ("Union", feature_union_pipeline),
+            ("Union", feature_union_classifier),
             ("SWKernel", sliced_wasserstein_classifier)
         ], voting='soft', n_jobs=1)
 
@@ -97,46 +71,3 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
 
         """
         return self.classifier.predict(X)
-
-    def _tda_vectorisations_pipeline(self):
-        persistence_image = Pipeline([
-            ("Rotator", tda.DiagramPreprocessor(scaler=tda.BirthPersistenceTransform())),
-            ("PersistenceImage", tda.PersistenceImage())
-        ])
-
-        return Pipeline([
-            ("Translate",   TranslateChunks()),
-            ("Extract",     ExtractKeypoints(self.arm_keypoints)),
-            ("Smoothing",   SmoothChunks()),
-            ("Interpolate", InterpolateKeypoints(self.arm_connections)),
-            ("Flattening",  FlattenTo3D()),
-            ("Persistence", Persistence()),
-            ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
-            ("Union", FeatureUnion([
-                ("Landscape", tda.Landscape(resolution=1000)),
-                ("TopologicalVector", tda.TopologicalVector()),
-                ("Silhouette", tda.Silhouette()),
-                ("BettiCurve", tda.BettiCurve())
-            ])),
-            ("Scaler", RobustScaler())
-        ])
-
-    def _feature_engineering_union(self):
-        return FeatureUnion([
-            ("AverageSpeed", Pipeline([
-                ("Feature", AverageSpeed(self.speed_keypoints)),
-                ("Scaler", RobustScaler())
-            ])),
-            ("AngleChangeSpeed", Pipeline([
-                ("Feature", AngleChangeSpeed(self.angle_change_connections)),
-                ("Scaler", RobustScaler())
-            ])),
-            ("Movement",    Pipeline([
-                ("Feature", AmountOfMovement(range(14))),
-                ("Scaler", RobustScaler())
-            ])),
-            ("KeypointDistance", Pipeline([
-                ("Feature", KeypointDistance(self.keypoint_distance_connections)),
-                ("Scaler", RobustScaler())
-            ]))
-        ])

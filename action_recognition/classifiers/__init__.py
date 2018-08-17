@@ -8,3 +8,4 @@ with feature engineering to produce more accurate predictions.
 from .tda_classifier import TDAClassifier
 from .ensemble_classifier import EnsembleClassifier
 from .classification_visualiser import ClassificationVisualiser
+from .feature_engineering_classifier import FeatureEngineeringClassifier

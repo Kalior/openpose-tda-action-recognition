@@ -11,7 +11,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.externals import joblib
 
 from action_recognition.analysis import Mapper, ChunkVisualiser
-from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, ClassificationVisualiser
+from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, \
+    ClassificationVisualiser, FeatureEngineeringClassifier
 from action_recognition import transforms
 from action_recognition.features import FeatureVisualiser
 from action_recognition.util import COCOKeypoints, coco_connections
@@ -32,11 +33,16 @@ def main(args):
     logging.info("Number of train dataset labels after augmentor: {}".format(Counter(train[2])))
 
     if args.tda:
-        run_tda(train, test, args.title, args.cross_validate)
+        classifier = TDAClassifier(cross_validate=args.cross_validate)
+        run_classifier(train, test, args.title, classifier)
+    if args.ensemble:
+        classifier = EnsembleClassifier()
+        run_classifier(train, test, args.title, classifier)
+    if args.feature_engineering:
+        classifier = FeatureEngineeringClassifier()
+        run_classifier(train, test, args.title, classifier)
     if args.mapper:
         run_mapper(train, test)
-    if args.ensemble:
-        run_ensemble(train, test, args.title)
     if args.visualise:
         vis = FeatureVisualiser()
         vis.visualise_features(train[0], train[2])
@@ -62,16 +68,6 @@ def append_train_and_test(train, test):
     labels = np.append(train[2], test[2], axis=0)
     videos = np.append(train[3], test[3], axis=0)
     return chunks, frames, labels, videos
-
-
-def run_ensemble(train, test, title):
-    classifier = EnsembleClassifier()
-    run_classifier(train, test, title, classifier)
-
-
-def run_tda(train, test, title, cross_validate):
-    classifier = TDAClassifier(cross_validate=cross_validate)
-    run_classifier(train, test, title, classifier)
 
 
 def run_classifier(train, test, title, classifier):
@@ -136,12 +132,16 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, help='The path to the dataset')
     parser.add_argument('--mapper', action='store_true',
                         help='Run the mapper algorithm on the data')
+
     parser.add_argument('--tda', action='store_true',
                         help='Run a TDA algorithm on the data.')
-    parser.add_argument('--visualise', action='store_true',
-                        help='Specify if you wish to only visualise the classes in the dataset.')
     parser.add_argument('--ensemble', action='store_true',
                         help='Runs a voting classifier on TDA and feature engineering on the dataset.')
+    parser.add_argument('--feature-engineering', action='store_true',
+                        help='Runs a classifier by using feature engineering.')
+
+    parser.add_argument('--visualise', action='store_true',
+                        help='Specify if you wish to only visualise the classes in the dataset.')
     parser.add_argument('--title', type=str, default='classifier',
                         help='Title and file name for confusion matrix plot.')
     parser.add_argument('--cross-validate', '-cv', action='store_true',
