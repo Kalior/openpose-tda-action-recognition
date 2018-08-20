@@ -109,7 +109,7 @@ class FeatureEngineeringClassifier(BaseEstimator, ClassifierMixin):
         y_proba : array-like, shape = [n_samples, n_classes]
 
         """
-        return self.model.predict_proba(X)
+        return self.classifier.predict_proba(X)
 
     def _feature_engineering_union(self):
         transformer_list = [
