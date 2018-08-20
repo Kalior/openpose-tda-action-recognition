@@ -10,7 +10,6 @@ from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.externals import joblib
 
-from action_recognition.analysis import Mapper, ChunkVisualiser
 from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, \
     ClassificationVisualiser, FeatureEngineeringClassifier
 from action_recognition import transforms
@@ -41,8 +40,6 @@ def main(args):
     if args.feature_engineering:
         classifier = FeatureEngineeringClassifier()
         run_classifier(train, test, args.title, classifier)
-    if args.mapper:
-        run_mapper(train, test)
     if args.visualise:
         vis = FeatureVisualiser()
         vis.visualise_features(train[0], train[2])
@@ -59,14 +56,6 @@ def load_data(file_name):
     labels = dataset_npz['labels']
     videos = dataset_npz['videos']
 
-    return chunks, frames, labels, videos
-
-
-def append_train_and_test(train, test):
-    chunks = np.append(train[0], test[0], axis=0)
-    frames = np.append(train[1], test[1], axis=0)
-    labels = np.append(train[2], test[2], axis=0)
-    videos = np.append(train[3], test[3], axis=0)
     return chunks, frames, labels, videos
 
 
@@ -101,37 +90,9 @@ def run_classifier(train, test, title, classifier):
         pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
 
 
-def run_mapper(test, train):
-    chunks, frames, labels, videos = append_train_and_test(train, test)
-    translated_chunks = transforms.TranslateChunks().transform(chunks)
-
-    logging.info("Smoothing chunks.")
-    translated_chunks = transforms.SmoothChunks().transform(translated_chunks)
-
-    selected_keypoints = [
-        COCOKeypoints.RShoulder.value,
-        COCOKeypoints.LShoulder.value,
-        COCOKeypoints.RElbow.value,
-        COCOKeypoints.LElbow.value,
-        COCOKeypoints.RWrist.value,
-        COCOKeypoints.LWrist.value
-    ]
-    logging.info("Flattening data into a datapoint per chunk.")
-    extracted = transforms.ExtractKeypoints(selected_keypoints).transform(translated_chunks)
-    data = transforms.Flatten().transform(extracted)
-    logging.info("Applying mapping to tracks.")
-    mapper = Mapper(chunks, frames, translated_chunks, labels)
-    mapper.create_tooltips(videos)
-    graph = mapper.mapper(data)
-    logging.info("Visualisation of the resulting nodes.")
-    mapper.visualise(videos, graph)
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='TDA analysis of the tracks.')
     parser.add_argument('--dataset', type=str, help='The path to the dataset')
-    parser.add_argument('--mapper', action='store_true',
-                        help='Run the mapper algorithm on the data')
 
     parser.add_argument('--tda', action='store_true',
                         help='Run a TDA algorithm on the data.')
