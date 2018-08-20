@@ -101,7 +101,7 @@ class FeatureVisualiser:
         sns.lineplot(x='keypoint', y='value', hue='action', style=None, data=df)
         plt.title(title)
 
-    def visualise_classes(self, chunks, frames, labels):
+    def visualise_classes(self, train, test):
         """Draws the average shape of the input data.
 
         Not a feature in the feature package, but gives an indication of
@@ -117,6 +117,9 @@ class FeatureVisualiser:
             The training labels.
 
         """
+
+        chunks, frames, labels = self._append_train_and_test(train, test)
+
         translated_chunks = transforms.TranslateChunks().transform(chunks)
         visualiser = ChunkVisualiser(chunks, frames, translated_chunks)
         unique_labels = set(labels)
@@ -130,3 +133,9 @@ class FeatureVisualiser:
             print("{}: {}".format(k, np.mean([c.shape[0] for c in chunks[node]])))
 
         visualiser.visualise_averages(nodes, True)
+
+    def _append_train_and_test(self, train, test):
+        chunks = np.append(train[0], test[0], axis=0)
+        frames = np.append(train[1], test[1], axis=0)
+        labels = np.append(train[2], test[2], axis=0)
+        return chunks, frames, labels
