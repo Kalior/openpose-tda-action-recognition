@@ -24,13 +24,6 @@ class Person:
         self.track_index = track_index
         self.og_keypoints = np.copy(keypoints)
 
-    def __copy__(self):
-        copy_keypoints = np.copy(self.keypoints)
-        copy_person = Person(copy_keypoints)
-        copy_person.track_index = self.track_index
-        copy_person.og_keypoints = np.copy(self.og_keypoints)
-        return copy_person
-
     def get_nonzero_keypoint(self):
         """Gets the first keypoint from the person that isn't zero.
 

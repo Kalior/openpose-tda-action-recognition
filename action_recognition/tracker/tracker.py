@@ -98,18 +98,18 @@ class Tracker:
                 self.tracks, image_with_keypoints, current_frame, self.only_track_arms)
             visualisation_time = time() - visualisation_start_time
 
+            if yielding and current_frame > 10:
+                # Only yield the relevant tracks, and at most the latest
+                # 40 frames to avoid copying to much data here.
+                tracks = [track.copy(-40)
+                          for track in self.tracks
+                          if track.is_relevant(current_frame)]
+                yield tracks, image_with_keypoints, current_frame
+
             if draw_frames:
                 smaller_img = cv2.resize(image_with_keypoints, (0, 0), fx=0.5, fy=0.5)
                 cv2.imshow("output", smaller_img)
                 cv2.waitKey(1)
-
-            if yielding and current_frame > 10:
-                # Only yield the relevant tracks, and at most the latest
-                # 40 frames to avoid copying to much data here.
-                tracks = [Track(track.track[-40:], track.frame_assigned[-40:])
-                          for track in self.tracks
-                          if track.is_relevant(current_frame)]
-                yield tracks, current_frame
 
             # Write the frame to a video
             writer.write(image_with_keypoints)

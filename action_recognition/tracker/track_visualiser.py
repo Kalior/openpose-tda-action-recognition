@@ -144,9 +144,8 @@ class TrackVisualiser:
         path = track.get_keypoint_path(keypoint_index, current_frame)
 
         font = cv2.FONT_HERSHEY_SIMPLEX
-        path_index = max(0, len(path) - 11)
         if len(path) > 0:
-            keypoint = path[path_index].astype(np.int)
+            keypoint = path[-1].astype(np.int)
             cv2.putText(img, str(track_index), tuple(keypoint), font, 4, color, 3)
 
     def _add_lines_from_track(self, img, track, color, current_frame, keypoint_index):

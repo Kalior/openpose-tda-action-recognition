@@ -12,13 +12,10 @@ class Track:
 
     """
 
-    def __init__(self, track=[], frame_assigned=[]):
-        self.track = track
-        self.frame_assigned = frame_assigned
-        if frame_assigned:
-            self.last_frame_update = frame_assigned[-1]
-        else:
-            self.last_frame_update = -1
+    def __init__(self):
+        self.track = []
+        self.frame_assigned = []
+        self.last_frame_update = -1
 
     def __len__(self):
         return len(self.track)
@@ -26,10 +23,13 @@ class Track:
     def __getitem__(self, item):
         return self.track[item]
 
-    def __copy__(self):
-        copy_track = [copy.copy(person) for person in self.track]
-        copy_frame_assigned = self.frame_assigned.copy()
-        return Track(copy_track, copy_frame_assigned)
+    def copy(self, number_of_frames):
+        new_track = Track()
+        new_track.track = self.track[number_of_frames:]
+        new_track.frame_assigned = self.frame_assigned[number_of_frames:]
+        new_track.last_frame_update = new_track.frame_assigned[-1]
+
+        return new_track
 
     def add_person(self, person, current_frame):
         """Adds a Person to the track
@@ -114,8 +114,9 @@ class Track:
         if current_frame == -1:
             current_frame = self.last_frame_update
 
-        return [p[idx][:2] for i, p in enumerate(self.track)
-                if np.any(p[idx][:2]) and self.frame_assigned[i] <= current_frame]
+        return [p[idx][:2] for f, p in zip(self.frame_assigned, self.track)
+                if np.any(p[idx][:2]) and
+                f <= current_frame]
 
     def get_keypoints_at(self, frame):
         """Returns all keypoints at time frame.
@@ -132,7 +133,14 @@ class Track:
 
         """
 
-        return [p[:, :2] for i, p in enumerate(self.track) if self.frame_assigned[i] <= frame][-1]
+        path = [k[:, 2] for k, f in zip(self.track, self.frame_assigned)
+                if f <= frame and
+                np.any(k[:, :2])]
+
+        if len(path) > 0:
+            return path[-1]
+        else:
+            return None
 
     def divide_into_chunks(self, frames_per_chunk, overlap=-1):
         """Divides the track into chunks with overlaps, used for action recognition.
