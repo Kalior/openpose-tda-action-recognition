@@ -79,6 +79,7 @@ class FeatureEngineeringClassifier(BaseEstimator, ClassifierMixin):
         ])
 
         self.classifier = classifier.fit(X, y)
+        self.classes_ = classifier.classes_
         return self
 
     def predict(self, X):

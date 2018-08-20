@@ -54,6 +54,7 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
         ], voting='soft', n_jobs=1)
 
         self.classifier = classifier.fit(X, y)
+        self.classes_ = classifier.classes_
         return self
 
     def predict(self, X):

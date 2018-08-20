@@ -5,9 +5,7 @@ import numpy as np
 from collections import Counter
 import matplotlib.pyplot as plt
 
-from sklearn.preprocessing import LabelEncoder, RobustScaler
 from sklearn import metrics
-from sklearn.pipeline import Pipeline
 from sklearn.externals import joblib
 
 from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, \
@@ -63,10 +61,6 @@ def run_classifier(train, test, title, classifier):
     test_chunks, test_frames, test_labels, test_videos = test
     test_translated_chunks = transforms.TranslateChunks().transform(test_chunks)
 
-    le = LabelEncoder()
-    train_labels = le.fit_transform(train_labels)
-    test_labels = le.transform(test_labels)
-
     logging.info("Fitting classifier.")
     classifier.fit(train_chunks, train_labels)
     logging.info("Predicting classes of test data.")
@@ -84,9 +78,9 @@ def run_classifier(train, test, title, classifier):
     joblib.dump(classifier, file_name)
 
     visualiser = ClassificationVisualiser()
-    visualiser.plot_confusion_matrix(pred_labels, test_labels, le, title)
+    visualiser.plot_confusion_matrix(pred_labels, test_labels, classifier.classes_, title)
     visualiser.visualise_incorrect_classifications(
-        pred_labels, test_labels, le, test_chunks, test_frames, test_translated_chunks, test_videos)
+        pred_labels, test_labels, test_chunks, test_frames, test_translated_chunks, test_videos)
 
 
 if __name__ == '__main__':

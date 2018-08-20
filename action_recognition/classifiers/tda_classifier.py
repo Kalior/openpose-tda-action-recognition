@@ -80,7 +80,7 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             self.model = model.fit(X, y)
 
         # logging.info("Train accuracy = {}".format(self.model.score(X, y)))
-
+        self.classes_ = self.model.classes_
         return self
 
     def predict(self, X):
