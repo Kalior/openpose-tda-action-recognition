@@ -143,4 +143,4 @@ RUN python3.6 -m pip install -r requirements.txt
 COPY requirements.txt requirements.txt
 RUN python3.6 -m pip install -r requirements.txt
 
-WORKDIR /tda-action-recognition
+WORKDIR /openpose-action-recognition
