@@ -12,7 +12,6 @@ from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, \
     ClassificationVisualiser, FeatureEngineeringClassifier
 from action_recognition import transforms
 from action_recognition.features import FeatureVisualiser
-from action_recognition.util import COCOKeypoints, coco_connections
 from action_recognition import augmentors
 
 
@@ -84,7 +83,8 @@ def run_classifier(train, test, title, classifier):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='TDA analysis of the tracks.')
+    parser = argparse.ArgumentParser(description=(
+        'Trains a classifier on recognising actions from the given dataset.'))
     parser.add_argument('--dataset', type=str, help='The path to the dataset')
 
     parser.add_argument('--tda', action='store_true',
@@ -97,7 +97,8 @@ if __name__ == '__main__':
     parser.add_argument('--visualise', action='store_true',
                         help='Specify if you wish to only visualise the classes in the dataset.')
     parser.add_argument('--title', type=str, default='classifier',
-                        help='Title and file name for confusion matrix plot.')
+                        help=('Title and file name for confusion matrix plot '
+                              'as well as the name of the .pkl classifier file.'))
     parser.add_argument('--cross-validate', '-cv', action='store_true',
                         help='Specify for cross-validation of tda pipeline.')
 
