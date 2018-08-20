@@ -133,7 +133,7 @@ class Track:
 
         """
 
-        path = [k[:, 2] for k, f in zip(self.track, self.frame_assigned)
+        path = [k[:, :2] for k, f in zip(self.track, self.frame_assigned)
                 if f <= frame and
                 np.any(k[:, :2])]
 
