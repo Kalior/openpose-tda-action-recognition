@@ -23,10 +23,11 @@ Below is a description of what each of these steps do:
 * The final step is to run the `run_tda.py` script.  It accepts a dataset as input (without the `-test` or `-train` suffix) and an option to either run either `visualise`, `mapper`, `tda`, or `ensemble` on the data.  The `tda` and `ensemble` option will produce confusion matricies of the test set.  The `tda` option runs a Sliced Wasserstein Kernel on the Persistence diagrams of the generated point clouds from the data.  The `ensemble` option combines the Sliced Wasserstein kernel with other features for a better classification.  The `mapper` option runs the Mapper algorithm on the combined dataset.  The `visualise` option displays the average keypoint position for each class and the features used in the `ensemble` for each class.
 
 ## Dockerfiles
-There are currently three dockerfiles.  There is currently no Dockerfile for every part of the project since there are two well-defined parts of the project with widely different dependencies.  Of course, combining them is not difficult, if needed.
+There are currently four dockerfiles, as there are three natural divisions of the project:
 
-* `Dockerfile`: which is the GPU version of OpenPose, which allows the openpose parts of this project to be run.
-* `Dockerfile.cpu`: which is the CPU version of OpenPose.
-* `Dockerfile.tda`: which contains the `Gudhi` and `sklearn_tda` for the classification part of the project.
+* `dockerfiles/Dockerfile-openpose-gpu`: which is the GPU version of OpenPose, which allows the openpose parts of this project to be run.
+* `dockerfiles/Dockerfile-openpose-cpu`: which is the CPU version of OpenPose.
+* `dockerfiles/Dockerfile-tda`: which contains the `Gudhi` and `sklearn_tda` for the classification part of the project.
+* `Dockerfile`: which installs both openpose (assuming a GPU) as well as the TDA libraries.  This file can really do with some cleanup using build stages.
 
-After building the Dockerfiles there are two scripts `openpose-dev.sh` and `tda-dev.sh` which runs the corresponding containers and mounts the source directory as well as the expected locations of the data.
+After building the Dockerfiles there is a script `dev.sh` which runs the corresponding container and mounts the source directory as well as the expected locations of the data.  It is provided more out of convenience than anything, and may need some modification depending on your configuration.
