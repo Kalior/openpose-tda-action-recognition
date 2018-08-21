@@ -4,6 +4,8 @@ import copy
 from time import time
 import numpy as np
 import logging
+import os
+from shutil import copyfile
 
 from action_recognition.tracker import Tracker, TrackVisualiser
 from action_recognition.detector import CaffeOpenpose
@@ -11,9 +13,15 @@ from action_recognition.analysis import PostProcessor, ChunkVisualiser
 
 
 def main(args):
+    video_ending = os.path.splitext(args.video)[1]
+    # Copy video file so we can create multiple different videos
+    # with it as base simultaneously.
+    tmp_video_file = "output/tmp" + video_ending
+    copyfile(args.video, tmp_video_file)
+
     classifier = joblib.load(args.classifier)
     detector = CaffeOpenpose(args.model_path)
-    tracker = Tracker(detector)
+    tracker = Tracker(detector, out_dir=args.out_directory)
 
     processor = PostProcessor()
     vis = TrackVisualiser()
@@ -29,7 +37,7 @@ def main(args):
         processor.tracks = [copy.deepcopy(t) for t in tracks]
 
         processor.post_process_tracks()
-        chunks, _, _ = processor.chunk_tracks(30, 0, 30)
+        chunks, chunk_frames, _ = processor.chunk_tracks(30, 0, 30)
 
         logging.debug("Number of chunks: {}".format(len(chunks)))
 
@@ -41,8 +49,11 @@ def main(args):
                 ["{}: {:.3f}".format(*get_best_pred(prediction, classes))
                  for prediction in predictions]))
 
+            zipped = zip(chunks, chunk_frames, predictions)
+
             add_predictions_to_img(
-                chunks, predictions, args.probability_threshold, classes, vis, img)
+                zipped, args.probability_threshold,
+                classes, img, args.video, tmp_video_file, args.out_directory)
         predict_people_time = time() - predict_people_start
 
         logging.debug("Predict time: {:.3f}, Track time: {:.3f}".format(
@@ -53,16 +64,21 @@ def main(args):
 def get_best_pred(prediction, classes):
     best_pred_i = np.argmax(prediction)
     probability = prediction[best_pred_i]
-    class_name = classes[best_pred_i]
-    return class_name, probability
+    label = classes[best_pred_i]
+    return label, probability
 
 
-def add_predictions_to_img(chunks, predictions, probability_threshold, classes, vis, img):
-    for chunk, prediction in zip(chunks, predictions):
-        class_name, probability = get_best_pred(prediction, classes)
-        if probability > probability_threshold:
+def add_predictions_to_img(zipped, threshold, classes, img, video, video_copy, out_dir):
+    for i, (chunk, frames, prediction) in enumerate(zipped):
+        label, probability = get_best_pred(prediction, classes)
+        if probability > threshold:
             position = tuple(chunk[-1, 0, :2].astype(np.int))
-            vis.draw_text(img, "{}: {:.3f}".format(class_name, probability), position)
+            TrackVisualiser().draw_text(img, "{}: {:.3f}".format(label, probability), position)
+
+            _, video_name = os.path.split(video)
+            file_name = "{}-{}-{}.avi".format(video_name, frames[-1], i)
+            out_file = os.path.join(out_dir, file_name)
+            ChunkVisualiser().chunk_to_video_scene(video_copy, chunk, out_file, frames, label)
 
 
 if __name__ == '__main__':
@@ -76,6 +92,10 @@ if __name__ == '__main__':
                         help='The model path for the caffe implementation.')
     parser.add_argument('--probability-threshold', type=float, default=0.8,
                         help='Threshold for how confident the model should be in each prediction.')
+
+    parser.add_argument('--out-directory', type=str, default='output/prediction',
+                        help=('Output directory to where the processed video and identified '
+                              'chunks are saved.'))
 
     logging.basicConfig(level=logging.DEBUG)
 
