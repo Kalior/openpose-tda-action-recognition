@@ -20,7 +20,7 @@ class ChunkVisualiser:
 
     """
 
-    def __init__(self, chunks, chunk_frames, translated_chunks):
+    def __init__(self, chunks=[], chunk_frames=[], translated_chunks=[]):
         self.chunks = chunks
         self.chunk_frames = chunk_frames
         self.translated_chunks = translated_chunks
@@ -189,10 +189,9 @@ class ChunkVisualiser:
 
         writer.release()
 
-    def _create_writer(self, out_file):
+    def _create_writer(self, out_file, fps=10):
         frame_width = 100
         frame_height = 100
-        fps = 10
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
         writer = cv2.VideoWriter(out_file, fourcc, fps, (frame_width, frame_height))
@@ -234,7 +233,8 @@ class ChunkVisualiser:
         track = self._chunk_to_track(chunk, frames)
         visualiser = TrackVisualiser()
 
-        writer, frame_width, frame_height = self._create_writer(out_file)
+        fps = capture.get(cv2.CAP_PROP_FPS)
+        writer, frame_width, frame_height = self._create_writer(out_file, fps)
 
         for i in range(len(chunk)):
             sucess, image = capture.read()
