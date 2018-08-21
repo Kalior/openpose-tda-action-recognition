@@ -84,9 +84,11 @@ class Persistence(BaseEstimator, TransformerMixin):
         number_of_points : int, number of point-clouds to plot.
 
         """
+        scaler = RobustScaler()
+        scaler.fit(np.vstack(data))
         for i in range(number_of_points):
             plt.style.use('seaborn')
-            points = self.scaler.transform(data[i])
+            points = scaler.transform(data[i])
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
             plt.tight_layout()
@@ -110,13 +112,10 @@ class Persistence(BaseEstimator, TransformerMixin):
         """
         #   Train the scaler on each individual point in every
         # dataset since the scalers don't accept 3D data.
-        fit_data = np.vstack(data)
-        scaler = RobustScaler()
-        scaler.fit(fit_data)
 
         diags = np.zeros(data.shape[0], dtype=object)
         for i, d in enumerate(data):
-            points = scaler.transform(d)
+            points = self.scaler.transform(d)
 
             if self.complex == 'alpha':
                 diag = self._alpha_complex(points)
