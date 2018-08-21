@@ -49,6 +49,10 @@ class SmoothChunks(BaseEstimator, TransformerMixin):
         if window_length % 2 == 0:
             window_length += 1
 
+        # Polyorder has to be less than window_length
+        if window_length < 5:
+            window_length = 5
+
         for i in range(chunk.shape[1]):
             for j in range(2):
                 chunk[:, i, j] = scipy.signal.savgol_filter(chunk[:, i, j], window_length, 3)
