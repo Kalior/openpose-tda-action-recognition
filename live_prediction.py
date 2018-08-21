@@ -13,7 +13,7 @@ from action_recognition.analysis import PostProcessor, ChunkVisualiser
 
 
 def main(args):
-    video_ending = os.path.splitext(args.video)[1]
+    _, video_ending = os.path.splitext(args.video)
     # Copy video file so we can create multiple different videos
     # with it as base simultaneously.
     tmp_video_file = "output/tmp" + video_ending
@@ -76,6 +76,7 @@ def add_predictions_to_img(zipped, threshold, classes, img, video, video_copy, o
             TrackVisualiser().draw_text(img, "{}: {:.3f}".format(label, probability), position)
 
             _, video_name = os.path.split(video)
+            video_name, _ = os.path.splitext(video_name)
             file_name = "{}-{}-{}.avi".format(video_name, frames[-1], i)
             out_file = os.path.join(out_dir, file_name)
             ChunkVisualiser().chunk_to_video_scene(video_copy, chunk, out_file, frames, label)
