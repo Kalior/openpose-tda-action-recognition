@@ -41,7 +41,7 @@ class Persistence(BaseEstimator, TransformerMixin):
         self.possible_complex_values = ['rips', 'alpha', 'tangential', 'cubical']
 
     def fit(self, X, y, **fit_params):
-        """Returns self unchanged, as there are no parameters to fit.
+        """Fits a scaler to the data.
 
         Parameters
         ----------
@@ -54,6 +54,9 @@ class Persistence(BaseEstimator, TransformerMixin):
         self : unchanged
 
         """
+        scaler = RobustScaler()
+        self.scaler = scaler.fit(np.vstack(X))
+
         return self
 
     def transform(self, data):
@@ -81,11 +84,9 @@ class Persistence(BaseEstimator, TransformerMixin):
         number_of_points : int, number of point-clouds to plot.
 
         """
-        scaler = RobustScaler()
-        scaler.fit(np.vstack(data))
         for i in range(number_of_points):
             plt.style.use('seaborn')
-            points = scaler.transform(data[i])
+            points = self.scaler.transform(data[i])
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
             plt.tight_layout()
