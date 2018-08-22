@@ -38,17 +38,14 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
 
     def __init__(self, cross_validate=False):
         self.cross_validate = cross_validate
-        self.arm_keypoints = [k.value for k in [
-            COCOKeypoints.RElbow,
+        self.selected_keypoints = [k.value for k in [
+            COCOKeypoints.Neck,
             COCOKeypoints.RWrist,
-            COCOKeypoints.LElbow,
             COCOKeypoints.LWrist,
-            # COCOKeypoints.LKnee,
-            # COCOKeypoints.LAnkle,
-            # COCOKeypoints.RKnee,
-            # COCOKeypoints.RAnkle
+            COCOKeypoints.RAnkle,
+            COCOKeypoints.LAnkle,
         ]]
-        self.arm_connections = [(0, 1), (2, 3)]  # , (4, 5), (6, 7)]
+        self.keypoint_connections = [(0, 1), (0, 2), (1, 3), (2, 4)]
         self.all_keypoints = range(14)
 
     def fit(self, X, y, **fit_params):
@@ -117,13 +114,14 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
 
     def _pre_validated_pipeline(self):
         pipe = Pipeline([
-            ("Translate",   TranslateChunks()),
-            ("Extract",     ExtractKeypoints(self.arm_keypoints)),
+            ("Extract",     ExtractKeypoints(self.selected_keypoints)),
             ("Smoothing",   SmoothChunks()),
-            ("Interpolate", InterpolateKeypoints(self.arm_connections, 1)),
-            ("Flattening",  FlattenTo3D()),
-            ("Persistence", Persistence(max_edge_length=0.5, complex_='rips')),
-            ("TDA",         tda.SlicedWasserstein(bandwidth=0.6, num_directions=10)),
+            ("Translate", TranslateChunks()),
+            ("PositionCloud", FlattenTo3D()),
+            ("Persistence", Persistence(max_alpha_square=1, complex_='alpha')),
+            ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
+            ("Prominent",   tda.ProminentPoints()),
+            ("TDA",         tda.SlicedWasserstein(bandwidth=0.6, num_directions=20)),
             ("Estimator",   SVC(kernel='precomputed', probability=True))
         ])
 
@@ -170,9 +168,9 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             {
                 "Persistence__max_edge_length": [0.5, 0.9],
                 "Persistence__complex_": ['rips'],
-                "Extract__selected_keypoints": [self.arm_keypoints],
+                "Extract__selected_keypoints": [self.selected_keypoints],
                 "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate__connect_keypoints": [self.arm_connections],
+                "Interpolate__connect_keypoints": [self.keypoint_connections],
             },
             {
                 "Persistence__max_edge_length": [0.5, 0.9],
@@ -205,9 +203,9 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             {
                 "Persistence__max_alpha_square": [0.9],
                 "Persistence__complex_": ['alpha'],
-                "Extract__selected_keypoints": [self.arm_keypoints],
+                "Extract__selected_keypoints": [self.selected_keypoints],
                 "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate__connect_keypoints": [no_connections, self.arm_connections]
+                "Interpolate__connect_keypoints": [no_connections, self.keypoint_connections]
             },
             {
                 "Persistence__max_alpha_square": [0.9],

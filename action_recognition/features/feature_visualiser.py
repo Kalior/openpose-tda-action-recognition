@@ -30,21 +30,19 @@ class FeatureVisualiser:
         chunks : array-like, shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
             The training data for classification.
         """
-        arm_keypoints = [k.value for k in [
+        selected_keypoints = [k.value for k in [
             COCOKeypoints.Neck,
             COCOKeypoints.RWrist,
             COCOKeypoints.LWrist,
             COCOKeypoints.RAnkle,
             COCOKeypoints.LAnkle,
         ]]
-        arm_connections = [(0, 1), (0, 2), (1, 3), (2, 4)]  # , (0, 4), (4, 5), (5, 3)]
+        selected_connections = [(0, 1), (0, 2), (1, 3), (2, 4)]  # , (0, 4), (4, 5), (5, 3)]
         pipe = Pipeline([
-            ("1", transforms.ExtractKeypoints(arm_keypoints)),
-            ("3", transforms.SmoothChunks()),
-            # ("4", transforms.InterpolateKeypoints(arm_connections, 1)),
-            ("2", transforms.TranslateChunks()),
-            # ("6", transforms.Speed()),
-            ("5", transforms.FlattenTo3D()),
+            ("Extract", transforms.ExtractKeypoints(selected_keypoints)),
+            ("Smooth", transforms.SmoothChunks()),
+            ("Translate", transforms.TranslateChunks()),
+            ("PositionCloud", transforms.FlattenTo3D()),
         ])
         chunks = pipe.fit_transform(chunks)
         transforms.Persistence().visualise_point_clouds(chunks, 10)
@@ -57,7 +55,7 @@ class FeatureVisualiser:
         chunks : array-like, shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
             The training data for classification.
         """
-        arm_keypoints = [k.value for k in [
+        selected_keypoints = [k.value for k in [
             COCOKeypoints.Neck,
             COCOKeypoints.RWrist,
             COCOKeypoints.LWrist,
@@ -65,7 +63,7 @@ class FeatureVisualiser:
             COCOKeypoints.LAnkle,
         ]]
         pipe = Pipeline([
-            ("1", transforms.ExtractKeypoints(arm_keypoints)),
+            ("1", transforms.ExtractKeypoints(selected_keypoints)),
             ("2", transforms.SmoothChunks()),
             ("3", transforms.TranslateChunks()),
             ("4", transforms.FlattenTo3D()),

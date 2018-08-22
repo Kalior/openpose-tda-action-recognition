@@ -41,17 +41,14 @@ class FeatureEngineeringClassifier(BaseEstimator, ClassifierMixin):
 
         self.angle_change_connections = np.array(coco_connections)
         self.speed_keypoints = range(14)
-        self.arm_keypoints = [k.value for k in [
-            COCOKeypoints.RElbow,
+        self.selected_keypoints = [k.value for k in [
+            COCOKeypoints.Neck,
             COCOKeypoints.RWrist,
-            COCOKeypoints.LElbow,
             COCOKeypoints.LWrist,
-            COCOKeypoints.LKnee,
             COCOKeypoints.LAnkle,
-            COCOKeypoints.RKnee,
             COCOKeypoints.RAnkle
         ]]
-        self.arm_connections = [(0, 1), (2, 3), (4, 5), (6, 7)]
+        self.keypoint_connections = [(0, 1), (2, 3), (4, 5), (6, 7)]
 
     def fit(self, X, y, **fit_params):
         """Fit the model.
@@ -143,9 +140,9 @@ class FeatureEngineeringClassifier(BaseEstimator, ClassifierMixin):
 
         return Pipeline([
             ("Translate",   TranslateChunks()),
-            ("Extract",     ExtractKeypoints(self.arm_keypoints)),
+            ("Extract",     ExtractKeypoints(self.selected_keypoints)),
             ("Smoothing",   SmoothChunks()),
-            ("Interpolate", InterpolateKeypoints(self.arm_connections)),
+            ("Interpolate", InterpolateKeypoints(self.keypoint_connections)),
             ("Flattening",  FlattenTo3D()),
             ("Persistence", Persistence()),
             ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
