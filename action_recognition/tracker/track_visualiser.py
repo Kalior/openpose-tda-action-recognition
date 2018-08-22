@@ -77,14 +77,6 @@ class TrackVisualiser:
         for i, track in enumerate(tracks):
             track_color = self.colors[i % len(self.colors)]
             positions = [(0, 0)] * 14
-            selected_keypoints = [
-                COCOKeypoints.RShoulder.value,
-                COCOKeypoints.LShoulder.value,
-                COCOKeypoints.RWrist.value,
-                COCOKeypoints.LWrist.value,
-                COCOKeypoints.RElbow.value,
-                COCOKeypoints.LElbow.value
-            ]
             keypoints = track.get_keypoints_at(current_frame)
             for i in range(14):
                 original_pos = keypoints[i].astype(np.int)
@@ -117,7 +109,7 @@ class TrackVisualiser:
 
         """
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(img, str(current_frame), (50, 50), font, 2, color, 2)
+        self.draw_text(img, str(current_frame), position=(50, 50), color=color)
 
     def draw_text(self, img, text, position=(50, 50), color=(255, 255, 255)):
         """Overlays the text on the img at the position.
@@ -134,7 +126,9 @@ class TrackVisualiser:
             The color of the number.
 
         """
+        black = (0, 0, 0)
         font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(img, text, position, font, 2, black, 4)
         cv2.putText(img, text, position, font, 2, color, 2)
 
     def _add_index_of_track(self, img, track_index, track, color, current_frame, keypoint_index):
@@ -143,10 +137,9 @@ class TrackVisualiser:
 
         path = track.get_keypoint_path(keypoint_index, current_frame)
 
-        font = cv2.FONT_HERSHEY_SIMPLEX
         if len(path) > 0:
             keypoint = path[-1].astype(np.int)
-            cv2.putText(img, str(track_index), tuple(keypoint), font, 4, color, 3)
+            self.draw_text(img, str(track_index), position=tuple(keypoint), color=color)
 
     def _add_lines_from_track(self, img, track, color, current_frame, keypoint_index):
         # Don't draw old paths
