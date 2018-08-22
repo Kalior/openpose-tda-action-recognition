@@ -11,7 +11,6 @@ from sklearn.externals import joblib
 from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, \
     ClassificationVisualiser, FeatureEngineeringClassifier
 from action_recognition import transforms
-from action_recognition.features import FeatureVisualiser
 from action_recognition import augmentors
 
 
@@ -25,24 +24,18 @@ def main(args):
     logging.info("Number of train dataset labels: {}".format(Counter(train[2])))
     logging.info("Number of test dataset labels: {}".format(Counter(test[2])))
 
-    train = augmentors.Rotate(2).augment(*train)
+    # train = augmentors.Rotate(2).augment(*train)
     logging.info("Number of train dataset labels after augmentor: {}".format(Counter(train[2])))
 
     if args.tda:
         classifier = TDAClassifier(cross_validate=args.cross_validate)
-        run_classifier(train, test, args.title, classifier)
+        train_classifier(train, test, args.title, classifier)
     if args.ensemble:
         classifier = EnsembleClassifier()
-        run_classifier(train, test, args.title, classifier)
+        train_classifier(train, test, args.title, classifier)
     if args.feature_engineering:
         classifier = FeatureEngineeringClassifier()
-        run_classifier(train, test, args.title, classifier)
-    if args.visualise:
-        vis = FeatureVisualiser()
-        vis.visualise_features(train[0], train[2])
-        vis.visualise_point_cloud(train[0])
-        vis.visualise_classes(train, test)
-        plt.show()
+        train_classifier(train, test, args.title, classifier)
 
 
 def load_data(file_name):
@@ -52,10 +45,18 @@ def load_data(file_name):
     labels = dataset_npz['labels']
     videos = dataset_npz['videos']
 
+    # mask = ((labels == 'scan') | (labels == 'cash') | (labels == 'moving'))
+    # chunks = chunks[~mask]
+    # frames = frames[~mask]
+    # videos = videos[~mask]
+    # labels = labels[~mask]
+    # mask = (labels == 'lie')
+    # labels[mask] = 'still'
+
     return chunks, frames, labels, videos
 
 
-def run_classifier(train, test, title, classifier):
+def train_classifier(train, test, title, classifier):
     train_chunks, _, train_labels, _ = train
     test_chunks, test_frames, test_labels, test_videos = test
     test_translated_chunks = transforms.TranslateChunks().transform(test_chunks)
@@ -94,8 +95,6 @@ if __name__ == '__main__':
     parser.add_argument('--feature-engineering', action='store_true',
                         help='Runs a classifier by using feature engineering.')
 
-    parser.add_argument('--visualise', action='store_true',
-                        help='Specify if you wish to only visualise the classes in the dataset.')
     parser.add_argument('--title', type=str, default='classifier',
                         help=('Title and file name for confusion matrix plot '
                               'as well as the name of the .pkl classifier file.'))
