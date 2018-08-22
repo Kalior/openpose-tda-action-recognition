@@ -259,7 +259,7 @@ class Labelling:
         return chunks, frames, labels
 
     def write_labels(self, chunks, chunk_frames, chunk_labels, track_indicies, labels_file):
-        """Writes a set of labels to a json file, for later reproducability.
+        """Writes a set of labels to a json file, for later reproducibility.
 
         Parameters
         ----------

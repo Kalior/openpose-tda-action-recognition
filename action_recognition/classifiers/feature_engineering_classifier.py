@@ -1,13 +1,11 @@
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.svm import SVC
-from sklearn.ensemble import VotingClassifier
 from sklearn.preprocessing import RobustScaler
 
 import sklearn_tda as tda
 import numpy as np
 
-from .tda_classifier import TDAClassifier
 from ..transforms import TranslateChunks, SmoothChunks, FlattenTo3D, Persistence, \
     ExtractKeypoints, InterpolateKeypoints
 from ..features import AverageSpeed, AngleChangeSpeed, AmountOfMovement, KeypointDistance
