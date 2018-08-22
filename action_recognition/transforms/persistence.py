@@ -40,7 +40,7 @@ class Persistence(BaseEstimator, TransformerMixin):
         self.complex = complex_
         self.possible_complex_values = ['rips', 'alpha', 'tangential', 'cubical']
 
-    def fit(self, X, y, **fit_params):
+    def fit(self, X, y=None, **fit_params):
         """Fits a scaler to the data.
 
         Parameters
@@ -167,7 +167,7 @@ class Persistence(BaseEstimator, TransformerMixin):
         diag = simplex_tree.persistence()
         return diag
 
-    def save_persistences(self, out_dir):
+    def save_persistences(self, labels, out_dir):
         """Saves the persistence diagrams to file.
 
         Requires persistence to be called first.
@@ -180,14 +180,13 @@ class Persistence(BaseEstimator, TransformerMixin):
         for i, diag in enumerate(self.persistences):
             fig = gd.plot_persistence_diagram(diag)
 
-            label = self.labels[i]
-            plt.title(label)
+            plt.title(labels[i])
 
             file_path = os.path.join(out_dir, 'persistence-{}.png'.format(i))
             plt.savefig(file_path, bbox_inches='tight')
             plt.close()
 
-    def save_betti_curves(self, out_dir):
+    def save_betti_curves(self, labels, out_dir):
         """Saves the betti curves of the calculate persistences to file.
 
         Requires persistence to be called first.
@@ -200,8 +199,7 @@ class Persistence(BaseEstimator, TransformerMixin):
         for i, diag in enumerate(self.persistences):
             tda_diag_df = self._construct_dataframe(diag)
 
-            label = self.labels[i]
-            plt.title(label)
+            plt.title(labels[i])
 
             for dim in range(3):
                 self._betti_curve(tda_diag_df, dim)

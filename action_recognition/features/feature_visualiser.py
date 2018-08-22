@@ -30,26 +30,51 @@ class FeatureVisualiser:
         chunks : array-like, shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
             The training data for classification.
         """
-        arm_keypoints = [
-            COCOKeypoints.RElbow.value,
-            COCOKeypoints.RWrist.value,
-            COCOKeypoints.LElbow.value,
-            COCOKeypoints.LWrist.value,
-            COCOKeypoints.LKnee.value,
-            COCOKeypoints.LAnkle.value,
-            COCOKeypoints.RKnee.value,
-            COCOKeypoints.RAnkle.value
-        ]
-        arm_connections = [(0, 1), (2, 3), (4, 5), (6, 7)]
+        arm_keypoints = [k.value for k in [
+            COCOKeypoints.Neck,
+            COCOKeypoints.RWrist,
+            COCOKeypoints.LWrist,
+            COCOKeypoints.RAnkle,
+            COCOKeypoints.LAnkle,
+        ]]
+        arm_connections = [(0, 1), (0, 2), (1, 3), (2, 4)]  # , (0, 4), (4, 5), (5, 3)]
         pipe = Pipeline([
-            ("1", transforms.TranslateChunks()),
-            ("2", transforms.ExtractKeypoints(arm_keypoints)),
+            ("1", transforms.ExtractKeypoints(arm_keypoints)),
             ("3", transforms.SmoothChunks()),
-            ("4", transforms.InterpolateKeypoints(arm_connections)),
+            # ("4", transforms.InterpolateKeypoints(arm_connections, 1)),
+            ("2", transforms.TranslateChunks()),
+            # ("6", transforms.Speed()),
             ("5", transforms.FlattenTo3D()),
         ])
         chunks = pipe.fit_transform(chunks)
         transforms.Persistence().visualise_point_clouds(chunks, 10)
+
+    def save_persistence_graphs(self, chunks, labels, out_dir):
+        """Saves the persistence graphs corresponding to the chunks to out_dir.
+
+        Parameters
+        ----------
+        chunks : array-like, shape = [n_chunks, frames_per_chunk, n_keypoints, 3]
+            The training data for classification.
+        """
+        arm_keypoints = [k.value for k in [
+            COCOKeypoints.Neck,
+            COCOKeypoints.RWrist,
+            COCOKeypoints.LWrist,
+            COCOKeypoints.RAnkle,
+            COCOKeypoints.LAnkle,
+        ]]
+        pipe = Pipeline([
+            ("1", transforms.ExtractKeypoints(arm_keypoints)),
+            ("2", transforms.SmoothChunks()),
+            ("3", transforms.TranslateChunks()),
+            ("4", transforms.FlattenTo3D()),
+        ])
+        chunks = pipe.fit_transform(chunks)
+        persistence = transforms.Persistence()
+        _ = persistence.fit_transform(chunks)
+        persistence.save_persistences(labels, out_dir)
+        persistence.save_betti_curves(labels, out_dir)
 
     def visualise_features(self, chunks, labels):
         """Plots all of the features from this package, divided by label.
