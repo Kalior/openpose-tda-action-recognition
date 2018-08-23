@@ -34,6 +34,7 @@ def main(args):
         #  Only predict every 5:th frame.  Need to figure out a way to
         # be more systematical about when to predict and which chunks.
         if current_frame % 5 != 0 or len(tracks) <= 0:
+            write_predictions(valid_predictions, img)
             continue
 
         logging.debug("Number of tracks: {}".format(len(tracks)))
@@ -58,7 +59,8 @@ def main(args):
 
         predict_people_time = time() - predict_people_start
 
-        write_predictions(valid_predictions, args.video, tmp_video_file, args.out_directory, img)
+        write_predictions(valid_predictions, img)
+        save_predictions(valid_predictions, args.video, tmp_video_file, args.out_directory)
 
         logging.debug("Predict time: {:.3f}, Track time: {:.3f}".format(
             predict_people_time, track_people_time))
@@ -87,9 +89,13 @@ def predict_per_track(track, classifier):
         return None, None, [0] * len(classifier.classes_)
 
 
-def write_predictions(valid_predictions, video_name, video, out_directory, img):
-    for i, (label, probability, position, chunk, frames) in enumerate(valid_predictions):
+def write_predictions(valid_predictions, img):
+    for label, probability, position, chunk, frames in valid_predictions:
         TrackVisualiser().draw_text(img, "{}: {:.3f}".format(label, probability), position)
+
+
+def save_predictions(valid_predictions, video_name, video, out_directory):
+    for i, (label, probability, position, chunk, frames) in enumerate(valid_predictions):
         write_chunk_to_file(video_name, video, frames, chunk, label, out_directory, i)
 
 
