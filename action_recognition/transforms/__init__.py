@@ -16,3 +16,4 @@ from .speed import Speed
 from .extract_keypoints import ExtractKeypoints
 from .interpolate_keypoints import InterpolateKeypoints
 from .rotate_point_cloud import RotatePointCloud
+from .concatenate_point_clouds import ConcatenatePointClouds

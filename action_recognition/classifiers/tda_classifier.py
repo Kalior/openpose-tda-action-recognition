@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 import sklearn
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import RobustScaler, StandardScaler
@@ -114,9 +114,13 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
         pipe = Pipeline([
             ("Extract", transforms.ExtractKeypoints(self.selected_keypoints)),
             ("Smoothing", transforms.SmoothChunks()),
-            ("Translate", transforms.TranslateChunks()),
+            ("FeatureUnion", FeatureUnion([
+                ("Speed", transforms.Speed()),
+                ("Translate", transforms.TranslateChunks()),
+            ])),
             ("PositionCloud", transforms.FlattenTo3D()),
-            ("Persistence", transforms.Persistence(max_alpha_square=1, complex_='alpha')),
+            ("Concatenate", transforms.ConcatenatePointClouds(2)),
+            ("Persistence", transforms.Persistence(max_alpha_square=0.5, complex_='rips')),
             ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
             ("Prominent", tda.ProminentPoints()),
             ("TDA", tda.SlicedWasserstein(bandwidth=0.6, num_directions=20)),

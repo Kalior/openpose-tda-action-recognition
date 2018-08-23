@@ -4,7 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import logging
 
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.preprocessing import RobustScaler
 
 from ..util import COCOKeypoints, coco_connections
@@ -41,10 +41,15 @@ class FeatureVisualiser:
         pipe = Pipeline([
             ("Extract", transforms.ExtractKeypoints(selected_keypoints)),
             ("Smooth", transforms.SmoothChunks()),
-            ("Translate", transforms.TranslateChunks()),
+            ("FeatureUnion",  FeatureUnion([
+                ("Speed",   transforms.Speed()),
+                ("Translate", transforms.TranslateChunks()),
+            ])),
             ("PositionCloud", transforms.FlattenTo3D()),
+            ("Concatenate", transforms.ConcatenatePointClouds(2))
         ])
         chunks = pipe.fit_transform(chunks)
+
         transforms.Persistence().visualise_point_clouds(chunks, 10)
 
     def save_persistence_graphs(self, chunks, labels, out_dir):
