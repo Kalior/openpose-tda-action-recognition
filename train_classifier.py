@@ -15,9 +15,9 @@ from action_recognition import augmentors
 
 
 def main(args):
-    extension_free = os.path.splitext(args.dataset)[0]
-    train_name = extension_free + '-train.npz'
-    test_name = extension_free + '-test.npz'
+    name, extension = os.path.splitext(args.dataset)
+    train_name = name + '-train.npz'
+    test_name = name + '-test.npz'
     train = load_data(train_name)
     test = load_data(test_name)
 
@@ -44,14 +44,6 @@ def load_data(file_name):
     frames = dataset_npz['frames']
     labels = dataset_npz['labels']
     videos = dataset_npz['videos']
-
-    # mask = ((labels == 'scan') | (labels == 'cash') | (labels == 'moving'))
-    # chunks = chunks[~mask]
-    # frames = frames[~mask]
-    # videos = videos[~mask]
-    # labels = labels[~mask]
-    # mask = (labels == 'lie')
-    # labels[mask] = 'still'
 
     return chunks, frames, labels, videos
 

@@ -75,7 +75,6 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             model = self._pre_validated_pipeline()
             self.model = model.fit(X, y)
 
-        # logging.info("Train accuracy = {}".format(self.model.score(X, y)))
         self.classes_ = self.model.classes_
         return self
 
@@ -165,67 +164,10 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
 
         params = [
             {
-                "Persistence__max_edge_length": [0.5, 0.9],
-                "Persistence__complex_": ['rips'],
-                "Extract__selected_keypoints": [self.selected_keypoints],
-                "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate__connect_keypoints": [self.keypoint_connections],
-            },
-            {
-                "Persistence__max_edge_length": [0.5, 0.9],
-                "Persistence__complex_": ['rips'],
-                "Extract__selected_keypoints": [self.all_keypoints],
-                "Interpolate__connect_keypoints": [no_connections, limb_connections, coco_connections],
-                "Interpolate__number_of_points": [2, 3, 4],
-            },
-            {
-                "Persistence__max_edge_length": [0.5, 0.9],
-                "Persistence__complex_": ['rips'],
-                "Extract__selected_keypoints": [leg_keypoints],
-                "Interpolate__connect_keypoints": [no_connections, leg_connections],
-                "Interpolate__number_of_points": [2, 3, 4],
-            },
-            {
-                "Persistence__max_edge_length": [0.5, 0.9],
-                "Persistence__complex_": ['rips'],
-                "Extract__selected_keypoints": [leg_and_arm_keypoints],
-                "Interpolate__connect_keypoints": [no_connections, leg_and_arm_connections],
-                "Interpolate__number_of_points": [2, 3, 4],
-            },
-            {
-                "Persistence__max_alpha_square": [0.9],
-                "Persistence__complex_": ['alpha'],
-                "Extract__selected_keypoints": [self.all_keypoints],
-                "Interpolate__connect_keypoints": [no_connections, limb_connections, coco_connections],
-                "Interpolate__number_of_points": [2, 3, 4],
-            },
-            {
-                "Persistence__max_alpha_square": [0.9],
+                "Persistence__max_alpha_square": [0.5, 0.9, 1.5],
                 "Persistence__complex_": ['alpha'],
                 "Extract__selected_keypoints": [self.selected_keypoints],
-                "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate__connect_keypoints": [no_connections, self.keypoint_connections]
             },
-            {
-                "Persistence__max_alpha_square": [0.9],
-                "Persistence__complex_": ['alpha'],
-                "Extract__selected_keypoints": [leg_keypoints],
-                "Interpolate__connect_keypoints": [no_connections, leg_connections],
-                "Interpolate__number_of_points": [2, 3, 4],
-            },
-            {
-                "Persistence__max_alpha_square": [0.9],
-                "Persistence__complex_": ['alpha'],
-                "Extract__selected_keypoints": [leg_and_arm_keypoints],
-                "Interpolate__connect_keypoints": [no_connections, leg_and_arm_connections],
-                "Interpolate__number_of_points": [2, 3, 4],
-            },
-            # {
-            #     "Smoothing": [SmoothChunks()],
-            #     "Interpolate": [None],
-            #     "Extract__selected_keypoints": [self.all_keypoints],
-            #     "Interpolate__connect_keypoints": [coco_connections],
-            # }
         ]
 
-        return GridSearchCV(pipe, params, n_jobs=-1)
+        return GridSearchCV(pipe, params, n_jobs=1)

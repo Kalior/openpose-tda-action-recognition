@@ -70,7 +70,8 @@ def run_mapper(test, train):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='TDA analysis of the tracks.')
+    parser = argparse.ArgumentParser(
+        description='Run the mapper algorithm on the dataset.  Can help visualise the data.')
     parser.add_argument('--dataset', type=str, help='The path to the dataset')
     parser.add_argument('--mapper', action='store_true',
                         help='Run the mapper algorithm on the data')

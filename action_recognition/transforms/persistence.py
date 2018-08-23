@@ -198,10 +198,9 @@ class Persistence(BaseEstimator, TransformerMixin):
         for i, diag in enumerate(self.persistences):
             tda_diag_df = self._construct_dataframe(diag)
 
-            plt.title(labels[i])
-
             for dim in range(3):
                 self._betti_curve(tda_diag_df, dim)
+                plt.title(labels[i])
 
                 file_path = os.path.join(out_dir, 'betti-curve-{}-{}.png'.format(i, dim))
                 plt.savefig(file_path, bbox_inches='tight')
@@ -219,13 +218,13 @@ class Persistence(BaseEstimator, TransformerMixin):
     def _betti_curve(self, tda_diag_df, dim):
         betti_points = 100
 
-        betti_curve_0 = []
+        betti_curve = []
         min_birth = tda_diag_df.loc[tda_diag_df.Dimension == dim].Birth.min()
         max_death = tda_diag_df.loc[tda_diag_df.Dimension == dim].Death.max()
         betti_range = np.linspace(min_birth, max_death, betti_points)
         for death in betti_range:
             nb_points_alive = tda_diag_df.loc[
                 (tda_diag_df.Dimension == dim) & (tda_diag_df.Death >= death)].shape[0]
-            betti_curve_0.append([death, nb_points_alive])
-        betti_curve_0 = np.array(betti_curve_0)
-        plt.plot(betti_curve_0[:, 0], betti_curve_0[:, 1])
+            betti_curve.append([death, nb_points_alive])
+        betti_curve = np.array(betti_curve)
+        plt.plot(betti_curve[:, 0], betti_curve[:, 1])

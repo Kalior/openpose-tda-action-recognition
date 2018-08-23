@@ -86,7 +86,7 @@ class FeatureVisualiser:
         labels : array-like, shape = [n_chunks, 1]
             The training labels.
         """
-        features = classifiers.FeatureEngineeringClassifier(True)
+        features = classifiers.FeatureEngineeringClassifier(False)
 
         pipe = features._feature_engineering_union()
         self._plot_feature_per_class(chunks, pipe, labels, 'Combined features')

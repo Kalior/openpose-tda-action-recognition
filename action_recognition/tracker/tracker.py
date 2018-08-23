@@ -99,9 +99,8 @@ class Tracker:
             visualisation_time = time() - visualisation_start_time
 
             if yielding and current_frame > 10:
-                # Only yield the relevant tracks, and at most the latest
-                # 40 frames to avoid copying to much data here.
-                tracks = [track.copy(-40)
+                # Only yield the recently updated tracks.
+                tracks = [track
                           for track in self.tracks
                           if track.is_relevant(current_frame)]
                 yield tracks, image_with_keypoints, current_frame

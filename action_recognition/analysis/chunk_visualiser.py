@@ -182,8 +182,7 @@ class ChunkVisualiser:
         visualiser = TrackVisualiser()
 
         for i in range(len(chunk)):
-            translated_image = self._draw_translated_track(
-                translated_track, i, frames, visualiser)
+            translated_image = self._draw_translated_track(translated_track, i, frames, visualiser)
             translated_image = cv2.resize(translated_image, (frame_width, frame_height))
             writer.write(translated_image)
 
@@ -251,5 +250,5 @@ class ChunkVisualiser:
         cropped_image = original_image[
             start_x:(start_x + crop_size), start_y:(start_y + crop_size)]
         visualiser.draw_frame_number(cropped_image, frame)
-        visualiser.draw_text(cropped_image, label, position=(20, 450), color=(255, 255, 0))
+        visualiser.draw_text(cropped_image, label, position=(20, 450))
         return cropped_image
