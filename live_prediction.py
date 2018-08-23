@@ -10,6 +10,7 @@ from shutil import copyfile
 from action_recognition.tracker import Tracker, TrackVisualiser
 from action_recognition.detector import CaffeOpenpose
 from action_recognition.analysis import PostProcessor, ChunkVisualiser
+from action_recognition import transforms
 
 
 def main(args):
@@ -30,10 +31,10 @@ def main(args):
 
     track_people_start = time()
     valid_predictions = []
-    for tracks, img, current_frame in tracker.video(args.video, True, True):
+    for tracks, img, current_frame in tracker.video(args.video, False, True):
         #  Only predict every 5:th frame.  Need to figure out a way to
         # be more systematical about when to predict and which chunks.
-        if current_frame % 5 != 0 or len(tracks) <= 0:
+        if current_frame % 20 != 0 or len(tracks) <= 0:
             write_predictions(valid_predictions, img)
             continue
 
@@ -44,11 +45,10 @@ def main(args):
         # too much data here, and we've already predicted for the rest
         processor.tracks = [copy.deepcopy(t.copy(-50)) for t in tracks]
         processor.post_process_tracks()
-        tracks = processor.tracks
 
         predict_people_start = time()
 
-        predictions = [predict_per_track(t, classifier) for t in tracks]
+        predictions = [predict_per_track(t, classifier) for t in processor.tracks]
 
         logging.info("Predictions: " + ", ".join(
             ["{}: {:.3f}".format(*get_best_pred(prediction, classes))
@@ -58,6 +58,10 @@ def main(args):
             predictions, args.probability_threshold, classes)
 
         predict_people_time = time() - predict_people_start
+
+        not_stopped = [predict_no_stop(track) for track in [t.copy(-100) for t in tracks]]
+        [valid_predictions.append(t) for not_stopped, t in not_stopped if not_stopped]
+        print(not_stopped)
 
         write_predictions(valid_predictions, img)
         save_predictions(valid_predictions, args.video, tmp_video_file, args.out_directory)
@@ -88,12 +92,12 @@ def predict_per_track(track, classifier):
 
 
 def write_predictions(valid_predictions, img):
-    for label, probability, position, chunk, frames in valid_predictions:
+    for label, probability, position, _, _ in valid_predictions:
         TrackVisualiser().draw_text(img, "{}: {:.3f}".format(label, probability), position)
 
 
 def save_predictions(valid_predictions, video_name, video, out_directory):
-    for i, (label, probability, position, chunk, frames) in enumerate(valid_predictions):
+    for i, (label, _, _, chunk, frames) in enumerate(valid_predictions):
         write_chunk_to_file(video_name, video, frames, chunk, label, out_directory, i)
 
 
@@ -119,9 +123,24 @@ def filter_bad_predictions(zipped, threshold, classes):
 def write_chunk_to_file(video_name, video, frames, chunk, label, out_dir, i):
     _, video_name = os.path.split(video_name)
     video_name, _ = os.path.splitext(video_name)
-    file_name = "{}-{}-{}.avi".format(video_name, frames[-1], i)
+    file_name = "{}-{}-{}-{}.avi".format(video_name, frames[-1], i, label)
     out_file = os.path.join(out_dir, file_name)
     ChunkVisualiser().chunk_to_video_scene(video, chunk, out_file, frames, label)
+
+
+def predict_no_stop(track, stop_threshold=5):
+    if len(track) < 50:
+        return False, ()
+
+    chunks, chunk_frames = track.divide_into_chunks(len(track), 0)
+    keypoint_speed = transforms.Speed().fit_transform(chunks)
+    frame_speed = np.mean(keypoint_speed[:, :, :2], axis=1)
+    frame_speed = np.linalg.norm(frame_speed, axis=1)
+
+    position = tuple(chunks[0, -1, 1, :2].astype(np.int))
+    prediction_tuple = ("Not stopped", 1, position, chunks[0], chunk_frames[0])
+
+    return np.all(frame_speed > stop_threshold), prediction_tuple
 
 
 if __name__ == '__main__':
