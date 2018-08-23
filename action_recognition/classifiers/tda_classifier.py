@@ -14,8 +14,7 @@ import itertools
 import logging
 
 from ..util import COCOKeypoints, coco_connections
-from ..transforms import Persistence, TranslateChunks, SmoothChunks, FlattenTo3D, Speed, \
-    ExtractKeypoints, InterpolateKeypoints, RotatePointCloud
+from .. import transforms
 
 
 class TDAClassifier(BaseEstimator, ClassifierMixin):
@@ -114,15 +113,15 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
 
     def _pre_validated_pipeline(self):
         pipe = Pipeline([
-            ("Extract",     ExtractKeypoints(self.selected_keypoints)),
-            ("Smoothing",   SmoothChunks()),
-            ("Translate", TranslateChunks()),
-            ("PositionCloud", FlattenTo3D()),
-            ("Persistence", Persistence(max_alpha_square=1, complex_='alpha')),
-            ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
-            ("Prominent",   tda.ProminentPoints()),
-            ("TDA",         tda.SlicedWasserstein(bandwidth=0.6, num_directions=20)),
-            ("Estimator",   SVC(kernel='precomputed', probability=True))
+            ("Extract", transforms.ExtractKeypoints(self.selected_keypoints)),
+            ("Smoothing", transforms.SmoothChunks()),
+            ("Translate", transforms.TranslateChunks()),
+            ("PositionCloud", transforms.FlattenTo3D()),
+            ("Persistence", transforms.Persistence(max_alpha_square=1, complex_='alpha')),
+            ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
+            ("Prominent", tda.ProminentPoints()),
+            ("TDA", tda.SlicedWasserstein(bandwidth=0.6, num_directions=20)),
+            ("Estimator", SVC(kernel='precomputed', probability=True))
         ])
 
         return pipe
