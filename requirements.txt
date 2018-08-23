@@ -2,7 +2,7 @@ numpy==1.14.5
 opencv-python==3.4.1.15
 scipy==1.1.0
 kmapper
-sklearn
+scikit-learn==0.19.1
 pandas
 matplotlib
 seaborn==0.9.0
