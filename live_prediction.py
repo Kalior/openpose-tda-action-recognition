@@ -14,7 +14,7 @@ from action_recognition.analysis import PostProcessor, ChunkVisualiser
 
 def main(args):
     _, video_ending = os.path.splitext(args.video)
-    # Copy video file so we can create multiple different videos
+    #  Copy video file so we can create multiple different videos
     # with it as base simultaneously.
     tmp_video_file = "output/tmp" + video_ending
     copyfile(args.video, tmp_video_file)
@@ -24,41 +24,69 @@ def main(args):
     tracker = Tracker(detector, out_dir=args.out_directory)
 
     processor = PostProcessor()
-    vis = TrackVisualiser()
 
     classes = classifier.classes_
     logging.info("Classes: {}".format(classes))
 
     track_people_start = time()
+    valid_predictions = []
     for tracks, img, current_frame in tracker.video(args.video, True, True):
+        #  Only predict every 5:th frame.  Need to figure out a way to
+        # be more systematical about when to predict and which chunks.
+        if current_frame % 5 != 0 or len(tracks) <= 0:
+            continue
+
         logging.debug("Number of tracks: {}".format(len(tracks)))
         track_people_time = time() - track_people_start
 
-        processor.tracks = [copy.deepcopy(t) for t in tracks]
-
+        #  Extract the latest frames, as we don't want to copy
+        # too much data here, and we've already predicted for the rest
+        processor.tracks = [copy.deepcopy(t.copy(-50)) for t in tracks]
         processor.post_process_tracks()
-        chunks, chunk_frames, _ = processor.chunk_tracks(30, 0, 30)
-
-        logging.debug("Number of chunks: {}".format(len(chunks)))
+        tracks = process.tracks
 
         predict_people_start = time()
-        if len(chunks) > 0:
-            predictions = classifier.predict_proba(chunks)
 
-            logging.info("Predictions: " + ", ".join(
-                ["{}: {:.3f}".format(*get_best_pred(prediction, classes))
-                 for prediction in predictions]))
+        predictions = [predict_per_track(t, classifier) for t in tracks]
 
-            zipped = zip(chunks, chunk_frames, predictions)
+        logging.info("Predictions: " + ", ".join(
+            ["{}: {:.3f}".format(*get_best_pred(prediction, classes))
+             for _, _, prediction in predictions]))
 
-            add_predictions_to_img(
-                zipped, args.probability_threshold,
-                classes, img, args.video, tmp_video_file, args.out_directory)
+        valid_predictions = filter_bad_predictions(
+            predictions, args.probability_threshold, classes)
+
         predict_people_time = time() - predict_people_start
+
+        write_predictions(valid_predictions, args.video, tmp_video_file, args.out_directory)
 
         logging.debug("Predict time: {:.3f}, Track time: {:.3f}".format(
             predict_people_time, track_people_time))
         track_people_start = time()
+
+
+def predict_per_track(track, classifier):
+    all_chunks = np.empty(0, dtype=object)
+    all_frames = np.empty(0, dtype=object)
+    divisions = [(50, 0), (30, 10), (25, 0), (20, 5)]
+    for frames_per_chunk, overlap in divisions:
+        chunks, frames = track.divide_into_chunks(frames_per_chunk, overlap)
+        all_chunks = np.append(all_chunks, chunks, axis=0)
+        all_frames = np.append(all_frames, frames, axis=0)
+
+    if len(all_chunks) > 0:
+        predictions = classifier.predict_proba(all_chunks)
+        average_prediction = np.mean(predictions, axis=0)
+        print(average_prediction)
+        return all_chunks[0], all_frames[0], average_prediction
+    else:
+        return None, None, [0] * len(classifier.classes_)
+
+
+def write_predictions(valid_predictions, video_name, video, out_directory):
+    for label, probability, position, chunk, frames in valid_predictions:
+        TrackVisualiser().draw_text(img, "{}: {:.3f}".format(label, probability), position)
+        write_chunk_to_file(video_name, video, frames, chunk, label, out_directory)
 
 
 def get_best_pred(prediction, classes):
@@ -68,18 +96,24 @@ def get_best_pred(prediction, classes):
     return label, probability
 
 
-def add_predictions_to_img(zipped, threshold, classes, img, video, video_copy, out_dir):
+def filter_bad_predictions(zipped, threshold, classes):
+    valid_predictions = []
     for i, (chunk, frames, prediction) in enumerate(zipped):
         label, probability = get_best_pred(prediction, classes)
         if probability > threshold:
             position = tuple(chunk[-1, 0, :2].astype(np.int))
-            TrackVisualiser().draw_text(img, "{}: {:.3f}".format(label, probability), position)
+            predicion_tuple = (label, probability, position, chunk, frames)
+            valid_predictions.append(prediction_tuple)
 
-            _, video_name = os.path.split(video)
-            video_name, _ = os.path.splitext(video_name)
-            file_name = "{}-{}-{}.avi".format(video_name, frames[-1], i)
-            out_file = os.path.join(out_dir, file_name)
-            ChunkVisualiser().chunk_to_video_scene(video_copy, chunk, out_file, frames, label)
+    return valid_predictions
+
+
+def write_chunk_to_file(video_name, video, frames, chunk, label, out_dir):
+    _, video_name = os.path.split(video_name)
+    video_name, _ = os.path.splitext(video_name)
+    file_name = "{}-{}-{}.avi".format(video_name, frames[-1], i)
+    out_file = os.path.join(out_dir, file_name)
+    ChunkVisualiser().chunk_to_video_scene(video, chunk, out_file, frames, label)
 
 
 if __name__ == '__main__':
