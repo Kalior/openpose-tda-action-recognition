@@ -81,9 +81,7 @@ def predict_per_track(track, classifier):
 
     if len(all_chunks) > 0:
         predictions = classifier.predict_proba(all_chunks)
-        average_prediction = np.mean(predictions, axis=0)
-        print(predictions)
-        print(average_prediction)
+        average_prediction = np.amax(predictions, axis=0)
         return all_chunks[0], all_frames[0], average_prediction
     else:
         return None, None, [0] * len(classifier.classes_)
