@@ -65,3 +65,18 @@ class EnsembleClassifier(BaseEstimator, ClassifierMixin):
 
         """
         return self.classifier.predict(X)
+
+    def predict_proba(self, X):
+        """Predicts using the pipeline.
+
+        Parameters
+        ----------
+        X : iterable
+            Data to predict labels for.
+
+        Returns
+        -------
+        y_proba : array-like, shape = [n_samples, n_classes]
+
+        """
+        return self.model.predict_proba(X)
