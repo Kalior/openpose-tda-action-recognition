@@ -41,7 +41,7 @@ def label_recording(video_start_time):
         if Labelling().keypress_valid(keypress):
             start_time = time() - video_start_time
 
-            input('Press any key to stop')
+            input('Press enter to stop')
             end_time = time() - video_start_time
             label = Labelling().parse_keypress_to_label(keypress)
             timestamp = {
