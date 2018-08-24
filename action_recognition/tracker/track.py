@@ -82,8 +82,8 @@ class Track:
         speed = distance / (len(self.track) - start_index)
         return speed
 
-    def is_relevant(self, current_frame):
-        """Paths are relevant if they are updated with the last 10 frames.
+    def recently_updated(self, current_frame):
+        """Checks if the path is updated in the last 10 frames.
 
         Parameters
         ----------

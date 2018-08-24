@@ -44,14 +44,6 @@ class Tracker:
             os.makedirs(out_dir)
 
     def video(self, file, draw_frames):
-        #  Just loop through the generator as we're only interested
-        # in the output at the end.
-        for _ in self.video_generator(file, draw_frames):
-            continue
-
-        self._save_tracks(file)
-
-    def video_generator(self, file, draw_frames):
         """Tracks people in the video given in file.
 
         Produces a video with the identified people overlayed on the
@@ -66,13 +58,33 @@ class Tracker:
             Specifies if the intermediate frames from the original video
             overlayed with the identified keypoints should be produced
             during computation time or not.
-        yielding : boolean, optional, default=False
-            Specifies if intermediate chunks should be yielded, for instance
-            for postprocessing.
+
+        """
+        #  Just loop through the generator as we're only interested
+        # in the output at the end.
+        for _ in self.video_generator(file, draw_frames):
+            continue
+
+        self._save_tracks(file)
+
+    def video_generator(self, file, draw_frames):
+        """Tracks people in the video in file, and yields ever frame.
+
+        After each frame, yields the current tracks.  The yielded tracks
+        can e.g. be post-processed and actions can be predicted on them.
+
+        Parameters
+        ----------
+        file : str
+            path to the video for which the tracks should be produced
+        draw_frames : boolean
+            Specifies if the intermediate frames from the original video
+            overlayed with the identified keypoints should be produced
+            during computation time or not.
 
         """
         capture = cv2.VideoCapture(file)
-        self.speed_change_threshold = 10  # int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)) / 10
+        self.speed_change_threshold = 10
 
         writer = self._create_writer(file, capture)
 
@@ -81,7 +93,7 @@ class Tracker:
         while success:
             track_endpoints = [track.get_last_person()
                                for track in self.tracks
-                               if track.is_relevant(current_frame) and
+                               if track.recently_updated(current_frame) and
                                track.get_last_person().is_relevant()]
 
             openpose_start_time = time()
@@ -108,9 +120,8 @@ class Tracker:
 
             if current_frame > 10:
                 # Only yield the recently updated tracks.
-                tracks = [track
-                          for track in self.tracks
-                          if track.is_relevant(current_frame)]
+                tracks = [track for track in self.tracks
+                          if track.recently_updated(current_frame)]
                 yield tracks, image_with_keypoints, current_frame
 
             if draw_frames:
