@@ -157,7 +157,7 @@ class Labelling:
         frames : numpy.array of the frames for the labelled chunks
         labels : numpy.array of the labels for each chunk
         indicies : numpy.array of the index of the track for every chunk.
-            needed for reproducability.
+            needed for reproducibility.
         """
         keypoints = tracks[0][0].keypoints
         chunk_shape = (frames_per_chunk, *keypoints.shape)
@@ -201,7 +201,7 @@ class Labelling:
 
             self.visualiser.draw_video_with_tracks([track], video, end_frame, start_frame)
 
-            ok = input("Labelling as {}, ok? (y/n/s)".format(timestamp['label']))
+            ok = input("Labelling as {}, ok? (yes/(n)o/(s)kip forward)".format(timestamp['label']))
             if ok == 'y' or ok == '':
                 chunk, chunk_frames = track.chunk_from_frame(start_frame, frames_per_chunk)
 
@@ -321,7 +321,7 @@ class Labelling:
         frames : numpy.array of the frames for the labelled chunks
         labels : numpy.array of the labels for each chunk
         indicies : numpy.array of the index of the track for every chunk.
-            needed for reproducability.
+            needed for reproducibility.
         """
         capture = cv2.VideoCapture(video)
         fps = capture.get(cv2.CAP_PROP_FPS)

@@ -31,10 +31,11 @@ def main(args):
         classifier = TDAClassifier(cross_validate=args.cross_validate)
         train_classifier(train, test, args.title, classifier)
     if args.ensemble:
-        classifier = EnsembleClassifier()
+        classifier = EnsembleClassifier(use_tda_vectorisations=args.use_tda_vectorisations)
         train_classifier(train, test, args.title, classifier)
     if args.feature_engineering:
-        classifier = FeatureEngineeringClassifier()
+        classifier = FeatureEngineeringClassifier(
+            use_tda_vectorisations=args.use_tda_vectorisations)
         train_classifier(train, test, args.title, classifier)
 
 
@@ -92,6 +93,12 @@ if __name__ == '__main__':
                               'as well as the name of the .pkl classifier file.'))
     parser.add_argument('--cross-validate', '-cv', action='store_true',
                         help='Specify for cross-validation of tda pipeline.')
+
+    parser.add_argument('--use-tda-vectorisations', action='store_true',
+                        help=('Specify for if the feature engineering and ensemble classifiers '
+                              'should make use of the tda vectorisations from sklearn_tda. '
+                              'Note that this will cause the model saving to file to crash '
+                              'since parts of the tda vectorisations are not pickable.'))
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()

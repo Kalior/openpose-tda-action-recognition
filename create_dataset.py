@@ -34,7 +34,7 @@ def main(args):
 
         chunks, frames, labels = process_tracks(
             tracks_file, video, frames_per_chunk, overlap_percentage,
-            seconds_per_chunk, args.filter_moving)
+            seconds_per_chunk)
 
         videos = np.array([video] * len(chunks))
 
@@ -98,7 +98,7 @@ def split_data(chunks, frames, labels, videos):
         (test_chunks, test_frames, test_labels, test_videos)
 
 
-def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percentage, seconds_per_chunk, automatic_moving_filter):
+def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percentage, seconds_per_chunk):
     tracks_npz = np.load(tracks_file)
     np_tracks = tracks_npz['tracks']
     np_frames = tracks_npz['frames']
@@ -139,17 +139,17 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Dataset creation for analysis of tracks.')
+    parser = argparse.ArgumentParser(
+        description='Dataset creation/labelling for action recognition.')
     parser.add_argument('--videos', type=str, nargs='+',
-                        help='The video from which the paths were generated.')
+                        help='The videos/folders from which the paths were generated.')
     parser.add_argument('--tracks-files', type=str, nargs='+',
-                        help='The file with the saved tracks.')
+                        help='The files/folders with the saved tracks.')
     parser.add_argument('--out-file', type=str, default='dataset/dataset.npz',
                         help='The path to the file where the data will be saved')
     parser.add_argument('--append', action='store_true',
-                        help='Specify if the data should be added to the out-file (if it exists) or overwritten.')
-    parser.add_argument('--filter-moving', action='store_true',
-                        help='Specify if you want to automatically filter chunks with large movement.')
+                        help=('Specify if the data should be added to the out-file '
+                              '(if it exists) or overwritten.'))
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()
