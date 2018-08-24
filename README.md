@@ -46,3 +46,6 @@ There are currently four dockerfiles, corresponding to three natural divisions o
 * `Dockerfile`: which installs both openpose (assuming a GPU) as well as the TDA libraries.  This file can do with some cleanup using build stages.
 
 After building the Dockerfiles, there is a script `dev.sh` which runs the container and mounts the source directory as well as the expected locations of the data.  It is provided more out of convenience than anything else and may need some modification depending on your configuration.
+
+## Recording videos
+There is a helper script for producing timestamps for labels while recording videos.  It is called `record_videos.py` and requries a video name, a path to the camera device and a video size.  It prompts the user in multiple steps: First, asks whether to record video or stop recording.  Second, it prompts the user for a label for the timestamp.  These steps are repeated until a quit command is given.

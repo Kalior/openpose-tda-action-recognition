@@ -9,14 +9,29 @@ from ..tracker import TrackVisualiser
 class Labelling:
     """Help class for labelling datasets.
 
-    Contains a dict with the valid actions as well as some
-    helper functions which display chunks to the user and prompts
-    either for a label or for verification of a label.
+    Contains a dict with the valid actions as well as two methods of
+    labelling the data.
+
+    The first (pseudo_automatic_labelling(...)) requires pre-generated timestamps,
+    such as those outputted by `record_videos.py`.  For each such timestamp, it
+    displays the corresponding part of the video at a chunk-by-chunk basis.
+    For each displayed chunk, it prompts for if the chunk is okay, if it
+    should be skipped altogether, or if the start should be adjusted slightly
+    forwards.  This is the faster approach.
+
+    The second labelling method (manual_labelling(...)) does not rely on
+    any previously determined labels.
+    Instead, it divides the tracks into chunks and prompts for a label for each
+    such chunk.  The suggested chunks can have a user-specified overlap to allow
+    the important part of the action to be captured.
 
     """
 
     def __init__(self):
         self.visualiser = TrackVisualiser()
+        #  The allowed actions, the first array-entry is the full name of the label,
+        # and the second array-entry is a help text to display while prompting
+        # for user action, with the corresponding keypress marked by a capital letter.
         self.actions = {
             's': ['scan', 'Scan'],
             'c': ['cash', 'Cash'],
