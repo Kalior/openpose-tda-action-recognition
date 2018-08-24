@@ -31,16 +31,16 @@ class Labelling:
         self.visualiser = TrackVisualiser()
         #  The allowed actions, the first array-entry is the full name of the label,
         # and the second array-entry is a help text to display while prompting
-        # for user action, with the corresponding keypress marked by a capital letter.
+        # for user action, with the corresponding keypress marked by parentheses.
         self.actions = {
-            's': ['scan', 'Scan'],
-            'c': ['cash', 'Cash'],
-            't': ['still', 'sTill'],
-            'm': ['moving', 'Moving'],
-            'l': ['lie', 'Lie'],
-            'p': ['shop', 'shoP'],
-            'h': ['shoplift', 'sHoplit'],
-            'o': ['other', 'Other']
+            's': ['scan', '(s)can'],
+            'c': ['cash', '(c)ash'],
+            't': ['still', 's(t)ill'],
+            'm': ['moving', '(m)oving'],
+            'l': ['lie', '(l)ie'],
+            'p': ['shop', 'sho(p)'],
+            'h': ['shoplift', 's(h)oplift'],
+            'o': ['other', '(o)ther']
         }
 
     def keypress_valid(self, keypress):
@@ -76,7 +76,7 @@ class Labelling:
         valid_actions_string : string
             Corresponds to the prompt of valid actions.
         """
-        return "(" + ", ".join([v[1] for v in self.actions.values()]) + ', quit)'
+        return "(" + ", ".join([v[1] for v in self.actions.values()]) + ', (q)uit)'
 
     def parse_keypress_to_label(self, keypress):
         """Parses a character to a label
