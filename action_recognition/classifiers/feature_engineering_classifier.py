@@ -142,10 +142,10 @@ class FeatureEngineeringClassifier(BaseEstimator, ClassifierMixin):
             ("Translate",   TranslateChunks()),
             ("Extract",     ExtractKeypoints(self.selected_keypoints)),
             ("Smoothing",   SmoothChunks()),
-            ("Interpolate", InterpolateKeypoints(self.keypoint_connections)),
             ("Flattening",  FlattenTo3D()),
-            ("Persistence", Persistence()),
+            ("Persistence", Persistence(max_alpha_square=1, complex_='alpha')),
             ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
+            ("Prominent", tda.ProminentPoints()),
             ("Union", FeatureUnion([
                 ("PersistenceImage", persistence_image),
                 ("Landscape", Pipeline([

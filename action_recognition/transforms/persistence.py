@@ -30,9 +30,9 @@ class Persistence(BaseEstimator, TransformerMixin):
 
     def __init__(self,
                  max_edge_length=0.5,
-                 max_alpha_square=0.9,
+                 max_alpha_square=2,
                  intrisic_dim=2,
-                 complex_='rips'):
+                 complex_='alpha'):
         self.persistences = []
         self.max_edge_length = max_edge_length
         self.intrisic_dim = intrisic_dim
@@ -110,9 +110,9 @@ class Persistence(BaseEstimator, TransformerMixin):
             shape = [n_points, n_diags, 2]
 
         """
+
         #   Train the scaler on each individual point in every
         # dataset since the scalers don't accept 3D data.
-
         diags = np.zeros(data.shape[0], dtype=object)
         for i, d in enumerate(data):
             points = self.scaler.transform(d)

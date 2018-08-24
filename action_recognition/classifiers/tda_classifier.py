@@ -116,7 +116,7 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             ("Smoothing", transforms.SmoothChunks()),
             ("Translate", transforms.TranslateChunks()),
             ("PositionCloud", transforms.FlattenTo3D()),
-            ("Persistence", transforms.Persistence(max_alpha_square=1, complex_='alpha')),
+            ("Persistence", transforms.Persistence(max_alpha_square=2, complex_='alpha')),
             ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
             ("Prominent", tda.ProminentPoints()),
             ("TDA", tda.SlicedWasserstein(bandwidth=0.6, num_directions=20)),
