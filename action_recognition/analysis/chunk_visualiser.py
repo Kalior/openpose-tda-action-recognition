@@ -188,9 +188,9 @@ class ChunkVisualiser:
 
         writer.release()
 
-    def _create_writer(self, out_file, fps=10):
-        frame_width = 100
-        frame_height = 100
+    def _create_writer(self, out_file, fps=10, crop_size=100):
+        frame_width = crop_size
+        frame_height = crop_size
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
         writer = cv2.VideoWriter(out_file, fourcc, fps, (frame_width, frame_height))
@@ -229,11 +229,11 @@ class ChunkVisualiser:
 
         capture.set(cv2.CAP_PROP_POS_FRAMES, frames[0])
 
-        track = self._chunk_to_track(chunk, frames)
+        track = self._chunk_to_track(chunk, frames,)
         visualiser = TrackVisualiser()
 
         fps = capture.get(cv2.CAP_PROP_FPS)
-        writer, frame_width, frame_height = self._create_writer(out_file, fps)
+        writer, frame_width, frame_height = self._create_writer(out_file, fps, crop_size)
 
         for i in range(len(chunk)):
             sucess, image = capture.read()
