@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 from action_recognition.analysis import Mapper
 from action_recognition import transforms
+from action_recognition.util import COCOKeypoints
 
 
 def main(args):
@@ -19,15 +20,13 @@ def main(args):
     logging.info("Number of train dataset labels: {}".format(Counter(train[2])))
     logging.info("Number of test dataset labels: {}".format(Counter(test[2])))
 
-    # train = augmentors.Rotate(2).augment(*train)
-    logging.info("Number of train dataset labels after augmentor: {}".format(Counter(train[2])))
-
     run_mapper(train, test)
 
 
 def load_data(file_name):
     dataset_npz = np.load(file_name)
-    chunks = dataset_npz['chunks']
+    # Converts the data into a non-object array if possible
+    chunks = np.array([t for t in dataset_npz['chunks']])
     frames = dataset_npz['frames']
     labels = dataset_npz['labels']
     videos = dataset_npz['videos']
@@ -71,10 +70,9 @@ def run_mapper(test, train):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Run the mapper algorithm on the dataset.  Can help visualise the data.')
+        description=('Run the mapper algorithm on the dataset.  Can help visualise the data. '
+                     'Requires that the data has equal dimensions, i.e. the same number of frames per chunk.'))
     parser.add_argument('--dataset', type=str, help='The path to the dataset')
-    parser.add_argument('--mapper', action='store_true',
-                        help='Run the mapper algorithm on the data')
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()
