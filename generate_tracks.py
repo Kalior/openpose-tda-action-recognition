@@ -47,7 +47,7 @@ if __name__ == '__main__':
                         help='The model path for the caffe implementation.')
     parser.add_argument('--arm-tracking', action='store_true',
                         help='Use for arm/hand specific tracking.')
-    parser.add_argument('--output-directory', type=str, default='output',
+    parser.add_argument('--out-directory', type=str, default='output',
                         help='Root directory to where the annotated video is saved.')
     parser.add_argument('--draw-frames', action='store_true',
                         help='Flag for if the frames with identified frames should be drawn or not.')

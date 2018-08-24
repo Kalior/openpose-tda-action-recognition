@@ -33,7 +33,7 @@ def main(args):
 
     track_people_start = time()
     valid_predictions = []
-    for tracks, img, current_frame in tracker.video(args.video, False, True):
+    for tracks, img, current_frame in tracker.video_generator(args.video, False):
         #  Only predict every 5:th frame.  Need to figure out a way to
         # be more systematical about when to predict and which chunks.
         if current_frame % 20 != 0 or len(tracks) <= 0:
@@ -65,7 +65,7 @@ def main(args):
         [valid_predictions.append(t) for not_stopped, t in not_stopped if not_stopped]
 
         logging.info("Not stopped: " + ", ".join(
-            [i for i, prediction, _ in enumerate(not_stopped) if prediction]))
+            [str(i) for i, (prediction, _) in enumerate(not_stopped) if prediction]))
 
         write_predictions(valid_predictions, img)
         save_predictions(valid_predictions, args.video, tmp_video_file, args.out_directory)

@@ -43,7 +43,15 @@ class Tracker:
         except:
             os.makedirs(out_dir)
 
-    def video(self, file, draw_frames, yielding=False):
+    def video(self, file, draw_frames):
+        #  Just loop through the generator as we're only interested
+        # in the output at the end.
+        for _ in self.video_generator(file, draw_frames):
+            continue
+
+        self._save_tracks(file)
+
+    def video_generator(self, file, draw_frames):
         """Tracks people in the video given in file.
 
         Produces a video with the identified people overlayed on the
@@ -98,7 +106,7 @@ class Tracker:
                 self.tracks, image_with_keypoints, current_frame, self.only_track_arms)
             visualisation_time = time() - visualisation_start_time
 
-            if yielding and current_frame > 10:
+            if current_frame > 10:
                 # Only yield the recently updated tracks.
                 tracks = [track
                           for track in self.tracks
@@ -113,13 +121,11 @@ class Tracker:
             # Write the frame to a video
             writer.write(image_with_keypoints)
 
-            logging.info("OpenPose: {:.5f}, Closest person: {:.5f}, Draw tracks to img: {:.5f}".format(
+            logging.debug("OpenPose: {:.5f}, Closest person: {:.5f}, Draw tracks to img: {:.5f}".format(
                 openpose_time, closest_person_time, visualisation_time))
 
             success, original_image = capture.read()
             current_frame += 1
-
-        self._save_tracks(file)
 
         capture.release()
         writer.release()
