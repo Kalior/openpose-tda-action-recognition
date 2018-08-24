@@ -14,6 +14,8 @@ from action_recognition import transforms
 
 
 def main(args):
+    os.makedirs(args.out_directory, exist_ok=True)
+
     _, video_ending = os.path.splitext(args.video)
     #  Copy video file so we can create multiple different videos
     # with it as base simultaneously.
@@ -61,7 +63,9 @@ def main(args):
 
         not_stopped = [predict_no_stop(track) for track in [t.copy(-100) for t in tracks]]
         [valid_predictions.append(t) for not_stopped, t in not_stopped if not_stopped]
-        print(not_stopped)
+
+        logging.info("Not stopped: " + ", ".join(
+            [i for i, prediction, _ in enumerate(not_stopped) if prediction]))
 
         write_predictions(valid_predictions, img)
         save_predictions(valid_predictions, args.video, tmp_video_file, args.out_directory)
@@ -132,8 +136,8 @@ def predict_no_stop(track, stop_threshold=5):
     if len(track) < 50:
         return False, ()
 
-    chunks, chunk_frames = track.divide_into_chunks(len(track), 0)
-    keypoint_speed = transforms.Speed().fit_transform(chunks)
+    chunks, chunk_frames = track.divide_into_chunks(len(track) - 1, 0)
+    keypoint_speed = transforms.Speed().fit_transform(chunks)[0]
     frame_speed = np.mean(keypoint_speed[:, :, :2], axis=1)
     frame_speed = np.linalg.norm(frame_speed, axis=1)
 
