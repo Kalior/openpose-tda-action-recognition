@@ -66,7 +66,9 @@ def main(args):
         predict_people_time = time() - predict_people_start
 
         not_stopped = [predict_no_stop(track, args.confidence_threshold) for track in tracks]
-        [valid_predictions.append(t) for not_stopped, t in not_stopped if not_stopped]
+        for p, t in not_stopped:
+            if p:
+                valid_predictions.append(t)
 
         if not_stopped:
             logging.info("Not stopped: " + ", ".join(
@@ -108,13 +110,6 @@ def save_predictions(valid_predictions, video_name, video, out_directory):
         write_chunk_to_file(video_name, video, frames, chunk, label, out_directory, i)
 
 
-def get_best_pred(prediction, classes):
-    best_pred_i = np.argmax(prediction)
-    confidence = prediction[best_pred_i]
-    label = classes[best_pred_i]
-    return label, confidence
-
-
 def filter_bad_predictions(predictions, threshold, classes):
     valid_predictions = []
     for chunk, frames, prediction in predictions:
@@ -133,6 +128,13 @@ def save_predictions_to_track(predictions, classes, tracks, current_frame):
         t.add_prediction(label, confidence, current_frame)
 
 
+def get_best_pred(prediction, classes):
+    best_pred_i = np.argmax(prediction)
+    confidence = prediction[best_pred_i]
+    label = classes[best_pred_i]
+    return label, confidence
+
+
 def write_chunk_to_file(video_name, video, frames, chunk, label, out_dir, i):
     _, video_name = os.path.split(video_name)
     video_name, _ = os.path.splitext(video_name)
@@ -149,23 +151,26 @@ def predict_no_stop(track, confidence_threshold, stop_threshold=10):
     classifier_prediction = classifier_predict_no_stop(track, confidence_threshold)
 
     if speed_prediction and classifier_prediction:
-        prediction_tuple = ("Both " + prediction_tuple[0], *prediction_tuple[1:])
+        prediction_tuple = ("both " + prediction_tuple[0], *prediction_tuple[1:])
     elif speed_prediction:
-        prediction_tuple = ("Speed " + prediction_tuple[0], *prediction_tuple[1:])
+        prediction_tuple = ("speed " + prediction_tuple[0], *prediction_tuple[1:])
     elif classifier_prediction:
-        prediction_tuple = ("Classifier " + prediction_tuple[0], *prediction_tuple[1:])
+        prediction_tuple = ("classifier " + prediction_tuple[0], *prediction_tuple[1:])
 
     return speed_prediction or classifier_prediction, prediction_tuple
 
 
 def classifier_predict_no_stop(track, confidence_threshold):
-    if len(track.predictions) == 0:
+    # If there haven't been that many predictions, we can't say anything.
+    if len(track.predictions) < 5:
         return False
 
-    constant_moving = all(prediction['label'] == 'moving' and
-                          prediction['confidence'] > confidence_threshold
-                          for prediction in list(track.predictions.values())[-20:])
-    return constant_moving
+    number_moving = sum(prediction['label'] == 'moving' and
+                        prediction['confidence'] > confidence_threshold
+                        for prediction in list(track.predictions.values())[-20:])
+    #  If the person has been moving for 3 / 4 of the last time,
+    # we can assume they're moving through an area without stopping.
+    return number_moving > len(track.prediction) * (3 / 4)
 
 
 def speed_no_stop_prediction(track, stop_threshold):
@@ -173,22 +178,27 @@ def speed_no_stop_prediction(track, stop_threshold):
     # before that.  Makes the prediction a bit fragile.
     track = track.copy(-200)
     chunks, chunk_frames = track.divide_into_chunks(len(track) - 1, 0)
+
+    position = tuple(chunks[0, -1, 1, :2].astype(np.int))
+    prediction_tuple = ("not stopped", 1.0, position, chunks[0], chunk_frames[0])
+
     keypoint_speed = transforms.Speed().fit_transform(chunks)[0]
     frame_speed = np.mean(keypoint_speed[:, :, :2], axis=1)
     frame_speed = np.linalg.norm(frame_speed, axis=1)
 
     # Find first index where there is movement. Count from there.
-    first_movement_index = next(i for i, b in enumerate((frame_speed > stop_threshold)) if b)
+    first_movement_index = next((i for i, b in enumerate((frame_speed > stop_threshold)) if b), -1)
+
+    if first_movement_index == -1:
+        return False, prediction_tuple
 
     n_movement_frames = np.count_nonzero(frame_speed[first_movement_index:] > stop_threshold)
 
     #  Calculate how many of the last moving frames have to have had movement
     # for us to predict the person did not stop to do anything.
-    # The 50 here is arbitrary and might make the prediction a bit fragile
-    n_movement_frames_for_no_stop = len(track) - first_movement_index - 50
-
-    position = tuple(chunks[0, -1, 1, :2].astype(np.int))
-    prediction_tuple = ("not stopped", 1, position, chunks[0], chunk_frames[0])
+    # The 4 here is arbitrary and might make the prediction a bit fragile
+    movement_length = len(track) - first_movement_index
+    n_movement_frames_for_no_stop = movement_length - movement_length / 4
 
     # Make sure the speed is measured over at least 100 frames.
     if len(track) - first_movement_index < 100:
