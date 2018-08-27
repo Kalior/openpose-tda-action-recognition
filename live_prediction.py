@@ -75,7 +75,7 @@ def main(args):
         write_predictions(valid_predictions, img)
         save_predictions(valid_predictions, args.video, tmp_video_file, args.out_directory)
 
-        logging.debug("Predict time: {:.3f}, Track time: {:.3f}".format(
+        logging.info("Predict time: {:.3f}, Track time: {:.3f}".format(
             predict_people_time, track_people_time))
         track_people_start = time()
 
@@ -163,8 +163,7 @@ def classifier_predict_no_stop(track, confidence_threshold):
         return False
 
     constant_moving = all(prediction['label'] == 'moving' and
-                          prediction['confidence'] > confidence_threshold or
-                          prediction['confidence'] < confidence_threshold
+                          prediction['confidence'] > confidence_threshold
                           for prediction in list(track.predictions.values())[-20:])
     return constant_moving
 
@@ -179,11 +178,7 @@ def speed_no_stop_prediction(track, stop_threshold):
     frame_speed = np.linalg.norm(frame_speed, axis=1)
 
     # Find first index where there is movement. Count from there.
-    movement_indicies = np.where(frame_speed > stop_threshold)
-    if len(movement_indicies) > 0 and len(movement_indicies[0]) > 0:
-        first_movement_index = movement_indicies[0][0]
-    else:
-        first_movement_index = 0
+    first_movement_index = next(i for i, b in enumerate((frame_speed > stop_threshold)) if b)
 
     n_movement_frames = np.count_nonzero(frame_speed[first_movement_index:] > stop_threshold)
 
@@ -216,7 +211,7 @@ if __name__ == '__main__':
                         help=('Output directory to where the processed video and identified '
                               'chunks are saved.'))
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
     args = parser.parse_args()
     main(args)
