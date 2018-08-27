@@ -179,7 +179,12 @@ def speed_no_stop_prediction(track, stop_threshold):
     frame_speed = np.linalg.norm(frame_speed, axis=1)
 
     # Find first index where there is movement. Count from there.
-    first_movement_index = np.where(frame_speed > stop_threshold)[0][0]
+    movement_indicies = np.where(frame_speed > stop_threshold)
+    if len(movement_indicies) > 0 and len(movement_indicies[0]) > 0:
+        first_movement_index = movement_indicies[0][0]
+    else:
+        first_movement_index = 0
+
     n_movement_frames = np.count_nonzero(frame_speed[first_movement_index:] > stop_threshold)
 
     #  Calculate how many of the last moving frames have to have had movement
