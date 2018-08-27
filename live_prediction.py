@@ -34,11 +34,14 @@ def main(args):
     track_people_start = time()
     valid_predictions = []
     for tracks, img, current_frame in tracker.video_generator(args.video, args.draw_frames):
-        #  Only predict every 5:th frame.  Need to figure out a way to
-        # be more systematical about when to predict and which chunks.
+        #  Don't predict every frame, not enough has changed for it to be valuable.
         if current_frame % 20 != 0 or len(tracks) <= 0:
             write_predictions(valid_predictions, img)
             continue
+
+        # We only care about recently updated tracks.
+        tracks = [track for track in tracks
+                  if track.recently_updated(current_frame)]
 
         logging.debug("Number of tracks: {}".format(len(tracks)))
         track_people_time = time() - track_people_start
@@ -57,11 +60,12 @@ def main(args):
              for _, _, prediction in predictions]))
 
         valid_predictions = filter_bad_predictions(
-            predictions, args.probability_threshold, classes)
+            predictions, args.confidence_threshold, classes)
+        save_predictions_to_track(predictions, classes, tracks, current_frame)
 
         predict_people_time = time() - predict_people_start
 
-        not_stopped = [predict_no_stop(track) for track in [t.copy(-100) for t in tracks]]
+        not_stopped = [predict_no_stop(track, args.confidence_threshold) for track in tracks]
         [valid_predictions.append(t) for not_stopped, t in not_stopped if not_stopped]
 
         if not_stopped:
@@ -83,10 +87,8 @@ def predict_per_track(track, classifier):
     for frames_per_chunk, overlap in divisions:
         chunks, chunk_frames = track.divide_into_chunks(frames_per_chunk, overlap)
         if len(chunks) > 0:
-            for chunk in chunks:
-                all_chunks.append(chunk)
-            for frames in chunk_frames:
-                all_frames.append(frames)
+            all_chunks.append(chunks[-1])
+            all_frames.append(chunk_frames[-1])
 
     if len(all_chunks) > 0:
         predictions = classifier.predict_proba(all_chunks)
@@ -97,8 +99,8 @@ def predict_per_track(track, classifier):
 
 
 def write_predictions(valid_predictions, img):
-    for label, probability, position, _, _ in valid_predictions:
-        TrackVisualiser().draw_text(img, "{}: {:.3f}".format(label, probability), position)
+    for label, confidence, position, _, _ in valid_predictions:
+        TrackVisualiser().draw_text(img, "{}: {:.3f}".format(label, confidence), position)
 
 
 def save_predictions(valid_predictions, video_name, video, out_directory):
@@ -108,21 +110,27 @@ def save_predictions(valid_predictions, video_name, video, out_directory):
 
 def get_best_pred(prediction, classes):
     best_pred_i = np.argmax(prediction)
-    probability = prediction[best_pred_i]
+    confidence = prediction[best_pred_i]
     label = classes[best_pred_i]
-    return label, probability
+    return label, confidence
 
 
-def filter_bad_predictions(zipped, threshold, classes):
+def filter_bad_predictions(predictions, threshold, classes):
     valid_predictions = []
-    for chunk, frames, prediction in zipped:
-        label, probability = get_best_pred(prediction, classes)
-        if probability > threshold:
+    for chunk, frames, prediction in predictions:
+        label, confidence = get_best_pred(prediction, classes)
+        if confidence > threshold:
             position = tuple(chunk[-1, 0, :2].astype(np.int))
-            prediction_tuple = (label, probability, position, chunk, frames)
+            prediction_tuple = (label, confidence, position, chunk, frames)
             valid_predictions.append(prediction_tuple)
 
     return valid_predictions
+
+
+def save_predictions_to_track(predictions, classes, tracks, current_frame):
+    for t, (_, _, prediction) in zip(tracks, predictions):
+        label, confidence = get_best_pred(prediction, classes)
+        t.add_prediction(label, confidence, current_frame)
 
 
 def write_chunk_to_file(video_name, video, frames, chunk, label, out_dir, i):
@@ -133,20 +141,52 @@ def write_chunk_to_file(video_name, video, frames, chunk, label, out_dir, i):
     ChunkVisualiser().chunk_to_video_scene(video, chunk, out_file, frames, label)
 
 
-def predict_no_stop(track, stop_threshold=5):
+def predict_no_stop(track, confidence_threshold, stop_threshold=10):
     if len(track) < 50:
         return False, ()
 
+    no_classifier_prediction, prediction_tuple = speed_no_stop_prediction(track, stop_threshold)
+    classifier_prediction = classifier_predict_no_stop(track, confidence_threshold)
+
+    print("Speed no stop: {}, classifier no stop: {}".format(
+        no_classifier_prediction, classifier_prediction))
+
+    return no_classifier_prediction or classifier_prediction, prediction_tuple
+
+
+def classifier_predict_no_stop(track, confidence_threshold):
+    if len(track.predictions) == 0:
+        return False
+
+    constant_moving = all(prediction['label'] == 'moving' and
+                          prediction['confidence'] > confidence_threshold or
+                          prediction['confidence'] < confidence_threshold
+                          for prediction in list(track.predictions.values())[-20])
+    return constant_moving
+
+
+def speed_no_stop_prediction(track, stop_threshold):
+    #  Only check last 200 frames as person could have been doing something else
+    # before that.  Makes the prediction a bit fragile.
+    track = track.copy(-200)
     chunks, chunk_frames = track.divide_into_chunks(len(track) - 1, 0)
     keypoint_speed = transforms.Speed().fit_transform(chunks)[0]
     frame_speed = np.mean(keypoint_speed[:, :, :2], axis=1)
     frame_speed = np.linalg.norm(frame_speed, axis=1)
 
+    # Find first index where there is movement. Count from there.
+    first_movement_index = np.where(frame_speed > stop_threshold)[0][0]
+    n_movement_frames = np.count_nonzero(frame_speed[first_movement_index:] > stop_threshold)
+
+    #  Calculate how many of the last moving frames have to have had movement
+    # for us to predict the person did not stop to do anything.
+    # The 50 here is arbitrary and might make the prediction a bit fragile
+    n_movement_frames_for_no_stop = len(track) - first_movement_index - 50
+
     position = tuple(chunks[0, -1, 1, :2].astype(np.int))
     prediction_tuple = ("Not stopped", 1, position, chunks[0], chunk_frames[0])
 
-    return np.all(frame_speed > stop_threshold), prediction_tuple
-
+    return n_movement_frames >= n_movement_frames_for_no_stop, prediction_tuple
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -157,7 +197,7 @@ if __name__ == '__main__':
                         help='Path to video file to predict actions for.')
     parser.add_argument('--model-path', type=str, default='../openpose/models/',
                         help='The model path for the caffe implementation.')
-    parser.add_argument('--probability-threshold', type=float, default=0.8,
+    parser.add_argument('--confidence-threshold', type=float, default=0.8,
                         help='Threshold for how confident the model should be in each prediction.')
 
     parser.add_argument('--draw-frames', action='store_true',

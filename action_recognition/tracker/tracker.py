@@ -114,7 +114,7 @@ class Tracker:
 
             if current_frame > 10:
                 # Only yield the recently updated tracks.
-                yield tracks, image_with_keypoints, current_frame
+                yield self.tracks, image_with_keypoints, current_frame
 
             if draw_frames:
                 smaller_img = cv2.resize(image_with_keypoints, (0, 0), fx=0.5, fy=0.5)
