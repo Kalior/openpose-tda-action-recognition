@@ -16,6 +16,7 @@ class Track:
         self.track = []
         self.frame_assigned = []
         self.last_frame_update = -1
+        self.predictions = {}
 
     def __len__(self):
         return len(self.track)
@@ -416,3 +417,12 @@ class Track:
         """
         for person in self.track:
             person.reset_keypoints()
+
+    def add_prediction(self, label, confidence, frame):
+        """Adds a prediction to the track.
+
+        Predictions are stored as a dict with 'label' and 'confidence' with a
+        surrounding dict which connects the current frame to the prediction.
+
+        """
+        self.predictions[frame] = {'label': label, 'confidence': confidence}
