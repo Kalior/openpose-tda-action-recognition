@@ -24,19 +24,20 @@ def main(args):
     logging.info("Number of train dataset labels: {}".format(Counter(train[2])))
     logging.info("Number of test dataset labels: {}".format(Counter(test[2])))
 
-    # train = augmentors.Rotate(2).augment(*train)
+    if args.augmentation:
+        train = augmentors.Rotate(args.augmentation_amount).augment(*train)
+
     logging.info("Number of train dataset labels after augmentor: {}".format(Counter(train[2])))
 
     if args.tda:
         classifier = TDAClassifier(cross_validate=args.cross_validate)
-        train_classifier(train, test, args.title, classifier)
-    if args.ensemble:
+    elif args.ensemble:
         classifier = EnsembleClassifier(use_tda_vectorisations=args.use_tda_vectorisations)
-        train_classifier(train, test, args.title, classifier)
-    if args.feature_engineering:
+    elif args.feature_engineering:
         classifier = FeatureEngineeringClassifier(
             use_tda_vectorisations=args.use_tda_vectorisations)
-        train_classifier(train, test, args.title, classifier)
+
+    train_classifier(train, test, args.title, classifier, args.visualise_incorrect_classifications)
 
 
 def load_data(file_name):
@@ -49,7 +50,7 @@ def load_data(file_name):
     return chunks, frames, labels, videos
 
 
-def train_classifier(train, test, title, classifier):
+def train_classifier(train, test, title, classifier, visualise_incorrect_classifications):
     train_chunks, _, train_labels, _ = train
     test_chunks, test_frames, test_labels, test_videos = test
     test_translated_chunks = transforms.TranslateChunks().transform(test_chunks)
@@ -66,14 +67,15 @@ def train_classifier(train, test, title, classifier):
     logging.info("Accuracy: {:.3f}\nPrecision: {:.3f}\nRecall: {:.3f}".format(
         accuracy, precision, recall))
 
+    visualiser = ClassificationVisualiser()
+    visualiser.plot_confusion_matrix(pred_labels, test_labels, classifier.classes_, title)
+    if visualise_incorrect_classifications:
+        visualiser.visualise_incorrect_classifications(
+            pred_labels, test_labels, test_chunks, test_frames, test_translated_chunks, test_videos)
+
     file_name = "{}.pkl".format(title)
     logging.info("Saving model to {}.".format(file_name))
     joblib.dump(classifier, file_name)
-
-    visualiser = ClassificationVisualiser()
-    visualiser.plot_confusion_matrix(pred_labels, test_labels, classifier.classes_, title)
-    visualiser.visualise_incorrect_classifications(
-        pred_labels, test_labels, test_chunks, test_frames, test_translated_chunks, test_videos)
 
 
 if __name__ == '__main__':
@@ -94,11 +96,21 @@ if __name__ == '__main__':
     parser.add_argument('--cross-validate', '-cv', action='store_true',
                         help='Specify for cross-validation of tda pipeline.')
 
+    parser.add_argument('--visualise-incorrect-classifications', action='store_true',
+                        help=('If specified, the actions that are incorrectly classified will be '
+                              'drawn to help get an understanding what the classifier misses.'))
+
     parser.add_argument('--use-tda-vectorisations', action='store_true',
                         help=('Specify for if the feature engineering and ensemble classifiers '
                               'should make use of the tda vectorisations from sklearn_tda. '
                               'Note that this will cause the model saving to file to crash '
                               'since parts of the tda vectorisations are not pickable.'))
+
+    parser.add_argument('--augmentation', action='store_true',
+                        help=('Specify for if the training data should be augmented. '
+                              'Only current augmentor is a rotation augmentor.'))
+    parser.add_argument('--augmentation-amount', type=int, default=2,
+                        help='Number of points to add during augmentation.')
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()
