@@ -17,7 +17,7 @@ class Persistence(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     max_edge_length : float, optional, default = 0.5
-        The max_edge_length passed to RipsComplex, ignored for all else
+        The max_edge_length passed to RipsComplex, otherwise ignored
     max_alpha_square : float, optional, default = 0.9
         The max_alpha_square passed to AlphaComplex, otherwise ignored
     intrisic_dim : int, optional, default = 2

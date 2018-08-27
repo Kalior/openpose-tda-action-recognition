@@ -37,7 +37,7 @@ class FeatureVisualiser:
             COCOKeypoints.RAnkle,
             COCOKeypoints.LAnkle,
         ]]
-        selected_connections = [(0, 1), (0, 2), (1, 3), (2, 4)]  # , (0, 4), (4, 5), (5, 3)]
+        selected_connections = [(0, 1), (0, 2), (1, 3), (2, 4)]
         pipe = Pipeline([
             ("Extract", transforms.ExtractKeypoints(selected_keypoints)),
             ("Smooth", transforms.SmoothChunks()),

@@ -33,7 +33,7 @@ def main(args):
 
     track_people_start = time()
     valid_predictions = []
-    for tracks, img, current_frame in tracker.video_generator(args.video, False):
+    for tracks, img, current_frame in tracker.video_generator(args.video, args.draw_frames):
         #  Only predict every 5:th frame.  Need to figure out a way to
         # be more systematical about when to predict and which chunks.
         if current_frame % 20 != 0 or len(tracks) <= 0:
@@ -64,8 +64,9 @@ def main(args):
         not_stopped = [predict_no_stop(track) for track in [t.copy(-100) for t in tracks]]
         [valid_predictions.append(t) for not_stopped, t in not_stopped if not_stopped]
 
-        logging.info("Not stopped: " + ", ".join(
-            [str(i) for i, (prediction, _) in enumerate(not_stopped) if prediction]))
+        if not_stopped:
+            logging.info("Not stopped: " + ", ".join(
+                [str(i) for i, (prediction, _) in enumerate(not_stopped) if prediction]))
 
         write_predictions(valid_predictions, img)
         save_predictions(valid_predictions, args.video, tmp_video_file, args.out_directory)
@@ -158,6 +159,9 @@ if __name__ == '__main__':
                         help='The model path for the caffe implementation.')
     parser.add_argument('--probability-threshold', type=float, default=0.8,
                         help='Threshold for how confident the model should be in each prediction.')
+
+    parser.add_argument('--draw-frames', action='store_true',
+                        help='Flag for if the frames with identified frames should be drawn or not.')
 
     parser.add_argument('--out-directory', type=str, default='output/prediction',
                         help=('Output directory to where the processed video and identified '

@@ -15,8 +15,7 @@ def main(args):
     videos = parse_path(args.video, args.out_directory, args.allowed_video_formats)
 
     for video, out_dir in videos:
-        tracker = Tracker(detector=detector,
-                          only_track_arms=args.arm_tracking, out_dir=out_dir)
+        tracker = Tracker(detector=detector, out_dir=out_dir)
         tracker.video(video, args.draw_frames)
 
 
@@ -37,16 +36,17 @@ def parse_path(video, out_directory, allowed_video_formats):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Generate tracks of people using OpenPose. First part of action recognition system.')
+        description=('Generate tracks of people using OpenPose. '
+                     'Each track is a [n_frames, n_keypoints, 3] numpy.ndarray which is predicted '
+                     'as being a single person through several frames.'))
     parser.add_argument('--video', type=str, default='media/video.avi',
                         help=('The video/folder to run tracking on. If folder, maintains the '
                               'hierarchy within that folder in the output.'))
     parser.add_argument('--tf-openpose', action='store_true',
-                        help='Use to make the program use the tensorflow implementation.')
+                        help='Use to make the program use the tensorflow implementation of OpenPose.')
     parser.add_argument('--model-path', type=str, default='../openpose/models/',
                         help='The model path for the caffe implementation.')
-    parser.add_argument('--arm-tracking', action='store_true',
-                        help='Use for arm/hand specific tracking.')
+
     parser.add_argument('--out-directory', type=str, default='output',
                         help='Root directory to where the annotated video is saved.')
     parser.add_argument('--draw-frames', action='store_true',

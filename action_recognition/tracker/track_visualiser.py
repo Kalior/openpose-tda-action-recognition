@@ -39,8 +39,7 @@ class TrackVisualiser:
             cv2.imshow("output", smaller_original)
             cv2.waitKey(10)
 
-    def draw_tracks(self, tracks, img, current_frame,
-                    keypoint_index=COCOKeypoints.Neck.value):
+    def draw_tracks(self, tracks, img, current_frame, keypoint_index=COCOKeypoints.Neck.value):
         """Overlays the tracks on the img.
 
         Parameters

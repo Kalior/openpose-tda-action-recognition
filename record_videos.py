@@ -84,7 +84,8 @@ if __name__ == '__main__':
     parser.add_argument('--video-path', type=str, default='/dev/video1',
                         help='Path to the video device (e.g. /dev/video1)')
     parser.add_argument('--video-size', type=str, default='960x544',
-                        help='Resolution of output video, make sure the camera can capture the given size.')
+                        help=('Resolution of output video,'
+                              'make sure the camera can capture the given size.'))
 
     args = parser.parse_args()
 

@@ -17,31 +17,11 @@ class Person:
         The index of the track that the person belongs to, if any.
 
     """
-    only_track_arms = False
 
     def __init__(self, keypoints, track_index=-1):
         self.keypoints = keypoints
         self.track_index = track_index
         self.og_keypoints = np.copy(keypoints)
-
-    def get_nonzero_keypoint(self):
-        """Gets the first keypoint from the person that isn't zero.
-
-        Returns
-        -------
-        keypoint : array-like
-            The first non-zero keypoint of the person, shape = [2]
-
-        """
-        if Person.only_track_arms:
-            relevant_keypoints = self.get_arm_keypoints()
-        else:
-            relevant_keypoints = self.keypoints
-
-        return next((keypoint[:2]
-                     for keypoint in relevant_keypoints
-                     if np.any(keypoint[:2])),
-                    np.array([0.0, 0.0]))
 
     def __eq__(self, other_person):
         return np.array_equal(self.keypoints, other_person.keypoints)
@@ -61,12 +41,8 @@ class Person:
 
         """
         # Disregard the confidence for now.
-        if Person.only_track_arms:
-            xy_person = self.get_arm_keypoints()[:, :2]
-            xy_other = other_person.get_arm_keypoints()[:, :2]
-        else:
-            xy_person = self.keypoints[:, :2]
-            xy_other = other_person.keypoints[:, :2]
+        xy_person = self.keypoints[:, :2]
+        xy_other = other_person.keypoints[:, :2]
 
         #   Don't include the keypoints we didn't identify
         # as this can give large frame-to-frame errors.
@@ -121,22 +97,6 @@ class Person:
 
         """
         return self.keypoints[[COCOKeypoints.RWrist.value, COCOKeypoints.RElbow.value]]
-
-    def is_relevant(self):
-        """Checks if the Person has valid keypoints.
-
-        Returns True unless we're only tracking arms, in which case it checks
-        if any of the arms have non-zero values.
-
-        Returns
-        -------
-        bool : boolean
-
-        """
-        if Person.only_track_arms:
-            return np.any(self.get_arm_keypoints())
-        else:
-            return True
 
     def fill_missing_keypoints(self, other, fill_type='copy'):
         """Fills missing keypoints.

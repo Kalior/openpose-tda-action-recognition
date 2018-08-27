@@ -71,7 +71,8 @@ def run_mapper(test, train):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=('Run the mapper algorithm on the dataset.  Can help visualise the data. '
-                     'Requires that the data has equal dimensions, i.e. the same number of frames per chunk.'))
+                     'Requires that the data has equal dimensions, i.e. the same number of'
+                     'frames per chunk.'))
     parser.add_argument('--dataset', type=str, help='The path to the dataset')
 
     logging.basicConfig(level=logging.DEBUG)

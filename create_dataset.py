@@ -24,10 +24,10 @@ def main(args):
     number_of_keypoints = 18
     number_of_coordinates = 3
 
-    all_chunks = np.empty(0, dtype=object)
-    all_frames = np.empty(0, dtype=object)
-    all_labels = np.empty(0, dtype=object)
-    all_videos = np.empty(0, dtype=object)
+    all_chunks = []
+    all_frames = []
+    all_labels = []
+    all_videos = []
 
     for tracks_file, video in zip(tracks_files, video_files):
         logging.info("Processing video: {} with tracks {}".format(video, tracks_file))
@@ -38,10 +38,10 @@ def main(args):
 
         videos = np.array([video] * len(chunks))
 
-        all_chunks = np.append(all_chunks, chunks, axis=0)
-        all_frames = np.append(all_frames, frames, axis=0)
-        all_labels = np.append(all_labels, np.array(labels), axis=0)
-        all_videos = np.append(all_videos, videos, axis=0)
+        all_chunks.extend(chunks)
+        all_frames.extend(frames)
+        all_labels.extend(labels)
+        all_videos.extend(videos)
 
     train, test = split_data(all_chunks, all_frames, all_labels, all_videos)
 
@@ -140,7 +140,9 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Dataset creation/labelling for action recognition.')
+        description=('Dataset creation/labelling for action recognition. '
+                     'Allows for two different methods of labelling data, see '
+                     'the documentation of the Labelling class for details.'))
     parser.add_argument('--videos', type=str, nargs='+',
                         help='The videos/folders from which the paths were generated.')
     parser.add_argument('--tracks-files', type=str, nargs='+',

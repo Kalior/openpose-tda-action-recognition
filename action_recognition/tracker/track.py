@@ -276,7 +276,7 @@ class Track:
     def overlaps(self, other):
         """Checks if other overlaps with this track.
 
-        More specifically, it check if the two tracks are nearby each other
+        More specifically, it checks if the two tracks are nearby each other
         for all of their frames.
 
         Parameters
@@ -317,7 +317,8 @@ class Track:
 
         return True
 
-    def _check_frame_distance(self, frame_assigned, track, index, other_frame_assigned, other_track, other_index):
+    def _check_frame_distance(self, frame_assigned, track, index, other_frame_assigned,
+                              other_track, other_index):
         distance_threshold = 16
 
         frame_diff = frame_assigned[index] - other_frame_assigned[other_index]
@@ -402,6 +403,16 @@ class Track:
 
     def reset_keypoints(self):
         """Resets the Keypoints in every Person in track to the original.
+
+        Used since there are two fill_types in fill_missing_keypoints(...), the
+        'copy' fill_type is used during post_processing due to legacy, and changing
+        it there alters which tracks are outputted from the post processing, which
+        would mean a re-labelling of the data is needed whenever a new type of
+        fill_type is implemented.  Instead, it is possible to reset
+        the keypoints to their original values, which allows for new fill_types
+        to be experimented with without having to relabel the data for every
+        fill_type.
+
         """
         for person in self.track:
             person.reset_keypoints()

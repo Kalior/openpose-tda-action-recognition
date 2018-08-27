@@ -17,18 +17,13 @@ class Tracker:
     ----------
     detector : any object implementing detect in the same way as the openpose
         implementations in the detector module.
-    only_track_arms : boolean, optional, default False
-        Makes the program throw away people with no identified arms.
     out_dir : str, optional, default 'output'
         path to directory where the resulting tracks and videos are saved.
         Creates this directory if it does not exist.
 
     """
 
-    def __init__(self, detector, only_track_arms=False, out_dir='output'):
-        self.only_track_arms = only_track_arms
-        Person.only_track_arms = only_track_arms
-
+    def __init__(self, detector, out_dir='output'):
         self.tracks = []
 
         self.detector = detector
@@ -93,12 +88,11 @@ class Tracker:
         while success:
             track_endpoints = [track.get_last_person()
                                for track in self.tracks
-                               if track.recently_updated(current_frame) and
-                               track.get_last_person().is_relevant()]
+                               if track.recently_updated(current_frame)]
 
             openpose_start_time = time()
             keypoints, image_with_keypoints = self.detector.detect(original_image)
-            people = [p for p in self._convert_to_persons(keypoints) if p.is_relevant()]
+            people = [p for p in self._convert_to_persons(keypoints)]
             openpose_time = time() - openpose_start_time
 
             min_person_start_time = time()
@@ -115,13 +109,11 @@ class Tracker:
 
             visualisation_start_time = time()
             self.visualiser.draw_tracks(
-                self.tracks, image_with_keypoints, current_frame, self.only_track_arms)
+                self.tracks, image_with_keypoints, current_frame)
             visualisation_time = time() - visualisation_start_time
 
             if current_frame > 10:
                 # Only yield the recently updated tracks.
-                tracks = [track for track in self.tracks
-                          if track.recently_updated(current_frame)]
                 yield tracks, image_with_keypoints, current_frame
 
             if draw_frames:
@@ -132,8 +124,10 @@ class Tracker:
             # Write the frame to a video
             writer.write(image_with_keypoints)
 
-            logging.debug("OpenPose: {:.5f}, Closest person: {:.5f}, Draw tracks to img: {:.5f}".format(
-                openpose_time, closest_person_time, visualisation_time))
+            logging.debug("OpenPose: {:.5f}, "
+                          "Closest person: {:.5f}, "
+                          "Draw tracks to img: {:.5f}".format(
+                              openpose_time, closest_person_time, visualisation_time))
 
             success, original_image = capture.read()
             current_frame += 1
@@ -189,9 +183,12 @@ class Tracker:
             #  If the movement is too large, assume that the new item can't
             # be associated well. (Which will force it to get a new track later
             # in the processing).
-            if distances[from_, to] > avg_speed * frames_since_last_update + self.speed_change_threshold:
-                logging.debug("Invalid association! from: {}, to: {}, dist: {:.2f}, avg_speed: {:.2f}, frames since last update: {}".format(
-                    from_, to, distances[from_, to], avg_speed, frames_since_last_update))
+            distance_since_last_seen = avg_speed * frames_since_last_update
+            if distances[from_, to] > distance_since_last_seen + self.speed_change_threshold:
+                logging.debug("Invalid association! from: {}, to: {}, dist: {:.2f}, "
+                              "avg_speed: {:.2f}, frames since last update: {}".format(
+                                  from_, to, distances[from_, to], avg_speed,
+                                  frames_since_last_update))
 
                 distances = np.delete(distances, to, axis=1)
                 removed_person = people.pop(to)
