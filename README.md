@@ -4,7 +4,7 @@
 The pipeline can be run in its entirety using the following scripts (also in `all.sh`):
 
 ```bash
-python3.6 generate_tracks.py --video test-0.mp4 --output-directory output
+python3.6 generate_tracks.py --video test-0.mp4 --out-directory output
 python3.6 create_dataset.py --videos test-0.mp4 --tracks output/test-0-tracks.npz --out-file dataset/test
 python3.6 visualise_dataset.py --dataset dataset/test --point-clouds
 python3.6 train_classifier.py --dataset dataset/test --tda
@@ -13,7 +13,7 @@ python3.6 train_classifier.py --dataset dataset/test --tda
 The last step creates a trained classifier (in a `.pkl` file).  This classifier can then be used to generate predictions of actions live by running the script:
 
 ```bash
-python3.6 live_prediction.py --classifier classifier.pkl --video test-0.mp4 --output-directory predictions
+python3.6 live_prediction.py --classifier classifier.pkl --video test-0.mp4 --out-directory predictions
 ```
 
 which will output the identified actions, a video with the predictions overlayed on the original video, and a video per predicted action.
