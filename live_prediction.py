@@ -145,13 +145,17 @@ def predict_no_stop(track, confidence_threshold, stop_threshold=10):
     if len(track) < 50:
         return False, ()
 
-    no_classifier_prediction, prediction_tuple = speed_no_stop_prediction(track, stop_threshold)
+    speed_prediction, prediction_tuple = speed_no_stop_prediction(track, stop_threshold)
     classifier_prediction = classifier_predict_no_stop(track, confidence_threshold)
 
-    print("Speed no stop: {}, classifier no stop: {}".format(
-        no_classifier_prediction, classifier_prediction))
+    if speed_prediction and classifier_prediction:
+        prediction_tuple = ("Both " + prediction_tuple[0], *prediction_tuple[1:])
+    elif speed_prediction:
+        prediction_tuple = ("Speed " + prediction_tuple[0], *prediction_tuple[1:])
+    elif classifier_prediction:
+        prediction_tuple = ("Classifier " + prediction_tuple[0], *prediction_tuple[1:])
 
-    return no_classifier_prediction or classifier_prediction, prediction_tuple
+    return speed_prediction or classifier_prediction, prediction_tuple
 
 
 def classifier_predict_no_stop(track, confidence_threshold):
@@ -161,7 +165,7 @@ def classifier_predict_no_stop(track, confidence_threshold):
     constant_moving = all(prediction['label'] == 'moving' and
                           prediction['confidence'] > confidence_threshold or
                           prediction['confidence'] < confidence_threshold
-                          for prediction in list(track.predictions.values())[-20])
+                          for prediction in list(track.predictions.values())[-20:])
     return constant_moving
 
 
@@ -184,7 +188,7 @@ def speed_no_stop_prediction(track, stop_threshold):
     n_movement_frames_for_no_stop = len(track) - first_movement_index - 50
 
     position = tuple(chunks[0, -1, 1, :2].astype(np.int))
-    prediction_tuple = ("Not stopped", 1, position, chunks[0], chunk_frames[0])
+    prediction_tuple = ("not stopped", 1, position, chunks[0], chunk_frames[0])
 
     return n_movement_frames >= n_movement_frames_for_no_stop, prediction_tuple
 
