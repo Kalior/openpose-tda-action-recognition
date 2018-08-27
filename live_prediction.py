@@ -190,6 +190,10 @@ def speed_no_stop_prediction(track, stop_threshold):
     position = tuple(chunks[0, -1, 1, :2].astype(np.int))
     prediction_tuple = ("not stopped", 1, position, chunks[0], chunk_frames[0])
 
+    # Make sure the speed is measured over at least 100 frames.
+    if len(track) - first_movement_index < 100:
+        return False, prediction_tuple
+
     return n_movement_frames >= n_movement_frames_for_no_stop, prediction_tuple
 
 if __name__ == '__main__':
