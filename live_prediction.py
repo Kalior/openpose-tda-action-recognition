@@ -46,12 +46,11 @@ def main(args):
         logging.debug("Number of tracks: {}".format(len(tracks)))
         track_people_time = time() - track_people_start
 
+        predict_people_start = time()
         #  Extract the latest frames, as we don't want to copy
         # too much data here, and we've already predicted for the rest
         processor.tracks = [copy.deepcopy(t.copy(-50)) for t in tracks]
         processor.post_process_tracks()
-
-        predict_people_start = time()
 
         predictions = [predict_per_track(t, classifier) for t in processor.tracks]
 
@@ -72,6 +71,7 @@ def main(args):
 
         logging.info("Predict time: {:.3f}, Track time: {:.3f}".format(
             predict_people_time, track_people_time))
+        log_predictions(predictions, no_stop_predictions)
         track_people_start = time()
 
 
@@ -145,7 +145,7 @@ def predict_no_stop(track, confidence_threshold, stop_threshold=10):
     track = track.copy(-200)
     chunks, chunk_frames = track.divide_into_chunks(len(track) - 1, 0)
 
-    speed_prediction = speed_no_stop_prediction(track, chunk, stop_threshold)
+    speed_prediction = speed_no_stop_prediction(track, chunks, stop_threshold)
 
     confidence = max(classifier_prediction, speed_prediction)
 
@@ -155,6 +155,8 @@ def predict_no_stop(track, confidence_threshold, stop_threshold=10):
         label = "speed not stopped"
     elif classifier_prediction > confidence_threshold:
         label = "classifier not stopped"
+    else:
+        label = "has stopped"
 
     position = tuple(chunks[0, -1, 1, :2].astype(np.int))
     prediction_tuple = (label, confidence, position, chunks[0], chunk_frames[0])
@@ -217,13 +219,21 @@ def log_predictions(predictions, no_stop_predictions):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Generates action predictions live given a video and a pre-trained classifier.')
+        description=('Generates action predictions live given a video and a pre-trained classifier. '
+                     'Uses Tracker.tracker.video_generator which yields every track every frame, '
+                     'from which it predicts the class of action using the pre-trained classifier. '
+                     'To get a better prediction, it takes the latest 50, 30, 25, and 20 frames '
+                     'as chunks and selects the likliest prediction among the five * n_classes. '
+                     'It also predicts if a person has not stopped moving (e.g. if they are moving '
+                     'through a self-checkout area without scanning anything) by checking if '
+                     'a proportion of the latest identified actions for a track/person is moving.'))
+
     parser.add_argument('--classifier', type=str,
                         help='Path to a .pkl file with a pre-trained action recognition classifier.')
     parser.add_argument('--video', type=str,
                         help='Path to video file to predict actions for.')
     parser.add_argument('--model-path', type=str, default='../openpose/models/',
-                        help='The model path for the caffe implementation.')
+                        help='The model path for OpenPose.')
     parser.add_argument('--confidence-threshold', type=float, default=0.8,
                         help='Threshold for how confident the model should be in each prediction.')
 
