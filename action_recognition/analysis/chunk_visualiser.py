@@ -70,9 +70,10 @@ class ChunkVisualiser:
         for _ in range(iteration_length):
             for i in range(len(all_average_frames[0])):
                 for j, average_frames in enumerate(all_average_frames):
-                    smaller_average = cv2.resize(average_frames[i], (0, 0), fx=0.5, fy=0.5)
-                    cv2.imshow("average person {}".format(j), smaller_average)
-                    cv2.waitKey(15)
+                    if i < len(average_frames):
+                        smaller_average = cv2.resize(average_frames[i], (0, 0), fx=0.5, fy=0.5)
+                        cv2.imshow("average person {}".format(j), smaller_average)
+                        cv2.waitKey(15)
 
     def draw_node(self, videos, name, node):
         """Draws the videos with the chunks overlayed corresponding to the node.
