@@ -18,6 +18,7 @@ def main(args):
             out_file_video = "{}-{}.mp4".format(args.video_name, i)
             out_file_timestamps = "{}-{}-timestamps.json".format(args.video_name, i)
             ff, start_time = start_recording(out_file_video, args.video_path, args.video_size)
+
             # Sleep in order to allow the program some time to start the recording.
             sleep(2)
 

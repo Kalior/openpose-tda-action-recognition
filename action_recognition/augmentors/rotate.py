@@ -4,9 +4,6 @@ import numpy as np
 class Rotate:
     """Rotates point clouds for data augmentation.
 
-    Use with care, as you will also need to add corresponding labels to the
-    added points.
-
     Parameters
     ----------
     number_of_added_points : int, optional

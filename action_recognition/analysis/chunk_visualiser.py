@@ -54,7 +54,7 @@ class ChunkVisualiser:
             Key is name of group of chunks, Value is a list with indicies
             of the chunks corresponding to the group.
         forever : boolean, optional, default=False
-            Specifies if the averages should be drawn for a long time or not.
+            Specifies if the averages should be displayed for a long time or not.
 
         """
         visualiser = TrackVisualiser()

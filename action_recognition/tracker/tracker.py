@@ -113,7 +113,6 @@ class Tracker:
             visualisation_time = time() - visualisation_start_time
 
             if current_frame > 10:
-                # Only yield the recently updated tracks.
                 yield self.tracks, image_with_keypoints, current_frame
 
             if draw_frames:

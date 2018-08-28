@@ -52,7 +52,7 @@ def shuffle(chunks, frames, labels, videos):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Dataset combination.')
     parser.add_argument('--datasets', type=str, nargs='+', help='The datasets to combine.')
-    parser.add_argument('--out-file', type=str, help='Name of the new dataset')
+    parser.add_argument('--out-file', type=str, help='Name of the new dataset.')
 
     args = parser.parse_args()
 

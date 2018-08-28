@@ -148,7 +148,7 @@ if __name__ == '__main__':
     parser.add_argument('--tracks-files', type=str, nargs='+',
                         help='The files/folders with the saved tracks.')
     parser.add_argument('--out-file', type=str, default='dataset/dataset.npz',
-                        help='The path to the file where the data will be saved')
+                        help='The path to the file where the data will be saved.')
     parser.add_argument('--append', action='store_true',
                         help=('Specify if the data should be added to the out-file '
                               '(if it exists) or overwritten.'))
