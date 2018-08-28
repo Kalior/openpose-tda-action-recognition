@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from action_recognition.analysis import Mapper
 from action_recognition import transforms
-from action_recognition.util import COCOKeypoints
+from action_recognition.util import COCOKeypoints, load_data
 
 
 def main(args):
@@ -21,17 +21,6 @@ def main(args):
     logging.info("Number of test dataset labels: {}".format(Counter(test[2])))
 
     run_mapper(train, test)
-
-
-def load_data(file_name):
-    dataset_npz = np.load(file_name)
-    # Converts the data into a non-object array if possible
-    chunks = np.array([t for t in dataset_npz['chunks']])
-    frames = dataset_npz['frames']
-    labels = dataset_npz['labels']
-    videos = dataset_npz['videos']
-
-    return chunks, frames, labels, videos
 
 
 def append_train_and_test(train, test):

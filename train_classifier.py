@@ -12,6 +12,7 @@ from action_recognition.classifiers import TDAClassifier, EnsembleClassifier, \
     ClassificationVisualiser, FeatureEngineeringClassifier
 from action_recognition import transforms
 from action_recognition import augmentors
+from action_recognition.util import load_data
 
 
 def main(args):
@@ -38,16 +39,6 @@ def main(args):
             use_tda_vectorisations=args.use_tda_vectorisations)
 
     train_classifier(train, test, args.title, classifier, args.visualise_incorrect_classifications)
-
-
-def load_data(file_name):
-    dataset_npz = np.load(file_name)
-    chunks = dataset_npz['chunks']
-    frames = dataset_npz['frames']
-    labels = dataset_npz['labels']
-    videos = dataset_npz['videos']
-
-    return chunks, frames, labels, videos
 
 
 def train_classifier(train, test, title, classifier, visualise_incorrect_classifications):

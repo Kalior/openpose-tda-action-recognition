@@ -1,6 +1,8 @@
 import argparse
 import numpy as np
 
+from action_recognition.util import load_data
+
 
 def main(args):
     datasets = args.datasets
@@ -46,15 +48,6 @@ def shuffle(chunks, frames, labels, videos):
     videos = videos[permutation]
     return chunks, frames, labels, videos
 
-
-def load_data(file_name):
-    dataset_npz = np.load(file_name)
-    chunks = dataset_npz['chunks']
-    frames = dataset_npz['frames']
-    labels = dataset_npz['labels']
-    videos = dataset_npz['videos']
-
-    return chunks, frames, labels, videos
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Dataset combination.')
