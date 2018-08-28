@@ -144,31 +144,14 @@ def write_chunk_to_file(video_name, video, frames, chunk, label, out_dir, i):
 
 
 def predict_no_stop(track, confidence_threshold, stop_threshold=10):
-    if len(track) < 50:
-        return False, ()
-
     classifier_prediction = classifier_predict_no_stop(track, confidence_threshold)
 
-    #  Only check last 200 frames as person could have been doing something else
-    # before that.  Makes the prediction a bit fragile.
+    #  Copy last 200 frames to chunk for visusalisation.
     track = track.copy(-200)
     chunks, chunk_frames = track.divide_into_chunks(len(track) - 1, 0)
 
-    speed_prediction = speed_no_stop_prediction(track, chunks, stop_threshold)
-
-    confidence = max(classifier_prediction, speed_prediction)
-
-    if speed_prediction > confidence_threshold and classifier_prediction > confidence_threshold:
-        label = "both not stopped"
-    elif speed_prediction > confidence_threshold:
-        label = "speed not stopped"
-    elif classifier_prediction > confidence_threshold:
-        label = "classifier not stopped"
-    else:
-        label = "has stopped"
-
     position = tuple(chunks[0, -1, 1, :2].astype(np.int))
-    prediction_tuple = (label, confidence, position, chunks[0], chunk_frames[0])
+    prediction_tuple = ("Has not stopped", confidence, position, chunks[0], chunk_frames[0])
     return confidence > confidence_threshold, prediction_tuple
 
 
@@ -182,27 +165,6 @@ def classifier_predict_no_stop(track, confidence_threshold):
                         for prediction in list(track.predictions.values())[-20:])
 
     return number_moving / len(track.predictions)
-
-
-def speed_no_stop_prediction(track, chunks, stop_threshold):
-    keypoint_speed = transforms.Speed().fit_transform(chunks)[0]
-    frame_speed = np.mean(keypoint_speed[:, :, :2], axis=1)
-    frame_speed = np.linalg.norm(frame_speed, axis=1)
-
-    # Find first index where there is movement. Count from there.
-    first_movement_index = next((i for i, b in enumerate((frame_speed > stop_threshold)) if b), -1)
-
-    if first_movement_index == -1:
-        return 0
-
-    n_movement_frames = np.count_nonzero(frame_speed[first_movement_index:] > stop_threshold)
-
-    # Make sure the speed is measured over at least 100 frames.
-    if len(track) - first_movement_index < 100:
-        return 0
-
-    movement_length = len(track) - first_movement_index
-    return n_movement_frames / movement_length
 
 
 def log_predictions(predictions, no_stop_predictions, classes):
