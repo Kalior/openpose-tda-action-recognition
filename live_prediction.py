@@ -55,24 +55,17 @@ def main(args):
 
         predictions = [predict_per_track(t, classifier) for t in processor.tracks]
 
-        logging.info("Predictions: " + ", ".join(
-            ["{}: {:.3f}".format(*get_best_pred(prediction, classes))
-             for _, _, prediction in predictions]))
-
         valid_predictions = filter_bad_predictions(
             predictions, args.confidence_threshold, classes)
         save_predictions_to_track(predictions, classes, tracks, current_frame)
 
         predict_people_time = time() - predict_people_start
 
-        not_stopped = [predict_no_stop(track, args.confidence_threshold) for track in tracks]
-        for p, t in not_stopped:
-            if p:
-                valid_predictions.append(t)
+        no_stop_predictions = [predict_no_stop(track, args.confidence_threshold)
+                               for track in tracks]
 
-        if not_stopped:
-            logging.info("Not stopped: " + ", ".join(
-                [str(i) for i, (prediction, _) in enumerate(not_stopped) if prediction]))
+        for t in [t for p, t in no_stop_predictions if p]:
+            valid_predictions.append(t)
 
         write_predictions(valid_predictions, img)
         save_predictions(valid_predictions, args.video, tmp_video_file, args.out_directory)
@@ -145,42 +138,44 @@ def write_chunk_to_file(video_name, video, frames, chunk, label, out_dir, i):
 
 def predict_no_stop(track, confidence_threshold, stop_threshold=10):
     if len(track) < 50:
-        return False, ()
+        return 0, ()
 
-    speed_prediction, prediction_tuple = speed_no_stop_prediction(track, stop_threshold)
     classifier_prediction = classifier_predict_no_stop(track, confidence_threshold)
 
-    if speed_prediction and classifier_prediction:
-        prediction_tuple = ("both " + prediction_tuple[0], *prediction_tuple[1:])
-    elif speed_prediction:
-        prediction_tuple = ("speed " + prediction_tuple[0], *prediction_tuple[1:])
-    elif classifier_prediction:
-        prediction_tuple = ("classifier " + prediction_tuple[0], *prediction_tuple[1:])
+    track = track.copy(-200)
+    chunks, chunk_frames = track.divide_into_chunks(len(track) - 1, 0)
 
-    return speed_prediction or classifier_prediction, prediction_tuple
+    speed_prediction = speed_no_stop_prediction(track, chunk, stop_threshold)
+
+    confidence = max(classifier_prediction, speed_prediction)
+
+    if speed_prediction > confidence_threshold and classifier_prediction > confidence_threshold:
+        label = "both not stopped"
+    elif speed_prediction > confidence_threshold:
+        label = "speed not stopped"
+    elif classifier_prediction > confidence_threshold:
+        label = "classifier not stopped"
+
+    position = tuple(chunks[0, -1, 1, :2].astype(np.int))
+    prediction_tuple = (label, confidence, position, chunks[0], chunk_frames[0])
+    return confidence > confidence_threshold, prediction_tuple
 
 
 def classifier_predict_no_stop(track, confidence_threshold):
     # If there haven't been that many predictions, we can't say anything.
     if len(track.predictions) < 5:
-        return False
+        return 0
 
     number_moving = sum(prediction['label'] == 'moving' and
                         prediction['confidence'] > confidence_threshold
                         for prediction in list(track.predictions.values())[-20:])
-    #  If the person has been moving for 3 / 4 of the last time,
-    # we can assume they're moving through an area without stopping.
-    return number_moving > len(track.prediction) * (3 / 4)
+
+    return number_moving / len(track.predictions)
 
 
-def speed_no_stop_prediction(track, stop_threshold):
+def speed_no_stop_prediction(track, chunks, stop_threshold):
     #  Only check last 200 frames as person could have been doing something else
     # before that.  Makes the prediction a bit fragile.
-    track = track.copy(-200)
-    chunks, chunk_frames = track.divide_into_chunks(len(track) - 1, 0)
-
-    position = tuple(chunks[0, -1, 1, :2].astype(np.int))
-    prediction_tuple = ("not stopped", 1.0, position, chunks[0], chunk_frames[0])
 
     keypoint_speed = transforms.Speed().fit_transform(chunks)[0]
     frame_speed = np.mean(keypoint_speed[:, :, :2], axis=1)
@@ -190,7 +185,7 @@ def speed_no_stop_prediction(track, stop_threshold):
     first_movement_index = next((i for i, b in enumerate((frame_speed > stop_threshold)) if b), -1)
 
     if first_movement_index == -1:
-        return False, prediction_tuple
+        return 0
 
     n_movement_frames = np.count_nonzero(frame_speed[first_movement_index:] > stop_threshold)
 
@@ -202,9 +197,23 @@ def speed_no_stop_prediction(track, stop_threshold):
 
     # Make sure the speed is measured over at least 100 frames.
     if len(track) - first_movement_index < 100:
-        return False, prediction_tuple
+        return 0
 
-    return n_movement_frames >= n_movement_frames_for_no_stop, prediction_tuple
+    return n_movement_frames / n_movement_frames_for_no_stop
+
+
+def log_predictions(predictions, no_stop_predictions):
+    prints = []
+    for _, _, prediction in predictions:
+        prints.append(get_best_pred(prediction, classes))
+
+    if no_stop_predictions:
+        for label, confidence, _, _, _ in [t for p, t in no_stop_predictions if p]:
+            prints.append((label, confidence))
+
+    logging.info("Predictions: " + ", ".join(
+        ["{}: {:.3f}".format(*t)
+         for t in prints]))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
