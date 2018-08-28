@@ -72,7 +72,9 @@ def train_classifier(train, test, title, classifier, visualise_incorrect_classif
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=(
         'Trains a classifier on recognising actions from the given dataset.'))
-    parser.add_argument('--dataset', type=str, help='The path to the dataset')
+    parser.add_argument('--dataset', type=str,
+                        help=('The path to the dataset, will append -train.npz and -test.npz '
+                              'to this path, so make sure to not include those.'))
 
     parser.add_argument('--tda', action='store_true',
                         help='Run a TDA algorithm on the data.')
@@ -85,7 +87,9 @@ if __name__ == '__main__':
                         help=('Title and file name for confusion matrix plot '
                               'as well as the name of the .pkl classifier file.'))
     parser.add_argument('--cross-validate', '-cv', action='store_true',
-                        help='Specify for cross-validation of tda pipeline.')
+                        help=('Specify for cross-validation of tda pipeline. '
+                              'In order to change what is cross-validated, see '
+                              'action_recognition.classifiers.tda_classifier '))
 
     parser.add_argument('--visualise-incorrect-classifications', action='store_true',
                         help=('If specified, the actions that are incorrectly classified will be '

@@ -219,6 +219,9 @@ class Track:
     def to_np(self):
         """Converts the track into pure numpy arrays.
 
+        Needed for saving of the tracks to file in a format
+        that is easy to manage.
+
         Returns
         -------
         np_path : array-like
@@ -273,12 +276,14 @@ class Track:
         self.track = new_track
         self.frame_assigned = new_frame_assigned
         self.remove_frame_duplicates()
+        self.predictions = {**other.predictions, **self.predictions}
 
     def overlaps(self, other):
         """Checks if other overlaps with this track.
 
         More specifically, it checks if the two tracks are nearby each other
-        for all of their frames.
+        for all of their frames. If they are, we can join these tracks into one
+        as they probably correspond to a single person.
 
         Parameters
         ----------
@@ -345,7 +350,10 @@ class Track:
         return max(0, index)
 
     def fill_missing_keypoints(self, fill_type='copy'):
-        """Fill missing keypoints with data from previous parts of the track
+        """Fill missing keypoints with data from previous parts of the track.
+
+        Gives a more complete idea of each frame and helps with classification
+        of actions.
 
         Parameters
         ----------

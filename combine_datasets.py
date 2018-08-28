@@ -50,7 +50,12 @@ def shuffle(chunks, frames, labels, videos):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Dataset combination.')
+    parser = argparse.ArgumentParser(
+        description=('Combines mutliple dataset files into one. '
+                     'Keeps the train and test splits from the individual sets, so '
+                     'it does not re-split into test and train.  It does, however, '
+                     'shuffle the existing splits to avoid bias towards specific '
+                     'features of a single set.'))
     parser.add_argument('--datasets', type=str, nargs='+', help='The datasets to combine.')
     parser.add_argument('--out-file', type=str, help='Name of the new dataset.')
 

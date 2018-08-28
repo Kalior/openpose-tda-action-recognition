@@ -16,7 +16,8 @@ class Tracker:
     Parameters
     ----------
     detector : any object implementing detect in the same way as the openpose
-        implementations in the detector module.
+        implementations in the detector module.  Used for detecting keypoints
+        of people from an image.
     out_dir : str, optional, default 'output'
         path to directory where the resulting tracks and videos are saved.
         Creates this directory if it does not exist.
@@ -33,10 +34,7 @@ class Tracker:
         self.visualiser = TrackVisualiser()
 
         self.out_dir = out_dir
-        try:
-            os.stat(out_dir)
-        except:
-            os.makedirs(out_dir)
+        os.makedirs(out_dir, exist_ok=True)
 
     def video(self, file, draw_frames):
         """Tracks people in the video given in file.

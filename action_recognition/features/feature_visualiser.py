@@ -14,7 +14,13 @@ from ..analysis import ChunkVisualiser
 
 
 class FeatureVisualiser:
-    """Visaliser for features.
+    """Visaliser for features, point clouds, and classes.
+
+    Contains helper functionality for plotting and displaying the
+    data set in terms of features used for the classification.  Specifically
+    it contains functionality for displaying the point clouds, the persistence
+    diagrams, the features from the Feature package, and the average shape
+    of every class in the data set.
 
     """
 
