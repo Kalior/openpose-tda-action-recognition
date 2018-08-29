@@ -93,13 +93,13 @@ if __name__ == '__main__':
 
     parser.add_argument('--visualise-incorrect-classifications', action='store_true',
                         help=('If specified, the actions that are incorrectly classified will be '
-                              'drawn to help get an understanding what the classifier misses.'))
+                              'drawn to help get an understanding of what the classifier misses.'))
 
     parser.add_argument('--use-tda-vectorisations', action='store_true',
                         help=('Specify for if the feature engineering and ensemble classifiers '
                               'should make use of the tda vectorisations from sklearn_tda. '
                               'Note that this will cause the model saving to file to crash '
-                              'since parts of the tda vectorisations are not pickable.'))
+                              'since parts of the sklearn_tda vectorisations are not pickable.'))
 
     parser.add_argument('--augmentation', action='store_true',
                         help=('Specify for if the training data should be augmented. '

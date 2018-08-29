@@ -42,6 +42,9 @@ class Tracker:
         Produces a video with the identified people overlayed on the
         original video.  Also creates a .npz file with the identified
         tracks of people and the corresponding frame numbers.
+        Each track is a [n_frames, n_keypoints, 3], making the final
+        outputted array of shape [n_tracks, n_frames, n_keypoints, 3],
+        where the values are (x, y, confidence).
 
         Parameters
         ----------

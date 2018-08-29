@@ -38,7 +38,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=('Generate tracks of people using OpenPose. '
                      'Each track is a [n_frames, n_keypoints, 3] numpy.ndarray which is predicted '
-                     'as being a single person through several frames, saved to a .npz file.'))
+                     'as being a single person through several frames, making the final '
+                     'outputted array of shape [n_tracks, n_frames, n_keypoints, 3], '
+                     'where the values are (x, y, confidence), saved to a .npz file. '
+                     'Note, however, that it will be an array with dtype=object, '
+                     'since the n_frames per track will differ.'))
+
     parser.add_argument('--video', type=str, default='media/video.avi',
                         help=('The video/folder to run tracking on. If folder, maintains the '
                               'hierarchy within that folder in the output.'))
