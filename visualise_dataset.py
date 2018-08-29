@@ -29,7 +29,10 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=(
         'Helps visualise the dataset, e.g. by showing the features or the point clouds.'))
-    parser.add_argument('--dataset', type=str, help='The path to the dataset')
+    parser.add_argument('--dataset', type=str,
+                        help=('The path to the dataset, will append -train.npz and -test.npz '
+                              'to this path, so make sure to not include those.'))
+
     parser.add_argument('--out-directory', type=str, default='output/graphs',
                         help='Path to where the persistence graphs are saved if wanted.')
 

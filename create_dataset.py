@@ -111,15 +111,14 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
     extension_free_tracks = os.path.splitext(tracks_file)[0]
     labels_file = extension_free_tracks + '-labels.json'
 
-    extension_free_video = os.path.splitext(video)[0]
-    timestamps_file = extension_free_video + '-timestamps.json'
-
     if os.path.isfile(labels_file):
         with open(labels_file, 'r') as f:
             json_labels = json.load(f)
         chunks, frames, labels = Labelling().parse_labels(
             json_labels, target_frames_per_chunk, processor.tracks)
     else:
+        extension_free_video = os.path.splitext(video)[0]
+        timestamps_file = extension_free_video + '-timestamps.json'
         if os.path.isfile(timestamps_file):
             with open(timestamps_file, 'r') as f:
                 timestamps = json.load(f)

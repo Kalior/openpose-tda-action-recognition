@@ -151,8 +151,9 @@ def predict_no_stop(track, confidence_threshold, stop_threshold=10):
     chunks, chunk_frames = track.divide_into_chunks(len(track) - 1, 0)
 
     position = tuple(chunks[0, -1, 1, :2].astype(np.int))
-    prediction_tuple = ("Has not stopped", confidence, position, chunks[0], chunk_frames[0])
-    return confidence > confidence_threshold, prediction_tuple
+    prediction_tuple = ("Has not stopped", classifier_prediction,
+                        position, chunks[0], chunk_frames[0])
+    return classifier_prediction > confidence_threshold, prediction_tuple
 
 
 def classifier_predict_no_stop(track, confidence_threshold):
@@ -197,7 +198,7 @@ if __name__ == '__main__':
                         help='Path to video file to predict actions for.')
     parser.add_argument('--model-path', type=str, default='../openpose/models/',
                         help='The model path for OpenPose.')
-    parser.add_argument('--confidence-threshold', type=float, default=0.8,
+    parser.add_argument('--confidence-threshold', type=float, default=0.6,
                         help='Threshold for how confident the model should be in each prediction.')
 
     parser.add_argument('--draw-frames', action='store_true',
