@@ -143,7 +143,10 @@ def write_chunk_to_file(video_name, video, frames, chunk, label, out_dir, i):
     ChunkVisualiser().chunk_to_video_scene(video, chunk, out_file, frames, label)
 
 
-def predict_no_stop(track, confidence_threshold, stop_threshold=10):
+def predict_no_stop(track, confidence_threshold):
+    if len(track) < 50:
+        return False, ()
+
     classifier_prediction = classifier_predict_no_stop(track, confidence_threshold)
 
     #  Copy last 200 frames to chunk for visusalisation.
