@@ -34,14 +34,14 @@ Most of what the scripts do is to wrap input and output to the different modules
 
 #### create_dataset.py
 
-* Run the [`create_dataset.py`](create_dataset.py) script to create a dataset from tracks.  If you have not previously labelled the data, the labelling process will either give you the option to look through the videos and discard bad chunks (if there are timestamps for the videos with corresponding labels) or manually label the data by displaying each chunk and requiring input on which label to attach to which chunk.
+* Run the [`create_dataset.py`](create_dataset.py) script to create a dataset from tracks.  If you have not previously labelled the data, the script will prompt the user for labels.  The labelling process will either give you the option to look through the videos and discard bad chunks (if there are timestamps for the videos with corresponding labels) or manually label the data by displaying each chunk and requiring input on which label to attach to which chunk.
 * The script outputs `{name}-train.npz` and `{name}-test.npz` files containing the corresponding `chunks`, `frames`, `labels`, and `videos` of the train and test sets.  Note that the `frames` and `videos` are only used for visualisation of the data.
 * The labelling process only needs to be done once, after which a `.json` file is created per tracks file, which can be manually edited and will be parsed for labels subsequent times.
 * During the creation of the dataset, before dividing tracks into chunks, there are also a couple of post-processing steps:
-        1. Merge tracks that are very close to each other at their ends, or throughout a longer period.
-        2. Remove tracks that are too short, under 15 frames long.
-        3. Fill-in missing keypoints (as OpenPose sometimes does not output every keypoint) by maintaining the same distance to a connected keypoint (e.g. wirst-elbow) as when the keypoint was last seen.  This increases the accuracy of the classifier later on.
-        4. Fill-in missing frames by interpolating positions of every keypoint. This makes sure that chunks don't incorrectly have more movement just because OpenPose lost track of that person for a couple of frames.
+    1. Merge tracks that are very close to each other at their ends, or throughout a longer period.
+    2. Remove tracks that are too short, under 15 frames long.
+    3. Fill-in missing keypoints (as OpenPose sometimes does not output every keypoint) by maintaining the same distance to a connected keypoint (e.g. wirst-elbow) as when the keypoint was last seen.  This increases the accuracy of the classifier later on.
+    4. Fill-in missing frames by interpolating positions of every keypoint.  This is done to normalise the data in case OpenPose lost track of a person for a couple of frames.  With this normalisation, every chunk of the same length will also have the same length in video-time.
 * If there are multiple datasets that you wish to combine, you can run the [`combine_datasets.py`](combine_datasets.py) script which allows you to do exactly that.
 
 #### visualise_dataset.py
@@ -50,12 +50,12 @@ Most of what the scripts do is to wrap input and output to the different modules
 
 #### train_classifier.py
 
-* The [`train_classifier.py`](train_classifier.py) script finally train a classifier on the data.  It accepts a dataset as input (without the `-test` and `-train` suffix) and an option to run either [`--feature-engineering`](action_recognition/classifiers/feature_engineering_classifier.py), [`--tda`](action_recognition/classifiers/tda_classifier.py), or [`--ensemble`](action_recognition/classifiers/ensemble_classifier.py).  They will produce confusion matrices of the classifier on the test set.  The `--feature-engineering` option trains a classifier on hand-selected features.  The `tda` option runs a SlicedWasserstein Kernel on the Persistence diagrams of the generated point clouds from the data.  The `ensemble` option combines the Sliced Wasserstein kernel with the feature engineering using a voting classifier.
+* The [`train_classifier.py`](train_classifier.py) script trains a classifier on the data.  It accepts a dataset as input (without the `-test` and `-train` suffix) and an option to run either [`--feature-engineering`](action_recognition/classifiers/feature_engineering_classifier.py), [`--tda`](action_recognition/classifiers/tda_classifier.py), or [`--ensemble`](action_recognition/classifiers/ensemble_classifier.py).  They will produce confusion matrices of the classifier on the test set, the classifier saved in `.pkl` format, and optionally a visualisation of the incorrect classifications.  The `--feature-engineering` option trains a classifier on hand-selected features.  The `tda` option runs a SlicedWasserstein Kernel on the Persistence diagrams of the generated point clouds from the data.  The `ensemble` option combines the Sliced Wasserstein kernel with the feature engineering using a voting classifier.
 * The pipeline for the TDA calculation has 7 steps, remember the data is split up into chunks by [`create_dataset.py`](create_dataset.py):
     1. Extract certain keypoints (the neck, ankles, and wrists have worked the best for me), which both speeds up the computation and increases accuracy.
     2. Smooth the path of each keypoint.  This is mainly done since OpenPose sometimes produces jittery output, and this helps to remove that (and increases accuracy as a result).
     3. Normalise every chunk so that it is centered around `(0, 0)`.
-    4. Flatten the chunks from shape `[n_frames, n_keypoints, 2]` to `[n_keypoints * n_frames, 3]`.  The third dimension corresponds to the index of the frame, not actual time.
+    4. Flatten the chunks from shape `[n_frames, n_keypoints, 2]` to `[n_keypoints * n_frames, 3]`.  The third dimension corresponds to the index of the frame (i.e. ranging from 0 to n_frames), not actual time.
     5. Calculate persistence using `Gudhi`'s `AlphaComplex` (with `max_alpha_square` set to 2).
     6. Calculate the `SlicedWasserstein` kernel from `sklearn_tda`.
     7. Train a `scikit-learn` `SVC` classifier.
@@ -63,7 +63,7 @@ Most of what the scripts do is to wrap input and output to the different modules
 
 #### live_prediction.py
 * [`live_prediction.py`](live_prediction.py) takes a trained classifier and uses [`tracker.Tracker`](action_recognition/tracker/tracker.py) to yield identified tracks from the tracking of people in the video.
-* On each such track (every 20:th frame), it does post-processing (using [`analysis.PostProcessor`](action_recognition/analysis/post_processor.py)) and then takes the latest 50, 30, 25, and 20 (arbitrarily) frames as chunks for which actions are predicted.  The most likely action (highest probability/confidence from the classifier) from all chunks is selected as the action for the person.
+* On each such track (every 20:th frame), it does post-processing (using [`analysis.PostProcessor`](action_recognition/analysis/post_processor.py)) and then (arbitrarily) takes the latest 50, 30, 25, and 20 frames as chunks for which actions are predicted.  The most likely action (highest probability/confidence from the classifier) from all chunks is selected as the action for the person.
 * If the confiedence for a classification falls below a user-specifed threshold, the prediction is discarded.
 * It also tries to predict if a person moves through e.g. a checkout-area without stopping by identifying if a person moves during several consecutive frames.
 
@@ -71,10 +71,10 @@ Most of what the scripts do is to wrap input and output to the different modules
 
 There are currently four dockerfiles, corresponding to three natural divisions of dependencies, and one with every dependency:
 
-* [`dockerfiles/Dockerfile-openpose-gpu`](dockerfiles/Dockerfile-openpose-gpu): which is the GPU version of OpenPose, allows the openpose parts of this project to be run.
+* [`dockerfiles/Dockerfile-openpose-gpu`](dockerfiles/Dockerfile-openpose-gpu): which is the GPU version of OpenPose, allows the openpose parts (specifically `generate_tracks.py`) of this project to be run.
 * [`dockerfiles/Dockerfile-openpose-cpu`](dockerfiles/Dockerfile-openpose-cpu): which is the CPU version of OpenPose.
-* [`dockerfiles/Dockerfile-tda`](dockerfiles/Dockerfile-tda): which contains `Gudhi` and `sklearn_tda` for the classification part of the project.
-* [`Dockerfile`](Dockerfile): which installs both openpose (assuming a GPU) as well as the TDA libraries.  This file can do with some cleanup using build stages.
+* [`dockerfiles/Dockerfile-tda`](dockerfiles/Dockerfile-tda): which contains `Gudhi` and `sklearn_tda` for the classification part (specifically `train_classifier.py`) of the project.
+* [`Dockerfile`](Dockerfile): which installs both openpose (assuming a GPU) as well as the TDA libraries (which allows `live_prediction.py` to be run).  This file can do with some cleanup using build stages.
 
 After building the Dockerfiles, there is a script [`dev.sh`](dev.sh) which runs the container and mounts the source directory as well as the expected locations of the data.  It is provided more out of convenience than anything else and may need some modification depending on your configuration.
 

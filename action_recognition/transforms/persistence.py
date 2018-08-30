@@ -55,12 +55,14 @@ class Persistence(BaseEstimator, TransformerMixin):
 
         """
         scaler = RobustScaler()
+        #   Train the scaler on each individual point in every
+        # dataset since the scalers don't accept 3D data.
         self.scaler = scaler.fit(np.vstack(X))
 
         return self
 
     def transform(self, data):
-        """Returns self unchanged, as there are no parameters to fit.
+        """Calculates the persistence diagrams on the inputted point clouds.
 
         Parameters
         ----------
@@ -111,8 +113,6 @@ class Persistence(BaseEstimator, TransformerMixin):
 
         """
 
-        #   Train the scaler on each individual point in every
-        # dataset since the scalers don't accept 3D data.
         diags = np.zeros(data.shape[0], dtype=object)
         for i, d in enumerate(data):
             points = self.scaler.transform(d)

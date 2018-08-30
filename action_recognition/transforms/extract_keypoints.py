@@ -5,7 +5,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 class ExtractKeypoints(BaseEstimator, TransformerMixin):
     """Extracts a the specified keypoints from the inputted chunks.
 
-    Will also remove the confidence from each keypoin in the chunk
+    Will also remove the confidence from each keypoint in the chunk
     (the 3rd value).
 
     Parameters
@@ -46,7 +46,7 @@ class ExtractKeypoints(BaseEstimator, TransformerMixin):
         -------
         chunks : array-like
             The chunks with the specified keypoints extracted and the last
-            value removed.
+            value removed. shape = [n_chunks, frames_per_chunk, n_selected_keypoints, 2].
 
         """
         return np.array([chunk[:, self.selected_keypoints, :2] for chunk in chunks])

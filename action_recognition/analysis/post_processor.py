@@ -152,13 +152,17 @@ class PostProcessor:
         return chunks, chunk_frames, track_indicies
 
     def _decrease_frames_per_chunk(self, chunked, chunk_frames, target_frames_per_chunk):
-        indicies = np.arange(0, chunked.shape[1],
+        indicies = np.arange(0,
+                             chunked.shape[1],
                              chunked.shape[1] / target_frames_per_chunk).astype(np.int)
+
         target_chunked = np.empty((chunked.shape[0], target_frames_per_chunk, *chunked.shape[2:]))
         target_frames = np.empty((chunk_frames.shape[0], target_frames_per_chunk), dtype=np.int)
+
         for i, chunk in enumerate(chunked):
             target_chunked[i] = chunk[indicies]
             target_frames[i] = chunk_frames[i, indicies]
+
         return target_chunked, target_frames
 
     def filter_moving_chunks(self, chunks, chunk_frames):

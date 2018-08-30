@@ -36,7 +36,7 @@ def parse_path(video, out_directory, allowed_video_formats):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description=('Generate tracks of people using OpenPose. '
+        description=('Generates tracks of people using OpenPose. '
                      'Each track is a [n_frames, n_keypoints, 3] numpy.ndarray which is predicted '
                      'as being a single person through several frames, making the final '
                      'outputted array of shape [n_tracks, n_frames, n_keypoints, 3], '

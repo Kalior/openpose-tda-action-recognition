@@ -52,7 +52,8 @@ class Labelling:
 
         Returns
         -------
-        valid : boolean, True if keypress is contained in valid_actions()
+        valid : boolean
+            True if keypress is contained in valid_actions()
 
         """
         return keypress in self.valid_actions()
@@ -87,7 +88,8 @@ class Labelling:
 
         Returns
         -------
-        label : string of the corresponding label to the keypress
+        label : string
+            The corresponding label to the keypress
         """
         if keypress in self.actions:
             return self.actions[keypress][0]
@@ -101,10 +103,14 @@ class Labelling:
 
         Parameters
         ----------
-        chunks : numpy array shape = [number_of_frames, number_of_keypoints, 3]
-        chunk_frames : numpy array shape = [number_of_frames]
-        video : str, path to a video file from where the chunks were taken
+        chunks : numpy array
+            shape = [number_of_frames, number_of_keypoints, 3]
+        chunk_frames : numpy array
+            shape = [number_of_frames]
+        video : str
+            Path to a video file from where the chunks were taken
         processor : analysis.PostProcessor object
+            Used to extract tracks from chunks.
 
         Returns
         -------
@@ -120,7 +126,8 @@ class Labelling:
         while i < len(tracks):
             track = tracks[i]
             self.visualiser.draw_video_with_tracks(
-                [track], video, track.frame_assigned[-1].astype(np.int), track.frame_assigned[0].astype(np.int))
+                [track], video, track.frame_assigned[-1].astype(np.int),
+                track.frame_assigned[0].astype(np.int))
             keypress = input('Label? ' + self.valid_actions_string())
             if self.keypress_valid(keypress):
                 label = self.parse_keypress_to_label(label)
@@ -145,18 +152,24 @@ class Labelling:
         timestamps : list of dicts
             each dict must contain a 'start_time', 'end_time', and 'label' for
             each timestamp.
-        frames_per_chunk : int, corresponding to how long each chunk is.
-        video : str, path to the video corresponding to the timestamps.
+        frames_per_chunk : int
+            Corresponding to how long each chunk is.
+        video : str
+            Path to the video corresponding to the timestamps.
         tracks : list of tracker.Track
             the tracks from video, will be divided up into chunks of length
             frames_per_chunk.
 
         Returns
         -------
-        chunks : numpy.array of the labelled chunks
-        frames : numpy.array of the frames for the labelled chunks
-        labels : numpy.array of the labels for each chunk
-        indicies : numpy.array of the index of the track for every chunk.
+        chunks : numpy.array
+            The labelled chunks
+        frames : numpy.array
+            The frames for the labelled chunks
+        labels : numpy.array
+            The labels for each chunk
+        indicies : numpy.array
+            The index of the track for every chunk.
             needed for reproducibility.
         """
         keypoints = tracks[0][0].keypoints
@@ -182,7 +195,8 @@ class Labelling:
         track_indicies = np.zeros(0, dtype=np.int)
         return chunks, frames, labels, track_indicies
 
-    def _pseudo_automatic_labelling(self, timestamp, track, track_index, frames_per_chunk, chunk_shape, video):
+    def _pseudo_automatic_labelling(self, timestamp, track, track_index, frames_per_chunk,
+                                    chunk_shape, video):
         capture = cv2.VideoCapture(video)
         fps = capture.get(cv2.CAP_PROP_FPS)
 
@@ -226,23 +240,27 @@ class Labelling:
         return track_start <= start_frame and track_end >= end_frame
 
     def parse_labels(self, json_labels, frames_per_chunk, tracks):
-        """Function for parsing saved labels from json to labelled chuns.
+        """Function for parsing saved labels from json to labelled chunks.
 
         Parameters
         ----------
         json_labels : list of dicts
             each dict must contain a 'track_index', 'start_frame', 'end_frame',
             and 'label' value corresponding to each labelled chunk.
-        frames_per_chunk : int, length of each chunk.
+        frames_per_chunk : int
+            length of each chunk.
         tracks : list of tracker.Track
             Must be the same list of tracks from which the original json_labels
             where created.
 
         Returns
         -------
-        chunks : numpy.array of the labelled chunks
-        frames : numpy.array of the frames for the labelled chunks
-        labels : numpy.array of the labels for each chunk
+        chunks : numpy.array
+            The labelled chunks
+        frames : numpy.array
+            The frames for the labelled chunks
+        labels : numpy.array
+            The labels for each chunk
 
         """
         keypoints = tracks[0][0].keypoints
@@ -278,11 +296,16 @@ class Labelling:
 
         Parameters
         ----------
-        chunks : numpy.array of labelled chunks.
-        chunk_frames : numpy.array of the frames for the labelled chunks.
-        chunk_labels : numpy.array of the labels for each chunk.
-        track_indicies : numpy.array of the index of the track for every chunk.
-        labels_file : str, path to where the labels are to be written.
+        chunks : numpy.array
+            Labelled chunks.
+        chunk_frames : numpy.array
+            The frames for the labelled chunks.
+        chunk_labels : numpy.array
+            The labels for each chunk.
+        track_indicies : numpy.array
+            The index of the track for every chunk.
+        labels_file : str
+            Path to where the labels are to be written.
 
         """
         labels = []
@@ -304,7 +327,8 @@ class Labelling:
 
         Parameters
         ----------
-        video : str, path to the video for which the tracks where created.
+        video : str
+            Path to the video for which the tracks where created.
         processor : Processor object
             Requires that create_tracks(...) has been called on the processor
             before this function call.
@@ -317,10 +341,14 @@ class Labelling:
 
         Returns
         -------
-        chunks : numpy.array of the labelled chunks
-        frames : numpy.array of the frames for the labelled chunks
-        labels : numpy.array of the labels for each chunk
-        indicies : numpy.array of the index of the track for every chunk.
+        chunks : numpy.array
+            the labelled chunks
+        frames : numpy.array
+            the frames for the labelled chunks
+        labels : numpy.array
+            the labels for each chunk
+        indicies : numpy.array
+            the index of the track for every chunk,
             needed for reproducibility.
         """
         capture = cv2.VideoCapture(video)

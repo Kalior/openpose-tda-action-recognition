@@ -12,7 +12,7 @@ from .post_processor import PostProcessor
 class Mapper:
     """Runs the mapper algorithm on the dataset.
 
-    Essentially a visualisation procedure for high-dimensional data.
+    Essentially a TDA visualisation procedure for high-dimensional data.
     https://github.com/MLWave/kepler-mapper/
 
     Parameters
@@ -130,9 +130,9 @@ class Mapper:
             'output/tooltips', "pose-{}".format(chunk_index) + '.avi')
         out_file_scene = os.path.join(
             'output/tooltips', "scene-{}".format(chunk_index) + '.avi')
-        # self.chunk_visualiser.chunk_to_video_pose(chunk, out_file_pose, frames)
-        # self.chunk_visualiser.chunk_to_video_scene(
-        #     video, chunk, out_file_scene, frames, self.labels[chunk_index])
+        self.chunk_visualiser.chunk_to_video_pose(chunk, out_file_pose, frames)
+        self.chunk_visualiser.chunk_to_video_scene(
+            video, chunk, out_file_scene, frames, self.labels[chunk_index])
 
         tooltip = """
             <video

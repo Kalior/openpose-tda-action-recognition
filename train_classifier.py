@@ -27,8 +27,8 @@ def main(args):
 
     if args.augmentation:
         train = augmentors.Rotate(args.augmentation_amount).augment(*train)
-
-    logging.info("Number of train dataset labels after augmentor: {}".format(Counter(train[2])))
+        logging.info(
+            "Number of train dataset labels after augmentor: {}".format(Counter(train[2])))
 
     if args.tda:
         classifier = TDAClassifier(cross_validate=args.cross_validate)
@@ -60,6 +60,7 @@ def train_classifier(train, test, title, classifier, visualise_incorrect_classif
 
     visualiser = ClassificationVisualiser()
     visualiser.plot_confusion_matrix(pred_labels, test_labels, classifier.classes_, title)
+
     if visualise_incorrect_classifications:
         visualiser.visualise_incorrect_classifications(
             pred_labels, test_labels, test_chunks, test_frames, test_translated_chunks, test_videos)
@@ -71,7 +72,8 @@ def train_classifier(train, test, title, classifier, visualise_incorrect_classif
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=(
-        'Trains a classifier on recognising actions from the given dataset.'))
+        'Trains a classifier on recognising actions from the given dataset. '
+        'Requires one of --tda, --ensemble or --feature-engineering.'))
     parser.add_argument('--dataset', type=str,
                         help=('The path to the dataset, will append -train.npz and -test.npz '
                               'to this path, so make sure to not include those.'))

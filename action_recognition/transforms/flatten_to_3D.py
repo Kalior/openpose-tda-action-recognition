@@ -30,11 +30,11 @@ class FlattenTo3D(BaseEstimator, TransformerMixin):
         ----------
         chunks : array-like, shape = [n_chunks, frames_per_chunk, n_keypoints, 2]
             each subarray in chunks is transformed from
-            [frames_per_chunk, n_keypoints, 2] into [n_keypoints, 3]
+            [frames_per_chunk, n_keypoints, 2] into [frames_per_chunk * n_keypoints, 3]
 
         Returns
         -------
-        data : array-like, shape = [n_chunks, n_keypoints, 3]
+        data : array-like, shape = [n_chunks, frames_per_chunk * n_keypoints, 3]
             array of point clouds.
 
         """

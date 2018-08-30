@@ -28,11 +28,13 @@ class Flatten(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        chunks : array-like, array to flatten
+        chunks : array-like
+            array to flatten, shape = [n_chunks, n_frames, n_keypoints, x]
 
         Returns
         -------
-        data : array-like, with every subarray flattened.
+        data : array-like
+            shape = [n_chunks, n_frames * n_keypoints * x]
 
         """
         data = np.array([chunk.flatten() for chunk in chunks])
