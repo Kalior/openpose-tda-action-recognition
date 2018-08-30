@@ -4,42 +4,36 @@ import sklearn_tda as tda
 import numpy as np
 import logging
 
-from ..transforms import TranslateChunks, SmoothChunks, ExtractKeypoints, InterpolateKeypoints, \
-    FlattenTo3D, Persistence
+from .. import transforms
 from ..util import COCOKeypoints
 
 
 class TDAClusterer:
 
     def fit_predict(self, X):
-        arm_keypoints = [
-            COCOKeypoints.RElbow.value,
+        selected_keypoints = [
+            COCOKeypoints.Neck.value,
             COCOKeypoints.RWrist.value,
-            COCOKeypoints.LElbow.value,
-            COCOKeypoints.LWrist.value
+            COCOKeypoints.LWrist.value,
+            COCOKeypoints.RAnkle.value,
+            COCOKeypoints.LAnkle.value,
         ]
-        arm_connections = [(0, 1), (2, 3)]
 
-        logging.info("Translate.")
-        X = TranslateChunks().transform(X)
-        logging.info("Extract.")
-        X = ExtractKeypoints(arm_keypoints).transform(X)
-        logging.info("Smooth.")
-        X = SmoothChunks().transform(X)
-        logging.info("Interpolate.")
-        X = InterpolateKeypoints(arm_connections).transform(X)
-        logging.info("Flatten.")
-        X = FlattenTo3D().transform(X)
-        logging.info("Persistence.")
-        X = Persistence().fit_transform(X)
-        logging.info("Diagram selector.")
-        X = tda.DiagramSelector(limit=np.inf, point_type="finite").fit_transform(X)
-        logging.info("Sliced wasserstein.")
-        X = tda.SlicedWasserstein(bandwidth=0.6, num_directions=20).fit_transform(X)
+        pipe = sklearn.pipeline.Pipeline([
+            ("Extract", transforms.ExtractKeypoints(selected_keypoints)),
+            ("Smoothing", transforms.SmoothChunks()),
+            ("Translate", transforms.TranslateChunks()),
+            ("PositionCloud", transforms.FlattenTo3D()),
+            ("Persistence", transforms.Persistence(max_alpha_square=2, complex_='alpha')),
+            ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
+            ("Prominent", tda.ProminentPoints()),
+            ("TDA", tda.SlicedWasserstein(bandwidth=0.6, num_directions=20))
+        ])
+
+        X = pipe.fit_transform(X)
 
         logging.info("Cluster.")
         clusterer = sklearn.cluster.DBSCAN(metric='precomputed')
-        # clusterer = sklearn.cluster.SpectralClustering(n_clusters=5, affinity='precomputed')
         y_pred = clusterer.fit_predict(X)
 
         logging.info("PCA.")
