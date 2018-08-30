@@ -90,3 +90,11 @@ There is a helper script for producing timestamps for labels while recording vid
 * TDA does not have any way of recognising still vs lying.  Since the actions don't have any movement, they don't form any shapes that TDA can recognise.
 * TDA also does not have a concept of direction, only the shape of the point cloud. Therefore, a vertical action can easily be confused with a horizontal one.
 * While the final confusion matrix/accuracy looks good, I am worried that the data/actions are too easy since the feature engineering works so well.  The TDA kernel might generalise better?
+
+## Ideas that might improve the program
+
+* Main issue (for real usage) is that it is too slow.  As mentioned above, there are some parameters that can be tuned to help speed up the classification, but it is still too slow for real usage.  Under the assumption that every action takes the same amount of time, we can also base every live prediction on only one chunk.  Not sure how to actually make the persistence/kernel calculations faster.
+* There is also a need for more data to test the approach on.  As previously mentioned, the current data may be too easy, and I've seen improvements on test video by adding more data.
+* It might be possible to increase the dimensionality of the point clouds with some hand-crafted feature.  I experimented with adding the speed of every keypoint to the point cloud - but did not get an increase in performance.  Also, naturally, makes the persistence/kernel computations slower.
+* Could change the 3:rd dimension in the point clouds from the frame number (from start of chunk) to the actual change in time.
+* There are also three possible improvements to the tracker if necessary: To predict position of people in next frame by using their speed to help increase accuracy of tracks. To remove assignments of keypoints where the, e.g., arm suddenly is much much longer (which sometimes does happen).  To remove predicted people who have too few keypoints, maybe only an arm or part of a face.
