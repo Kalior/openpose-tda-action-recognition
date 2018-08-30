@@ -46,13 +46,6 @@ action\_recognition.transforms.persistence
     :undoc-members:
     :show-inheritance:
 
-action\_recognition.transforms.rotate\_point\_cloud
----------------------------------------------------
-
-.. automodule:: action_recognition.transforms.rotate_point_cloud
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 action\_recognition.transforms.smooth\_chunks
 ---------------------------------------------
@@ -77,13 +70,3 @@ action\_recognition.transforms.translate\_chunks
     :members:
     :undoc-members:
     :show-inheritance:
-
-action\_recognition.transforms.translate\_chunks\_by\_keypoints
----------------------------------------------------------------
-
-.. automodule:: action_recognition.transforms.translate_chunks_by_keypoints
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
