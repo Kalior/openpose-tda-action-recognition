@@ -9,4 +9,5 @@ finally use kernels and vectorisations from sklearn_tda to predict
 actions.
 """
 
-__all__ = ['analysis', 'classifiers', 'detector', 'features', 'tracker', 'transforms', 'util']
+__all__ = ['analysis', 'augmentors', 'classifiers',
+           'detector', 'features', 'tracker', 'transforms', 'util']

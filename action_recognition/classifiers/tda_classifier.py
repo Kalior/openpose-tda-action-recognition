@@ -7,15 +7,14 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
-from sklearn.preprocessing import KernelCenterer
+from sklearn.preprocessing import RobustScaler, StandardScaler
 
 import numpy as np
 import itertools
 import logging
 
 from ..util import COCOKeypoints, coco_connections
-from ..transforms import Persistence, TranslateChunks, SmoothChunks, FlattenTo3D, Speed, \
-    ExtractKeypoints, InterpolateKeypoints, RotatePointCloud
+from .. import transforms
 
 
 class TDAClassifier(BaseEstimator, ClassifierMixin):
@@ -38,16 +37,15 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
 
     def __init__(self, cross_validate=False):
         self.cross_validate = cross_validate
-        self.arm_keypoints = [
-            COCOKeypoints.RElbow.value,
-            COCOKeypoints.RWrist.value,
-            COCOKeypoints.LElbow.value,
-            COCOKeypoints.LWrist.value,
-            COCOKeypoints.LAnkle.value,
-            COCOKeypoints.RAnkle.value
-        ]
-        self.arm_connections = [(0, 1), (2, 3), (4, 5)]
-        self.all_keypoints = range(18)
+        self.selected_keypoints = [k.value for k in [
+            COCOKeypoints.Neck,
+            COCOKeypoints.RWrist,
+            COCOKeypoints.LWrist,
+            COCOKeypoints.RAnkle,
+            COCOKeypoints.LAnkle,
+        ]]
+        self.keypoint_connections = [(0, 1), (0, 2), (1, 3), (2, 4)]
+        self.all_keypoints = range(14)
 
     def fit(self, X, y, **fit_params):
         """Fit the model.
@@ -77,8 +75,7 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             model = self._pre_validated_pipeline()
             self.model = model.fit(X, y)
 
-        # logging.info("Train accuracy = {}".format(self.model.score(X, y)))
-
+        self.classes_ = self.model.classes_
         return self
 
     def predict(self, X):
@@ -115,16 +112,15 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
 
     def _pre_validated_pipeline(self):
         pipe = Pipeline([
-            ("Translate",   TranslateChunks()),
-            ("Extract",     ExtractKeypoints(self.arm_keypoints)),
-            ("Smoothing",   SmoothChunks()),
-            ("Interpolate", InterpolateKeypoints(self.arm_connections, 1)),
-            ("Flattening",  FlattenTo3D()),
-            ("Persistence", Persistence(max_edge_length=0.5, complex_='rips')),
-            ("Separator",   tda.DiagramSelector(limit=np.inf, point_type="finite")),
-            ("TDA",         tda.SlicedWasserstein(bandwidth=0.6, num_directions=20)),
-            ("Centerer",    KernelCenterer()),
-            ("Estimator",   SVC(kernel='precomputed', probability=True))
+            ("Extract", transforms.ExtractKeypoints(self.selected_keypoints)),
+            ("Smoothing", transforms.SmoothChunks()),
+            ("Translate", transforms.TranslateChunks()),
+            ("PositionCloud", transforms.FlattenTo3D()),
+            ("Persistence", transforms.Persistence(max_alpha_square=2, complex_='alpha')),
+            ("Separator", tda.DiagramSelector(limit=np.inf, point_type="finite")),
+            ("Prominent", tda.ProminentPoints()),
+            ("TDA", tda.SlicedWasserstein(bandwidth=0.6, num_directions=20)),
+            ("Estimator", SVC(kernel='precomputed', probability=True))
         ])
 
         return pipe
@@ -144,95 +140,34 @@ class TDAClassifier(BaseEstimator, ClassifierMixin):
             (12, 13)
         ]
 
-        leg_keypoints = [
-            COCOKeypoints.LKnee.value,
-            COCOKeypoints.LAnkle.value,
-            COCOKeypoints.RKnee.value,
-            COCOKeypoints.RAnkle.value
-        ]
+        leg_keypoints = [k.value for k in [
+            COCOKeypoints.LKnee,
+            COCOKeypoints.LAnkle,
+            COCOKeypoints.RKnee,
+            COCOKeypoints.RAnkle
+        ]]
         leg_connections = [(0, 1), (2, 3)]
 
-        leg_and_arm_keypoints = [
-            COCOKeypoints.RElbow.value,
-            COCOKeypoints.RWrist.value,
-            COCOKeypoints.LElbow.value,
-            COCOKeypoints.LWrist.value,
-            COCOKeypoints.LKnee.value,
-            COCOKeypoints.LAnkle.value,
-            COCOKeypoints.RKnee.value,
-            COCOKeypoints.RAnkle.value
-        ]
+        leg_and_arm_keypoints = [k.value for k in [
+            COCOKeypoints.RElbow,
+            COCOKeypoints.RWrist,
+            COCOKeypoints.LElbow,
+            COCOKeypoints.LWrist,
+            COCOKeypoints.LKnee,
+            COCOKeypoints.LAnkle,
+            COCOKeypoints.RKnee,
+            COCOKeypoints.RAnkle
+        ]]
         leg_and_arm_connections = [(0, 1), (2, 3), (4, 5), (6, 7)]
+
+        no_connections = []
 
         params = [
             {
-                "Persistence__max_edge_length": [0.5, 0.9],
-                "Persistence__complex_": ['rips'],
-                "Extract__selected_keypoints": [self.arm_keypoints],
-                "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate__connect_keypoints": [self.arm_connections],
-            },
-            {
-                "Persistence__max_edge_length": [0.5, 0.9],
-                "Persistence__complex_": ['rips'],
-                "Extract__selected_keypoints": [self.all_keypoints],
-                "Interpolate__connect_keypoints": [limb_connections, coco_connections],
-                "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate": [None, InterpolateKeypoints(self.arm_connections)]
-            },
-            {
-                "Persistence__max_edge_length": [0.5, 0.9],
-                "Persistence__complex_": ['rips'],
-                "Extract__selected_keypoints": [leg_keypoints],
-                "Interpolate__connect_keypoints": [leg_connections],
-                "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate": [None, InterpolateKeypoints(leg_connections)]
-            },
-            {
-                "Persistence__max_edge_length": [0.5, 0.9],
-                "Persistence__complex_": ['rips'],
-                "Extract__selected_keypoints": [leg_and_arm_keypoints],
-                "Interpolate__connect_keypoints": [leg_and_arm_connections],
-                "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate": [None, InterpolateKeypoints(leg_and_arm_connections)]
-            },
-            {
-                "Persistence__max_alpha_square": [0.9],
+                "Persistence__max_alpha_square": [0.5, 0.9, 1.5],
                 "Persistence__complex_": ['alpha'],
-                "Extract__selected_keypoints": [self.all_keypoints],
-                "Interpolate__connect_keypoints": [limb_connections, coco_connections],
-                "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate": [None, InterpolateKeypoints(self.arm_connections)]
+                "Extract__selected_keypoints": [self.selected_keypoints],
             },
-            {
-                "Persistence__max_alpha_square": [0.9],
-                "Persistence__complex_": ['alpha'],
-                "Extract__selected_keypoints": [self.arm_keypoints],
-                "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate__connect_keypoints": [self.arm_connections]
-            },
-            {
-                "Persistence__max_alpha_square": [0.9],
-                "Persistence__complex_": ['alpha'],
-                "Extract__selected_keypoints": [leg_keypoints],
-                "Interpolate__connect_keypoints": [leg_connections],
-                "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate": [None, InterpolateKeypoints(leg_connections)]
-            },
-            {
-                "Persistence__max_alpha_square": [0.9],
-                "Persistence__complex_": ['alpha'],
-                "Extract__selected_keypoints": [leg_and_arm_keypoints],
-                "Interpolate__connect_keypoints": [leg_and_arm_connections],
-                "Interpolate__number_of_points": [2, 3, 4],
-                "Interpolate": [None, InterpolateKeypoints(leg_and_arm_connections)]
-            },
-            # {
-            #     "Smoothing": [SmoothChunks()],
-            #     "Interpolate": [None],
-            #     "Extract__selected_keypoints": [self.all_keypoints],
-            #     "Interpolate__connect_keypoints": [coco_connections],
-            # }
         ]
 
-        return GridSearchCV(pipe, params, n_jobs=-1)
+        return GridSearchCV(pipe, params, n_jobs=1)

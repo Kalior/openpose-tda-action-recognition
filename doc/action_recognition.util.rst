@@ -7,7 +7,7 @@ action\_recognition.util package
     :show-inheritance:
 
 action\_recognition.util.coco\_keypoints
------------------------------------------------
+----------------------------------------
 
 .. automodule:: action_recognition.util.coco_keypoints
     :members:

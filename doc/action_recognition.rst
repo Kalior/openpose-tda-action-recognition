@@ -12,6 +12,7 @@ Subpackages
 .. toctree::
 
     action_recognition.analysis
+    action_recognition.augmentors
     action_recognition.classifiers
     action_recognition.detector
     action_recognition.features

@@ -7,7 +7,7 @@ action\_recognition.tracker package
     :show-inheritance:
 
 action\_recognition.tracker.person
------------------------------------------
+----------------------------------
 
 .. automodule:: action_recognition.tracker.person
     :members:
@@ -15,7 +15,7 @@ action\_recognition.tracker.person
     :show-inheritance:
 
 action\_recognition.tracker.track
-----------------------------------------
+---------------------------------
 
 .. automodule:: action_recognition.tracker.track
     :members:
@@ -23,7 +23,7 @@ action\_recognition.tracker.track
     :show-inheritance:
 
 action\_recognition.tracker.track\_visualiser
-----------------------------------------------------
+---------------------------------------------
 
 .. automodule:: action_recognition.tracker.track_visualiser
     :members:
@@ -31,7 +31,7 @@ action\_recognition.tracker.track\_visualiser
     :show-inheritance:
 
 action\_recognition.tracker.tracker
-------------------------------------------
+-----------------------------------
 
 .. automodule:: action_recognition.tracker.tracker
     :members:

@@ -44,7 +44,6 @@ class Speed(BaseEstimator, TransformerMixin):
         data : array-like
             shape = [n_chunks, frames_per_chunk - window, n_keypoints, x]
 
-
         """
 
         data = np.array([self._chunk_to_speed(chunk) for chunk in chunks])

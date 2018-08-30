@@ -23,28 +23,32 @@ def main(args):
     frames_per_chunk = 20
     number_of_keypoints = 18
     number_of_coordinates = 3
-    all_chunks = np.empty((0, frames_per_chunk, number_of_keypoints, number_of_coordinates))
-    all_frames = np.empty((0, frames_per_chunk))
-    all_labels = np.empty((0,), dtype=str)
-    all_videos = np.empty((0,), dtype=str)
-    for i in range(len(tracks_files)):
-        tracks_file = tracks_files[i]
-        video = video_files[i]
+
+    all_chunks = []
+    all_frames = []
+    all_labels = []
+    all_videos = []
+
+    for tracks_file, video in zip(tracks_files, video_files):
         logging.info("Processing video: {} with tracks {}".format(video, tracks_file))
+
         chunks, frames, labels = process_tracks(
             tracks_file, video, frames_per_chunk, overlap_percentage,
-            seconds_per_chunk, args.filter_moving)
-        videos = [video] * len(chunks)
+            seconds_per_chunk)
 
-        all_chunks = np.append(all_chunks, chunks, axis=0)
-        all_frames = np.append(all_frames, frames, axis=0)
-        all_labels = np.append(all_labels, np.array(labels), axis=0)
-        all_videos = np.append(all_videos, np.array(videos), axis=0)
+        videos = np.array([video] * len(chunks))
+
+        all_chunks.extend(chunks)
+        all_frames.extend(frames)
+        all_labels.extend(labels)
+        all_videos.extend(videos)
+
+    train, test = split_data(all_chunks, all_frames, all_labels, all_videos)
 
     extension_free = os.path.splitext(args.out_file)[0]
     train_name = extension_free + '-train.npz'
     test_name = extension_free + '-test.npz'
-    train, test = split_data(all_chunks, all_frames, all_labels, all_videos)
+
     append_and_save(*train, train_name)
     append_and_save(*test, test_name)
 
@@ -88,13 +92,13 @@ def split_data(chunks, frames, labels, videos):
     logging.info("Splitting data into test/train")
     train_chunks, test_chunks, train_labels, test_labels, \
         train_frames, test_frames, train_videos, test_videos = train_test_split(
-            chunks, labels, frames, videos)
+            chunks, labels, frames, videos, test_size=0.2)
 
-    return [train_chunks, train_frames, train_labels, train_videos], \
-        [test_chunks, test_frames, test_labels, test_videos]
+    return (train_chunks, train_frames, train_labels, train_videos), \
+        (test_chunks, test_frames, test_labels, test_videos)
 
 
-def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percentage, seconds_per_chunk, automatic_moving_filter):
+def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percentage, seconds_per_chunk):
     tracks_npz = np.load(tracks_file)
     np_tracks = tracks_npz['tracks']
     np_frames = tracks_npz['frames']
@@ -107,15 +111,14 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
     extension_free_tracks = os.path.splitext(tracks_file)[0]
     labels_file = extension_free_tracks + '-labels.json'
 
-    extension_free_video = os.path.splitext(video)[0]
-    timestamps_file = extension_free_video + '-timestamps.json'
-
     if os.path.isfile(labels_file):
         with open(labels_file, 'r') as f:
             json_labels = json.load(f)
         chunks, frames, labels = Labelling().parse_labels(
             json_labels, target_frames_per_chunk, processor.tracks)
     else:
+        extension_free_video = os.path.splitext(video)[0]
+        timestamps_file = extension_free_video + '-timestamps.json'
         if os.path.isfile(timestamps_file):
             with open(timestamps_file, 'r') as f:
                 timestamps = json.load(f)
@@ -123,10 +126,9 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
             chunks, frames, labels, track_indicies = Labelling().pseudo_automatic_labelling(
                 timestamps, target_frames_per_chunk, video, processor.tracks)
         else:
-            chunks, frames, labels, track_indicies = manual_labelling(
-                tracks_file,
+            chunks, frames, labels, track_indicies = Labelling().manual_labelling(
                 video, processor, target_frames_per_chunk, overlap_percentage,
-                seconds_per_chunk, automatic_moving_filter)
+                seconds_per_chunk)
 
         Labelling().write_labels(chunks, frames, labels, track_indicies, labels_file)
 
@@ -135,60 +137,20 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
     return chunks, frames, labels
 
 
-def manual_labelling(tracks_file, video, processor, target_frames_per_chunk, overlap_percentage, seconds_per_chunk, automatic_moving_filter):
-    capture = cv2.VideoCapture(video)
-    fps = capture.get(cv2.CAP_PROP_FPS)
-    frames_per_chunk_for_seconds = int(seconds_per_chunk * fps)
-    logging.debug("Frames per chunks to get same #seconds: {}".format(
-        frames_per_chunk_for_seconds))
-    overlap = int(frames_per_chunk_for_seconds * overlap_percentage)
-
-    logging.info("Chunking tracks.")
-    chunks, frames, track_indicies = processor.chunk_tracks(
-        frames_per_chunk_for_seconds, overlap, target_frames_per_chunk)
-    logging.info("Identified {} chunks".format(chunks.shape[0]))
-
-    if automatic_moving_filter:
-        chunks, frames = filter_moving(chunks, frames)
-
-    base_name = os.path.splitext(tracks_file)[0]
-    labels_file = base_name + '.labels'
-    if os.path.isfile(labels_file):
-        with open(labels_file, 'r') as f:
-            labels = json.load(f)
-    else:
-        labels = Labelling().label_chunks(chunks, frames, video, processor)
-        j = json.dumps(labels)
-        with open(labels_file, 'w') as f:
-            f.write(j)
-
-    chunks = chunks[np.array(list(labels.keys()), dtype=np.int)]
-    frames = frames[np.array(list(labels.keys()), dtype=np.int)]
-    track_indicies = track_indicies[np.array(list(labels.keys()), dtype=np.int)]
-
-    return chunks, frames, list(labels.values()), track_indicies
-
-
-def filter_moving(chunks, frames):
-    chunks_before_filtering = chunks.shape[0]
-    logging.info("Filtering out every path but the cachier standing still.")
-    chunks, frames = processor.filter_moving_chunks(chunks, frames)
-    logging.info("Automatically removed {} chunks".format(
-        chunks_before_filtering - chunks.shape[0]))
-    return chunks, frames
-
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Dataset creation for analysis of tracks.')
+    parser = argparse.ArgumentParser(
+        description=('Dataset creation/labelling for action recognition. '
+                     'Allows for two different methods of labelling data, see '
+                     'the documentation of the Labelling class for details.'))
     parser.add_argument('--videos', type=str, nargs='+',
-                        help='The video from which the paths were generated.')
+                        help='The videos/folders from which the paths were generated.')
     parser.add_argument('--tracks-files', type=str, nargs='+',
-                        help='The file with the saved tracks.')
-    parser.add_argument('--out-file', type=str, default='dataset/dataset.npz',
-                        help='The path to the file where the data will be saved')
+                        help='The files/folders with the saved tracks.')
+    parser.add_argument('--out-file', type=str, default='dataset/dataset',
+                        help='The path to the file where the data will be saved.')
     parser.add_argument('--append', action='store_true',
-                        help='Specify if the data should be added to the out-file (if it exists) or overwritten.')
-    parser.add_argument('--filter-moving', action='store_true',
-                        help='Specify if you want to automatically filter chunks with large movement.')
+                        help=('Specify if the data should be added to the out-file '
+                              '(if it exists) or overwritten.'))
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()

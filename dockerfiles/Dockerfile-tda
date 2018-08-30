@@ -75,7 +75,7 @@ ENV PYTHONPATH $GUDHIPATH:$PYTHONPATH
 
 RUN make all test install
 
-WORKDIR /tda-action-recognition
+WORKDIR /openpose-action-recognition
 
 COPY requirements.txt requirements.txt
 RUN python3.6 -m pip install -r requirements.txt

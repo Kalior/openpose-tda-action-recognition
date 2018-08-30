@@ -15,13 +15,13 @@ class TestTrack(unittest.TestCase):
         self.people = [self.person, other_person_1, other_person_2,
                        other_person_3, mostly_zero_person]
 
-    def test_is_relevant(self):
+    def test_recently_updated(self):
         track = Track()
         track.add_person(self.people[0], 10)
 
-        self.assertTrue(track.is_relevant(0))
-        self.assertTrue(track.is_relevant(10))
-        self.assertFalse(track.is_relevant(20))
+        self.assertTrue(track.recently_updated(0))
+        self.assertTrue(track.recently_updated(10))
+        self.assertFalse(track.recently_updated(20))
 
     def test_get_average_speed_in_window(self):
         track = Track()

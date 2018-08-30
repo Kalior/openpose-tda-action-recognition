@@ -3,6 +3,7 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import logging
 
 from ..analysis import ChunkVisualiser
 
@@ -15,31 +16,30 @@ class ClassificationVisualiser:
     visualising the incorrect classifications.
     """
 
-    def plot_confusion_matrix(self, labels, test_labels, le, title):
+    def plot_confusion_matrix(self, labels, test_labels, class_names, title):
         """Plots a confusion matrix for the given labels.
 
         Parameters
         ----------
         labels : array-like of predicted labels
         test_labels : array-like of ground truth labels
-        le : sklearn.preprocessing.LabelEncoder for converting to label names
+        class_names : array-like of class names.
         title : str, title of the plot and name of the file
 
         """
         confusion_matrix = metrics.confusion_matrix(test_labels, labels).astype(np.float32)
         confusion_matrix = confusion_matrix / confusion_matrix.sum(axis=1)[:, np.newaxis]
-        class_names = le.classes_
         df_cm = pd.DataFrame(confusion_matrix, index=class_names, columns=class_names)
         plt.figure(figsize=(10, 7))
         sns.heatmap(df_cm, annot=True)
         plt.ylabel('True label')
         plt.xlabel('Predicted label')
-        plt.tight_layout()
         plt.title(title)
+        plt.tight_layout()
         plt.savefig(title + '.png', bbox_inches='tight')
         plt.show(block=False)
 
-    def visualise_incorrect_classifications(self, pred_labels, test_labels, le, chunks, frames, translated_chunks, videos):
+    def visualise_incorrect_classifications(self, pred_labels, test_labels, chunks, frames, translated_chunks, videos):
         """Displays videos of the incorrect classifications.
 
         Can help with identifying features that can be added to the
@@ -49,7 +49,6 @@ class ClassificationVisualiser:
         ----------
         pred_labels : array-like of predicted labels.
         test_labels : array-like of ground truth labels.
-        le : sklearn.preprocessing.LabelEncoder for converting labels to names.
         chunks : array-like, the corresponding chunks for the labels.
         frames : array-like, the frames for the chunks.
         translated_chuns : array-like
@@ -67,7 +66,11 @@ class ClassificationVisualiser:
                 pred_class_member_mask = (pred_labels == pred_label)
                 true_class_member_mask = (test_labels == true_label)
                 node = np.where(pred_class_member_mask & true_class_member_mask)[0]
-                name = "P {}, T {}".format(le.classes_[pred_label], le.classes_[true_label])
+                name = "P {}, T {}".format(pred_label, true_label)
+
+                logging.debug("\n".join("{}-{} {}, {}".format(
+                    f[0], f[-1], true_label, video)
+                    for f, video in zip(frames[node], videos[node])))
 
                 if len(node) != 0:
                     repeat = 'y'

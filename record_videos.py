@@ -18,6 +18,7 @@ def main(args):
             out_file_video = "{}-{}.mp4".format(args.video_name, i)
             out_file_timestamps = "{}-{}-timestamps.json".format(args.video_name, i)
             ff, start_time = start_recording(out_file_video, args.video_path, args.video_size)
+
             # Sleep in order to allow the program some time to start the recording.
             sleep(2)
 
@@ -41,7 +42,7 @@ def label_recording(video_start_time):
         if Labelling().keypress_valid(keypress):
             start_time = time() - video_start_time
 
-            input('Press any key to stop')
+            input('Press enter to stop')
             end_time = time() - video_start_time
             label = Labelling().parse_keypress_to_label(keypress)
             timestamp = {
@@ -79,12 +80,13 @@ def start_recording(out_file, video_path, video_size):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Helper script for labelling data in record(ing)-time.')
+        description='Helper script recording and generating timestamps with labels during record-time.')
     parser.add_argument('--video-name', type=str, help='Prefix of the outputted video files.')
     parser.add_argument('--video-path', type=str, default='/dev/video1',
                         help='Path to the video device (e.g. /dev/video1)')
     parser.add_argument('--video-size', type=str, default='960x544',
-                        help='Resolution of output video, make sure the camera can capture the given size.')
+                        help=('Resolution of output video,'
+                              'make sure the camera can capture the given size.'))
 
     args = parser.parse_args()
 

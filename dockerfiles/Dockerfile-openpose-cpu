@@ -21,7 +21,7 @@ RUN apt-get install -y \
     cmake \
     libgflags-dev \
     libgoogle-glog-dev \
-    liblmdb-dev 
+    liblmdb-dev
 
 RUN apt-get install --no-install-recommends -y libboost-all-dev
 

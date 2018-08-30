@@ -17,31 +17,11 @@ class Person:
         The index of the track that the person belongs to, if any.
 
     """
-    only_track_arms = False
 
     def __init__(self, keypoints, track_index=-1):
         self.keypoints = keypoints
         self.track_index = track_index
         self.og_keypoints = np.copy(keypoints)
-
-    def get_nonzero_keypoint(self):
-        """Gets the first keypoint from the person that isn't zero.
-
-        Returns
-        -------
-        keypoint : array-like
-            The first non-zero keypoint of the person, shape = [2]
-
-        """
-        if Person.only_track_arms:
-            relevant_keypoints = self.get_arm_keypoints()
-        else:
-            relevant_keypoints = self.keypoints
-
-        return next((keypoint[:2]
-                     for keypoint in relevant_keypoints
-                     if np.any(keypoint[:2])),
-                    np.array([0.0, 0.0]))
 
     def __eq__(self, other_person):
         return np.array_equal(self.keypoints, other_person.keypoints)
@@ -61,12 +41,8 @@ class Person:
 
         """
         # Disregard the confidence for now.
-        if Person.only_track_arms:
-            xy_person = self.get_arm_keypoints()[:, :2]
-            xy_other = other_person.get_arm_keypoints()[:, :2]
-        else:
-            xy_person = self.keypoints[:, :2]
-            xy_other = other_person.keypoints[:, :2]
+        xy_person = self.keypoints[:, :2]
+        xy_other = other_person.keypoints[:, :2]
 
         #   Don't include the keypoints we didn't identify
         # as this can give large frame-to-frame errors.
@@ -122,22 +98,6 @@ class Person:
         """
         return self.keypoints[[COCOKeypoints.RWrist.value, COCOKeypoints.RElbow.value]]
 
-    def is_relevant(self):
-        """Checks if the Person has valid keypoints.
-
-        Returns True unless we're only tracking arms, in which case it checks
-        if any of the arms have non-zero values.
-
-        Returns
-        -------
-        bool : boolean
-
-        """
-        if Person.only_track_arms:
-            return np.any(self.get_arm_keypoints())
-        else:
-            return True
-
     def fill_missing_keypoints(self, other, fill_type='copy'):
         """Fills missing keypoints.
 
@@ -154,17 +114,8 @@ class Person:
         """
         # If type is diff, we have to try to fill in both directions.
         if fill_type is 'diff':
-            for i, k in enumerate(self.keypoints):
-                if not np.any(k):
-                    new_keypoint = self._diff_fill_keypoint(i, other)
-                    if new_keypoint is not None:
-                        self.keypoints[i] = new_keypoint
-
-            for i, k in reversed(list(enumerate(self.keypoints))):
-                if not np.any(k):
-                    new_keypoint = self._diff_fill_keypoint(i, other)
-                    if new_keypoint is not None:
-                        self.keypoints[i] = new_keypoint
+            self._fill_diff_loop(enumerate(self.keypoints), other)
+            self._fill_diff_loop(reversed(list(enumerate(self.keypoints))), other)
 
         # Always fill with copy in case we did not find any possible
         # connections.
@@ -172,11 +123,19 @@ class Person:
             if not np.any(k):
                 self.keypoints[i] = np.copy(other.keypoints[i])
 
+    def _fill_diff_loop(self, enumerator, other):
+        for i, k in enumerator:
+            if not np.any(k):
+                new_keypoint = self._diff_fill_keypoint(i, other)
+                if new_keypoint is not None:
+                    self.keypoints[i] = new_keypoint
+
     def _diff_fill_keypoint(self, keypoint_index, other):
         # Try finding a keypoint in the downwards direction (e.g. shoulder - elbow)
         connect_downwards = next((from_ for from_, to in coco_connections
                                   if to == keypoint_index and
                                   np.any(other.keypoints[from_]) and
+                                  np.any(other.keypoints[to]) and
                                   np.any(self.keypoints[from_])
                                   ), -1)
         # If none found, try the other direction. (e.g. elbow - shoulder)
@@ -185,6 +144,7 @@ class Person:
         connect_upwards = next((to for from_, to in coco_connections
                                 if from_ == keypoint_index and
                                 np.any(other.keypoints[to]) and
+                                np.any(other.keypoints[from_]) and
                                 np.any(self.keypoints[to])
                                 ), -1)
         if connect_downwards == -1 and connect_upwards == -1:

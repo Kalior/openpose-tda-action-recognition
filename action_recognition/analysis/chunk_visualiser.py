@@ -20,7 +20,7 @@ class ChunkVisualiser:
 
     """
 
-    def __init__(self, chunks, chunk_frames, translated_chunks):
+    def __init__(self, chunks=[], chunk_frames=[], translated_chunks=[]):
         self.chunks = chunks
         self.chunk_frames = chunk_frames
         self.translated_chunks = translated_chunks
@@ -54,7 +54,7 @@ class ChunkVisualiser:
             Key is name of group of chunks, Value is a list with indicies
             of the chunks corresponding to the group.
         forever : boolean, optional, default=False
-            Specifies if the averages should be drawn for a long time or not.
+            Specifies if the averages should be displayed for a long time or not.
 
         """
         visualiser = TrackVisualiser()
@@ -70,9 +70,10 @@ class ChunkVisualiser:
         for _ in range(iteration_length):
             for i in range(len(all_average_frames[0])):
                 for j, average_frames in enumerate(all_average_frames):
-                    smaller_average = cv2.resize(average_frames[i], (0, 0), fx=0.5, fy=0.5)
-                    cv2.imshow("average person {}".format(j), smaller_average)
-                    cv2.waitKey(15)
+                    if i < len(average_frames):
+                        smaller_average = cv2.resize(average_frames[i], (0, 0), fx=0.5, fy=0.5)
+                        cv2.imshow("average person {}".format(j), smaller_average)
+                        cv2.waitKey(15)
 
     def draw_node(self, videos, name, node):
         """Draws the videos with the chunks overlayed corresponding to the node.
@@ -141,15 +142,19 @@ class ChunkVisualiser:
 
         frames = []
         opacity = 1 / len(tracks) + 0.05
-        for i in range(len(tracks[0][1])):
-            blank_image = np.zeros((500, 500, 3), np.uint8)
-            for start_frame, track in tracks:
-                overlay = blank_image.copy()
-                visualiser.draw_people([track], overlay, i + start_frame)
-                cv2.addWeighted(overlay, opacity, blank_image, 1 - opacity, 0, blank_image)
-            visualiser.draw_text(blank_image, name, position=(20, 50))
+        for start_frame, track in tracks:
+            for i in range(len(track)):
+                if i < len(frames):
+                    frame = frames[i]
+                else:
+                    frame = np.zeros((500, 500, 3), np.uint8)
+                    visualiser.draw_text(frame, name, position=(20, 50))
+                    frames.append(frame)
 
-            frames.append(blank_image)
+                overlay = frame.copy()
+                visualiser.draw_people([track], overlay, i + start_frame)
+                cv2.addWeighted(overlay, opacity, frame, 1 - opacity, 0, frame)
+                frames[i] = frame
 
         return frames
 
@@ -178,17 +183,15 @@ class ChunkVisualiser:
         visualiser = TrackVisualiser()
 
         for i in range(len(chunk)):
-            translated_image = self._draw_translated_track(
-                translated_track, i, frames, visualiser)
+            translated_image = self._draw_translated_track(translated_track, i, frames, visualiser)
             translated_image = cv2.resize(translated_image, (frame_width, frame_height))
             writer.write(translated_image)
 
         writer.release()
 
-    def _create_writer(self, out_file):
-        frame_width = 100
-        frame_height = 100
-        fps = 10
+    def _create_writer(self, out_file, fps=10, crop_size=100):
+        frame_width = crop_size
+        frame_height = crop_size
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
         writer = cv2.VideoWriter(out_file, fourcc, fps, (frame_width, frame_height))
@@ -227,10 +230,11 @@ class ChunkVisualiser:
 
         capture.set(cv2.CAP_PROP_POS_FRAMES, frames[0])
 
-        track = self._chunk_to_track(chunk, frames)
+        track = self._chunk_to_track(chunk, frames,)
         visualiser = TrackVisualiser()
 
-        writer, frame_width, frame_height = self._create_writer(out_file)
+        fps = capture.get(cv2.CAP_PROP_FPS)
+        writer, frame_width, frame_height = self._create_writer(out_file, fps, crop_size)
 
         for i in range(len(chunk)):
             sucess, image = capture.read()
@@ -247,5 +251,5 @@ class ChunkVisualiser:
         cropped_image = original_image[
             start_x:(start_x + crop_size), start_y:(start_y + crop_size)]
         visualiser.draw_frame_number(cropped_image, frame)
-        visualiser.draw_text(cropped_image, label, position=(20, 450), color=(255, 255, 0))
+        visualiser.draw_text(cropped_image, label, position=(20, 450))
         return cropped_image

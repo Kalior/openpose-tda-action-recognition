@@ -66,9 +66,5 @@ class TestTracker(unittest.TestCase):
                                 for person in track)
                             for track in self.tracker.tracks))
 
-    def test_get_nonzero_keypoint(self):
-        keypoint = self.mostly_zero_person.get_nonzero_keypoint()
-        self.assertTrue(np.array_equal(keypoint, [3, 4]))
-
 if __name__ == '__main__':
     unittest.main()

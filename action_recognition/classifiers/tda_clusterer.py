@@ -31,15 +31,15 @@ class TDAClusterer:
         logging.info("Flatten.")
         X = FlattenTo3D().transform(X)
         logging.info("Persistence.")
-        X = Persistence().transform(X)
+        X = Persistence().fit_transform(X)
         logging.info("Diagram selector.")
         X = tda.DiagramSelector(limit=np.inf, point_type="finite").fit_transform(X)
         logging.info("Sliced wasserstein.")
         X = tda.SlicedWasserstein(bandwidth=0.6, num_directions=20).fit_transform(X)
 
         logging.info("Cluster.")
-        # clusterer = sklearn.cluster.DBSCAN(metric='precomputed')
-        clusterer = sklearn.cluster.SpectralClustering(n_clusters=5, affinity='precomputed')
+        clusterer = sklearn.cluster.DBSCAN(metric='precomputed')
+        # clusterer = sklearn.cluster.SpectralClustering(n_clusters=5, affinity='precomputed')
         y_pred = clusterer.fit_predict(X)
 
         logging.info("PCA.")

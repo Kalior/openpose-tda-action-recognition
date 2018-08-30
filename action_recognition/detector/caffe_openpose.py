@@ -2,11 +2,11 @@
 from openpose import openpose as op
 
 
-class CaffeOpenpose(object):
+class CaffeOpenpose:
     """CMU's original OpenPose installation.
 
     Requires OpenPose to be installed on the system, there is a Dockerfile
-    that achieves this, and there are installatino instructions on CMU's
+    that achieves this, and there are installation instructions on CMU's
     OpenPose GitHub page.
 
     Parameters
@@ -20,7 +20,7 @@ class CaffeOpenpose(object):
     def __init__(self, model_path):
         # Initialise openpose
         params = self._openpose_parameters(model_path)
-        # Construct OpenPose object allocates GPU memory
+        # Constructing OpenPose object allocates GPU memory
         self.openpose = op.OpenPose(params)
 
     def _openpose_parameters(self, model_path):

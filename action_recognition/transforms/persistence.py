@@ -17,7 +17,7 @@ class Persistence(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     max_edge_length : float, optional, default = 0.5
-        The max_edge_length passed to RipsComplex, ignored for all else
+        The max_edge_length passed to RipsComplex, otherwise ignored
     max_alpha_square : float, optional, default = 0.9
         The max_alpha_square passed to AlphaComplex, otherwise ignored
     intrisic_dim : int, optional, default = 2
@@ -30,9 +30,9 @@ class Persistence(BaseEstimator, TransformerMixin):
 
     def __init__(self,
                  max_edge_length=0.5,
-                 max_alpha_square=0.9,
+                 max_alpha_square=2,
                  intrisic_dim=2,
-                 complex_='rips'):
+                 complex_='alpha'):
         self.persistences = []
         self.max_edge_length = max_edge_length
         self.intrisic_dim = intrisic_dim
@@ -40,8 +40,8 @@ class Persistence(BaseEstimator, TransformerMixin):
         self.complex = complex_
         self.possible_complex_values = ['rips', 'alpha', 'tangential', 'cubical']
 
-    def fit(self, X, y, **fit_params):
-        """Returns self unchanged, as there are no parameters to fit.
+    def fit(self, X, y=None, **fit_params):
+        """Fits a scaler to the data.
 
         Parameters
         ----------
@@ -54,6 +54,9 @@ class Persistence(BaseEstimator, TransformerMixin):
         self : unchanged
 
         """
+        scaler = RobustScaler()
+        self.scaler = scaler.fit(np.vstack(X))
+
         return self
 
     def transform(self, data):
@@ -82,7 +85,7 @@ class Persistence(BaseEstimator, TransformerMixin):
 
         """
         scaler = RobustScaler()
-        scaler.fit(data.reshape(-1, 3))
+        scaler.fit(np.vstack(data))
         for i in range(number_of_points):
             plt.style.use('seaborn')
             points = scaler.transform(data[i])
@@ -107,15 +110,12 @@ class Persistence(BaseEstimator, TransformerMixin):
             shape = [n_points, n_diags, 2]
 
         """
-        scaler = RobustScaler()
-        scaler.fit(data.reshape(-1, 3))
 
-        # self.visualise_point_clouds(data, 5)
-        # plt.show()
-
+        #   Train the scaler on each individual point in every
+        # dataset since the scalers don't accept 3D data.
         diags = np.zeros(data.shape[0], dtype=object)
         for i, d in enumerate(data):
-            points = scaler.transform(d)
+            points = self.scaler.transform(d)
 
             if self.complex == 'alpha':
                 diag = self._alpha_complex(points)
@@ -130,7 +130,7 @@ class Persistence(BaseEstimator, TransformerMixin):
             clean_diag = [p for p in diag if p[1][1] < np.inf]
             self.persistences.append(clean_diag)
 
-            diags[i] = np.array([(p[1][1], p[1][0]) for p in clean_diag])
+            diags[i] = np.array([(p[1][0], p[1][1]) for p in diag])
 
         return np.array(diags)
 
@@ -149,6 +149,8 @@ class Persistence(BaseEstimator, TransformerMixin):
     def _cubical_complex(self, points):
         shape = [points.shape[0]] * 2
         bitmap = np.zeros(shape)
+        #  You can do other calculations for the bitmap values,
+        # this is just an example I found.
         for i, p1 in enumerate(points):
             for j, p2 in enumerate(points):
                 norm = np.linalg.norm(p1 - p2)
@@ -164,7 +166,7 @@ class Persistence(BaseEstimator, TransformerMixin):
         diag = simplex_tree.persistence()
         return diag
 
-    def save_persistences(self, out_dir):
+    def save_persistences(self, labels, out_dir):
         """Saves the persistence diagrams to file.
 
         Requires persistence to be called first.
@@ -177,14 +179,13 @@ class Persistence(BaseEstimator, TransformerMixin):
         for i, diag in enumerate(self.persistences):
             fig = gd.plot_persistence_diagram(diag)
 
-            label = self.labels[i]
-            plt.title(label)
+            plt.title(labels[i])
 
             file_path = os.path.join(out_dir, 'persistence-{}.png'.format(i))
             plt.savefig(file_path, bbox_inches='tight')
             plt.close()
 
-    def save_betti_curves(self, out_dir):
+    def save_betti_curves(self, labels, out_dir):
         """Saves the betti curves of the calculate persistences to file.
 
         Requires persistence to be called first.
@@ -197,11 +198,9 @@ class Persistence(BaseEstimator, TransformerMixin):
         for i, diag in enumerate(self.persistences):
             tda_diag_df = self._construct_dataframe(diag)
 
-            label = self.labels[i]
-            plt.title(label)
-
             for dim in range(3):
                 self._betti_curve(tda_diag_df, dim)
+                plt.title(labels[i])
 
                 file_path = os.path.join(out_dir, 'betti-curve-{}-{}.png'.format(i, dim))
                 plt.savefig(file_path, bbox_inches='tight')
@@ -219,13 +218,13 @@ class Persistence(BaseEstimator, TransformerMixin):
     def _betti_curve(self, tda_diag_df, dim):
         betti_points = 100
 
-        betti_curve_0 = []
+        betti_curve = []
         min_birth = tda_diag_df.loc[tda_diag_df.Dimension == dim].Birth.min()
         max_death = tda_diag_df.loc[tda_diag_df.Dimension == dim].Death.max()
         betti_range = np.linspace(min_birth, max_death, betti_points)
         for death in betti_range:
             nb_points_alive = tda_diag_df.loc[
                 (tda_diag_df.Dimension == dim) & (tda_diag_df.Death >= death)].shape[0]
-            betti_curve_0.append([death, nb_points_alive])
-        betti_curve_0 = np.array(betti_curve_0)
-        plt.plot(betti_curve_0[:, 0], betti_curve_0[:, 1])
+            betti_curve.append([death, nb_points_alive])
+        betti_curve = np.array(betti_curve)
+        plt.plot(betti_curve[:, 0], betti_curve[:, 1])

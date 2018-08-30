@@ -8,7 +8,7 @@ action\_recognition.tests package
 
 
 action\_recognition.tests.test\_track
---------------------------------------------
+-------------------------------------
 
 .. automodule:: action_recognition.tests.test_track
     :members:
@@ -16,7 +16,7 @@ action\_recognition.tests.test\_track
     :show-inheritance:
 
 action\_recognition.tests.test\_tracker
-----------------------------------------------
+---------------------------------------
 
 .. automodule:: action_recognition.tests.test_tracker
     :members:

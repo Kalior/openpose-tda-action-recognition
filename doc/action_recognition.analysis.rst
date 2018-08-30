@@ -7,7 +7,7 @@ action\_recognition.analysis package
     :show-inheritance:
 
 action\_recognition.analysis.chunk\_visualiser
------------------------------------------------------
+----------------------------------------------
 
 .. automodule:: action_recognition.analysis.chunk_visualiser
     :members:
@@ -15,7 +15,7 @@ action\_recognition.analysis.chunk\_visualiser
     :show-inheritance:
 
 action\_recognition.analysis.labelling
----------------------------------------------
+--------------------------------------
 
 .. automodule:: action_recognition.analysis.labelling
     :members:
@@ -23,7 +23,7 @@ action\_recognition.analysis.labelling
     :show-inheritance:
 
 action\_recognition.analysis.mapper
-------------------------------------------
+-----------------------------------
 
 .. automodule:: action_recognition.analysis.mapper
     :members:
@@ -31,7 +31,7 @@ action\_recognition.analysis.mapper
     :show-inheritance:
 
 action\_recognition.analysis.post\_processor
----------------------------------------------------
+--------------------------------------------
 
 .. automodule:: action_recognition.analysis.post_processor
     :members:

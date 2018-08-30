@@ -72,10 +72,10 @@ class PostProcessor:
 
         """
         self._combine_tracks(self.tracks)
-        self.tracks = self._clean_tracks(self.tracks)
+        self.tracks = self._prune_tracks(self.tracks)
         self._fill_tracks(self.tracks)
 
-    def _clean_tracks(self, tracks):
+    def _prune_tracks(self, tracks):
         return [track for track in tracks if len(track) > 15]
 
     def _fill_tracks(self, tracks):

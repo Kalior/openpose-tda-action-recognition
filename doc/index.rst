@@ -6,8 +6,10 @@
 Documentation for action_recognition!
 ==============================================
 
+.. include:: ../README.md
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
    modules

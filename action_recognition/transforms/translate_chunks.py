@@ -38,15 +38,16 @@ class TranslateChunks(BaseEstimator, TransformerMixin):
 
 
         """
-        translated_chunks = np.copy(chunks)
-
-        for chunk in translated_chunks:
-            self._normalise_chunk(chunk)
+        translated_chunks = np.array([self._normalise_chunk(chunk) for chunk in chunks])
 
         return translated_chunks
 
     def _normalise_chunk(self, chunk):
+        chunk = np.copy(chunk)
         # Don't take unidentified keypoints into account:
-        mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
+        if np.any(chunk):
+            mean = chunk[~np.all(chunk == 0, axis=2)].mean(axis=0)
 
-        chunk[~np.all(chunk == 0, axis=2)] -= mean
+            chunk[~np.all(chunk == 0, axis=2)] -= mean
+
+        return chunk

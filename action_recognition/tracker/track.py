@@ -1,5 +1,5 @@
 import numpy as np
-
+import copy
 import logging
 
 
@@ -16,6 +16,7 @@ class Track:
         self.track = []
         self.frame_assigned = []
         self.last_frame_update = -1
+        self.predictions = {}
 
     def __len__(self):
         return len(self.track)
@@ -23,8 +24,17 @@ class Track:
     def __getitem__(self, item):
         return self.track[item]
 
+    def copy(self, number_of_frames):
+        new_track = Track()
+        new_track.track = self.track[number_of_frames:]
+        new_track.frame_assigned = self.frame_assigned[number_of_frames:]
+        new_track.last_frame_update = new_track.frame_assigned[-1]
+
+        return new_track
+
     def add_person(self, person, current_frame):
-        """Adds a Person to the track
+        """Adds a Person to the track.
+
         Parameters
         ----------
         person : Person object
@@ -74,8 +84,8 @@ class Track:
         speed = distance / (len(self.track) - start_index)
         return speed
 
-    def is_relevant(self, current_frame):
-        """Paths are relevant if they are updated with the last 10 frames.
+    def recently_updated(self, current_frame):
+        """Checks if the path is updated in the last 10 frames.
 
         Parameters
         ----------
@@ -106,8 +116,9 @@ class Track:
         if current_frame == -1:
             current_frame = self.last_frame_update
 
-        return [p[idx][:2] for i, p in enumerate(self.track)
-                if np.any(p[idx][:2]) and self.frame_assigned[i] <= current_frame]
+        return [p[idx][:2] for f, p in zip(self.frame_assigned, self.track)
+                if np.any(p[idx][:2]) and
+                f <= current_frame]
 
     def get_keypoints_at(self, frame):
         """Returns all keypoints at time frame.
@@ -124,7 +135,14 @@ class Track:
 
         """
 
-        return [p[:, :2] for i, p in enumerate(self.track) if self.frame_assigned[i] <= frame][-1]
+        path = [k[:, :2] for k, f in zip(self.track, self.frame_assigned)
+                if f <= frame and
+                np.any(k[:, :2])]
+
+        if len(path) > 0:
+            return path[-1]
+        else:
+            return None
 
     def divide_into_chunks(self, frames_per_chunk, overlap=-1):
         """Divides the track into chunks with overlaps, used for action recognition.
@@ -202,6 +220,9 @@ class Track:
     def to_np(self):
         """Converts the track into pure numpy arrays.
 
+        Needed for saving of the tracks to file in a format
+        that is easy to manage.
+
         Returns
         -------
         np_path : array-like
@@ -256,12 +277,14 @@ class Track:
         self.track = new_track
         self.frame_assigned = new_frame_assigned
         self.remove_frame_duplicates()
+        self.predictions = {**other.predictions, **self.predictions}
 
     def overlaps(self, other):
         """Checks if other overlaps with this track.
 
-        More specifically, it check if the two tracks are nearby each other
-        for all of their frames.
+        More specifically, it checks if the two tracks are nearby each other
+        for all of their frames. If they are, we can join these tracks into one
+        as they probably correspond to a single person.
 
         Parameters
         ----------
@@ -301,7 +324,8 @@ class Track:
 
         return True
 
-    def _check_frame_distance(self, frame_assigned, track, index, other_frame_assigned, other_track, other_index):
+    def _check_frame_distance(self, frame_assigned, track, index, other_frame_assigned,
+                              other_track, other_index):
         distance_threshold = 16
 
         frame_diff = frame_assigned[index] - other_frame_assigned[other_index]
@@ -327,7 +351,10 @@ class Track:
         return max(0, index)
 
     def fill_missing_keypoints(self, fill_type='copy'):
-        """Fill missing keypoints with data from previous parts of the track
+        """Fill missing keypoints with data from previous parts of the track.
+
+        Gives a more complete idea of each frame and helps with classification
+        of actions.
 
         Parameters
         ----------
@@ -386,6 +413,25 @@ class Track:
 
     def reset_keypoints(self):
         """Resets the Keypoints in every Person in track to the original.
+
+        Used since there are two fill_types in fill_missing_keypoints(...), the
+        'copy' fill_type is used during post_processing due to legacy, and changing
+        it there alters which tracks are outputted from the post processing, which
+        would mean a re-labelling of the data is needed whenever a new type of
+        fill_type is implemented.  Instead, it is possible to reset
+        the keypoints to their original values, which allows for new fill_types
+        to be experimented with without having to relabel the data for every
+        fill_type.
+
         """
         for person in self.track:
             person.reset_keypoints()
+
+    def add_prediction(self, label, confidence, frame):
+        """Adds a prediction to the track.
+
+        Predictions are stored as a dict with 'label' and 'confidence' with a
+        surrounding dict which connects the current frame to the prediction.
+
+        """
+        self.predictions[frame] = {'label': label, 'confidence': confidence}
