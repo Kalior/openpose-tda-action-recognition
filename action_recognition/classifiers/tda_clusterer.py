@@ -63,4 +63,5 @@ class TDAClusterer:
         n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
         plt.title('{} number of clusters: {}'.format(title, n_clusters_))
         plt.legend()
+        plt.savefig("clustering-{}.png".format(title), bbox_inches='tight')
         plt.show(block=False)

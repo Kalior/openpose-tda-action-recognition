@@ -35,7 +35,7 @@ def append_train_and_test(train, test):
     return chunks, frames, labels, videos
 
 
-def train_clusterer(test, train):
+def train_clusterer(train, test):
     chunks, frames, labels, videos = append_train_and_test(train, test)
 
     le = LabelEncoder()
