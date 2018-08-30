@@ -7,7 +7,7 @@ action\_recognition.detector package
     :show-inheritance:
 
 action\_recognition.detector.caffe\_openpose
----------------------------------------------------
+--------------------------------------------
 
 .. automodule:: action_recognition.detector.caffe_openpose
     :members:
@@ -15,7 +15,7 @@ action\_recognition.detector.caffe\_openpose
     :show-inheritance:
 
 action\_recognition.detector.tf\_openpose
-------------------------------------------------
+-----------------------------------------
 
 .. automodule:: action_recognition.detector.tf_openpose
     :members:

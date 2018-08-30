@@ -2,6 +2,6 @@ action_recognition
 ==================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    action_recognition

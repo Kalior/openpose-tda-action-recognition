@@ -7,7 +7,7 @@ action\_recognition.augmentors package
     :show-inheritance:
 
 action\_recognition.augmentors.rotate
---------------------------------------------
+-------------------------------------
 
 .. automodule:: action_recognition.augmentors.rotate
     :members:

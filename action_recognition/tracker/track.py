@@ -33,7 +33,8 @@ class Track:
         return new_track
 
     def add_person(self, person, current_frame):
-        """Adds a Person to the track
+        """Adds a Person to the track.
+
         Parameters
         ----------
         person : Person object
