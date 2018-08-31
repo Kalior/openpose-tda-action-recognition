@@ -44,7 +44,6 @@ def main(args):
 def train_classifier(train, test, title, classifier, visualise_incorrect_classifications):
     train_chunks, _, train_labels, _ = train
     test_chunks, test_frames, test_labels, test_videos = test
-    test_translated_chunks = transforms.TranslateChunks().transform(test_chunks)
 
     logging.info("Fitting classifier.")
     classifier.fit(train_chunks, train_labels)
@@ -63,7 +62,7 @@ def train_classifier(train, test, title, classifier, visualise_incorrect_classif
 
     if visualise_incorrect_classifications:
         visualiser.visualise_incorrect_classifications(
-            pred_labels, test_labels, test_chunks, test_frames, test_translated_chunks, test_videos)
+            pred_labels, test_labels, test_chunks, test_frames, test_videos)
 
     file_name = "{}.pkl".format(title)
     logging.info("Saving model to {}.".format(file_name))

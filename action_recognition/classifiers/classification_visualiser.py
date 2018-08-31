@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import logging
 
 from ..analysis import ChunkVisualiser
+from ..transforms import TranslateChunks
 
 
 class ClassificationVisualiser:
@@ -43,7 +44,7 @@ class ClassificationVisualiser:
         plt.savefig(title + '.png', bbox_inches='tight')
         plt.show(block=False)
 
-    def visualise_incorrect_classifications(self, pred_labels, test_labels, chunks, frames, translated_chunks, videos):
+    def visualise_incorrect_classifications(self, pred_labels, test_labels, chunks, frames, videos):
         """Displays videos of the incorrect classifications.
 
         Can help with identifying features that can be added to the
@@ -63,6 +64,7 @@ class ClassificationVisualiser:
             The paths to the corresponding videos of the chunks.
 
         """
+        translated_chunks = TranslateChunks().transform(chunks)
         visualiser = ChunkVisualiser(chunks, frames, translated_chunks)
         unique_labels = set(pred_labels)
         for pred_label in unique_labels:
