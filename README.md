@@ -43,6 +43,7 @@ Most of what the scripts do is to wrap input and output to the different modules
     3. Fill-in missing keypoints (as OpenPose sometimes does not output every keypoint) by maintaining the same distance to a connected keypoint (e.g. wirst-elbow) as when the keypoint was last seen.  This increases the accuracy of the classifier later on.
     4. Fill-in missing frames by interpolating positions of every keypoint.  This is done to normalise the data in case OpenPose lost track of a person for a couple of frames.  With this normalisation, every chunk of the same length will also have the same length in video-time.
 * If there are multiple datasets that you wish to combine, you can run the [`combine_datasets.py`](combine_datasets.py) script which allows you to do exactly that.
+* A possible improvement here is to allow a user to label different chunks in the same video with different lengths.
 
 #### visualise_dataset.py
 

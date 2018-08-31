@@ -163,21 +163,20 @@ class Labelling:
         Returns
         -------
         chunks : numpy.array
-            The labelled chunks
+            The labelled chunks.
         frames : numpy.array
-            The frames for the labelled chunks
+            The frames for the labelled chunks.
         labels : numpy.array
-            The labels for each chunk
+            The labels for each chunk.
         indicies : numpy.array
             The index of the track for every chunk.
-            needed for reproducibility.
+            Needed for reproducibility.
         """
         keypoints = tracks[0][0].keypoints
         chunk_shape = (frames_per_chunk, *keypoints.shape)
         chunks, frames, labels, track_indicies = self._init_arrays(chunk_shape, frames_per_chunk)
 
         for timestamp in timestamps:
-            # Only include the first track that fits the timestamp
             for i, track in enumerate(tracks):
                 track_arrays = self._pseudo_automatic_labelling(
                     timestamp, track, i, frames_per_chunk, chunk_shape, video)

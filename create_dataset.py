@@ -100,7 +100,7 @@ def process_tracks(tracks_file, video, target_frames_per_chunk, overlap_percenta
     np_tracks = tracks_npz['tracks']
     np_frames = tracks_npz['frames']
 
-    logging.info("Combining, cleaning and removing tracks.")
+    logging.info("Combining, cleaning, and removing tracks.")
     processor = PostProcessor()
     processor.create_tracks(np_tracks, np_frames)
     processor.post_process_tracks()

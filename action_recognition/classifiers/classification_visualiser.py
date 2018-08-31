@@ -21,10 +21,14 @@ class ClassificationVisualiser:
 
         Parameters
         ----------
-        labels : array-like of predicted labels
-        test_labels : array-like of ground truth labels
-        class_names : array-like of class names.
-        title : str, title of the plot and name of the file
+        labels : array-like
+            Predicted labels from the classifier.
+        test_labels : array-like
+            Ground truth labels.
+        class_names : array-like
+            The names of the classes in the data.
+        title : str
+            Title of the plot and name of the file.
 
         """
         confusion_matrix = metrics.confusion_matrix(test_labels, labels).astype(np.float32)
@@ -47,13 +51,16 @@ class ClassificationVisualiser:
 
         Parameters
         ----------
-        pred_labels : array-like of predicted labels.
-        test_labels : array-like of ground truth labels.
-        chunks : array-like, the corresponding chunks for the labels.
-        frames : array-like, the frames for the chunks.
-        translated_chuns : array-like
-            the chunks with transforms.TranslateChunks() applied
-        videos : array-like, the paths to the corresponding videos of the chunks.
+        pred_labels : array-like
+            Predicted labels from the classifier.
+        test_labels : array-like
+            Ground truth labels.
+        chunks : array-like
+            The corresponding chunks for the labels.
+        frames : array-like
+            The frame numbers for the chunks.
+        videos : array-like
+            The paths to the corresponding videos of the chunks.
 
         """
         visualiser = ChunkVisualiser(chunks, frames, translated_chunks)
