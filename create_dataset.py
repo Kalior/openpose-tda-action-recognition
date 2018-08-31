@@ -20,9 +20,6 @@ def main(args):
 
     seconds_per_chunk = 20 / 30
     overlap_percentage = 0.5
-    frames_per_chunk = 20
-    number_of_keypoints = 18
-    number_of_coordinates = 3
 
     all_chunks = []
     all_frames = []
@@ -33,7 +30,7 @@ def main(args):
         logging.info("Processing video: {} with tracks {}".format(video, tracks_file))
 
         chunks, frames, labels = process_tracks(
-            tracks_file, video, frames_per_chunk, overlap_percentage,
+            tracks_file, video, args.frames_per_chunk, overlap_percentage,
             seconds_per_chunk)
 
         videos = np.array([video] * len(chunks))
@@ -71,7 +68,7 @@ def parse_paths(paths, ok_ending):
 
 
 def append_and_save(chunks, frames, labels, videos, file_name):
-    if args.append and (os.path.isfile(file_name)):
+    if args.append and os.path.isfile(file_name):
         dataset_npz = np.load(file_name)
 
         chunks = load_and_append(dataset_npz, 'chunks', chunks)
@@ -143,7 +140,8 @@ if __name__ == '__main__':
                      'Allows for two different methods of labelling data, see '
                      'the documentation of the Labelling class for details.'))
     parser.add_argument('--videos', type=str, nargs='+',
-                        help='The videos/folders from which the paths were generated.')
+                        help=('The videos/folders from which the paths were generated. '
+                              'Needed for labelling of the data.'))
     parser.add_argument('--tracks-files', type=str, nargs='+',
                         help='The files/folders with the saved tracks.')
     parser.add_argument('--out-file', type=str, default='dataset/dataset',
@@ -151,6 +149,12 @@ if __name__ == '__main__':
     parser.add_argument('--append', action='store_true',
                         help=('Specify if the data should be added to the out-file '
                               '(if it exists) or overwritten.'))
+
+    parser.add_argument('--frames-per-chunk', type=int, default=20,
+                        help=('The number of frames per chunk to divide tracks into. '
+                              'If the data is already labelled with a different number of '
+                              'frames per chunk, it will log a warning but try to extend '
+                              'the labelled chunks to the given value.'))
 
     logging.basicConfig(level=logging.DEBUG)
     args = parser.parse_args()
