@@ -9,8 +9,7 @@ from sklearn.preprocessing import RobustScaler
 
 from ..util import COCOKeypoints, coco_connections
 from .. import classifiers, transforms
-from . import AverageSpeed, AngleChangeSpeed, AmountOfMovement, KeypointDistance
-from .arm_leg_ratio import ArmLegRatio
+from . import AverageSpeed, AngleChangeSpeed, AmountOfMovement, KeypointDistance, ArmLegRatio
 from ..analysis import ChunkVisualiser
 
 
