@@ -130,7 +130,9 @@ class FeatureVisualiser:
 
         logging.debug('Preparing plot.')
         plt.figure()
-        sns.lineplot(x='keypoint', y='value', hue='action', style=None, markers=True, data=df)
+        ax = sns.lineplot(x='keypoint', y='value', hue='action', data=df)
+        for line in ax.lines:
+            line.set_marker('o')
         plt.title(title)
 
     def visualise_classes(self, train, test):
