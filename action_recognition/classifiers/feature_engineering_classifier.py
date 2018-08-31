@@ -8,7 +8,7 @@ import numpy as np
 
 from ..transforms import TranslateChunks, SmoothChunks, FlattenTo3D, Persistence, \
     ExtractKeypoints, InterpolateKeypoints
-from ..features import AverageSpeed, AngleChangeSpeed, AmountOfMovement, KeypointDistance
+from ..features import AverageSpeed, AngleChangeSpeed, AmountOfMovement, KeypointDistance, ArmLegRatio
 from ..util import COCOKeypoints, coco_connections
 
 
@@ -124,7 +124,11 @@ class FeatureEngineeringClassifier(BaseEstimator, ClassifierMixin):
             ("KeypointDistance", Pipeline([
                 ("Feature", KeypointDistance(self.keypoint_distance_connections)),
                 ("Scaler", RobustScaler())
-            ]))
+            ])),
+            ("ArmToLegRatio", Pipeline([
+                ("Feature", ArmLegRatio()),
+                ("Scaler", RobustScaler())
+            ])),
         ]
         if self.use_tda_vectorisations:
             transformer_list.append(("TDAVectorisations", self._tda_vectorisations_pipeline()))

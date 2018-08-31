@@ -10,6 +10,7 @@ from sklearn.preprocessing import RobustScaler
 from ..util import COCOKeypoints, coco_connections
 from .. import classifiers, transforms
 from . import AverageSpeed, AngleChangeSpeed, AmountOfMovement, KeypointDistance
+from .arm_leg_ratio import ArmLegRatio
 from ..analysis import ChunkVisualiser
 
 
@@ -112,6 +113,9 @@ class FeatureVisualiser:
 
         keypoint_distance = KeypointDistance(keypoint_distance_connections)
         self._plot_feature_per_class(chunks, keypoint_distance, labels, 'Keypoint distances')
+
+        ratio = ArmLegRatio()
+        self._plot_feature_per_class(chunks, ratio, labels, 'Arm to leg ratio')
         plt.show(block=False)
 
     def _plot_feature_per_class(self, chunks, transform, labels, title):
@@ -127,7 +131,7 @@ class FeatureVisualiser:
 
         logging.debug('Preparing plot.')
         plt.figure()
-        sns.lineplot(x='keypoint', y='value', hue='action', style=None, data=df)
+        sns.lineplot(x='keypoint', y='value', hue='action', style=None, markers=True, data=df)
         plt.title(title)
 
     def visualise_classes(self, train, test):
