@@ -55,7 +55,7 @@ class ArmLegRatio(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, chunks):
-        """Extracts the absolute movement from the chunks.
+        """Calculate the average arm to leg ratio for the chunks.
 
         Parameters
         ----------
