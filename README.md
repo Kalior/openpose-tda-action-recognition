@@ -1,5 +1,9 @@
 # Action recognition based on [OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose/) and TDA (using [Gudhi](http://gudhi.gforge.inria.fr/python/latest/) and [sklearn_tda](https://github.com/MathieuCarriere/sklearn_tda))
 
+## Acknowldegement
+This project was developed in the summer of 2018 during an internship at Fujitsu Centre of Excellence in Paris.  Thanks for the all of the help throughout the project!
+
+
 ## Performance
 
 The ensemble classifier achieves an accuracy of `0.912` on custom data.  However, there is still a need to capture more data to see how well it would generalise over different actors and scenes.  The TDA classifier on its own achieves an accuracy of `0.823` on the same data.
